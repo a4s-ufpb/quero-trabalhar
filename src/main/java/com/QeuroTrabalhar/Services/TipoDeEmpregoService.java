@@ -1,7 +1,7 @@
 package com.QeuroTrabalhar.Services;  // Pacote onde esta classe está localizada
 
 
-import com.QeuroTrabalhar.Model.TipoDeEmprego; // Importa a entidade TipoDeEmprego
+import com.QeuroTrabalhar.Entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
 import com.QeuroTrabalhar.Repository.TipoDeEmpregoRepository; // Importa o repositório para acessar o banco de dados
 import org.springframework.beans.factory.annotation.Autowired; // Importa anotação para injeção de classe
 import org.springframework.stereotype.Service; // Indica que esta classe é um serviço gerenciado pelo Spring
@@ -12,10 +12,11 @@ import java.util.Optional; // Importa a classe Optional para evitar NullPointerE
 @Service // Marca esta classe como um serviço do Spring
 public class TipoDeEmpregoService {
 
-    @Autowired
+    @Autowired // Injeta as instâncias
     private TipoDeEmpregoRepository tipoDeEmpregoRepository; // Dependencia do repositório
 
-    public List<TipoDeEmprego> listarTodos() {
+
+    public List<TipoDeEmprego> listarTodosOsTiposDeEmprego() {
         return tipoDeEmpregoRepository.findAll(); // Retorna todos os registros do banco
     }
 
@@ -25,11 +26,11 @@ public class TipoDeEmpregoService {
     }
 
     // Metodo para salvar um novo Tipo de Emprego
-    public TipoDeEmprego salvar(TipoDeEmprego tipoDeEmprego) {
+    public TipoDeEmprego salvar(TipoDeEmprego tipoDeEmprego) { // TODO rever o tipo de retorno
         // Verifica se já existe um tipo de emprego com o mesmo nome
         Optional<TipoDeEmprego> existente = tipoDeEmpregoRepository.findByTitulo(tipoDeEmprego.getTitulo()); // cria um Objeto para guardar o possível Título
         if (existente.isPresent()) { // usa o metodo isPresent para verificar se o Titulo está em existente
-            throw new IllegalArgumentException("Já existe um tipo de emprego com este nome!");
+            throw new IllegalArgumentException("Já existe um tipo de emprego com este nome!"); // TODO rever se deve lançar outra exceção ou retornar um Optional
         }
         return tipoDeEmpregoRepository.save(tipoDeEmprego); // Salva no banco e retorna o objeto salvo
     }

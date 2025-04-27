@@ -1,4 +1,4 @@
-package com.QeuroTrabalhar.Model;
+package com.QeuroTrabalhar.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,16 +10,16 @@ import lombok.*;
 public class TipoDeEmprego {
 
     @Id //Define chave primária
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // Faz o ID ser gerado automaticamente pelo banco (autoincrement no MySQL)
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Faz o ID ser gerado automaticamente pelo banco (autoincrement no MySQL)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(unique = true, nullable = false, length = 100) // TODO: verificar se de fato precisa ser único
     // Garante que o campo não pode ser nulo e define o tamanho máximo
     private String titulo;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = 500) // TODO: Verificar limite de descrição
     // Define que o campo será armazenadoo como um tipo TEXT no banco
     private String descricao;
+
+
 }
