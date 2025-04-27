@@ -1,6 +1,6 @@
 package com.QeuroTrabalhar.Controllers;
 
-import com.QeuroTrabalhar.Model.TipoDeEmprego; // Importa a entidade TipoDeEmprego
+import com.QeuroTrabalhar.Entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
 import com.QeuroTrabalhar.Services.TipoDeEmpregoService; // Importa o serviço que contém a lógica de negócio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity; // Utilizado para retornar respostas HTTP
@@ -13,13 +13,13 @@ import java.util.Optional; // Importa Optional para evitar NullPointerException
 @RequestMapping ("api/tipos-de-emprego") // Define a URL base para endpoints deste controlador
 public class TipoDeEmpregoController {
 
-    @Autowired
+    @Autowired // Injeta as instâncias
     private TipoDeEmpregoService tipoDeEmpregoService; // Dependencia do Serviço
 
     // Metodo para listar todos os Tipos de Emprego (GET)
     @GetMapping
     public List<TipoDeEmprego> listarTodos() {
-        return tipoDeEmpregoService.listarTodos(); // Chama o serviço para obter a lista do banco de dados
+        return tipoDeEmpregoService.listarTodosOsTiposDeEmprego(); // Chama o serviço para obter a lista do banco de dados
     }
 
     // Metodo para buscar um Tipo de Emprego pelo ID (GET com parâmetro)

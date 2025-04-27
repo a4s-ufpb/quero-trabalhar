@@ -1,6 +1,6 @@
 package com.QeuroTrabalhar.Repository;
 
-import com.QeuroTrabalhar.Model.TipoDeEmprego;
+import com.QeuroTrabalhar.Entity.TipoDeEmprego;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
