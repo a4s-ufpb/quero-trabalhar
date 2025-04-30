@@ -1,0 +1,39 @@
+# Ignorar diretórios de build
+/target/
+/bin/
+
+# Arquivos de dependências
+*.log
+*.jar
+*.war
+*.ear
+
+# Arquivos do IntelliJ IDEA
+.idea/
+
+# Arquivos do Eclipse
+.project
+.classpath
+.settings/
+
+# Arquivos do Maven
+.mvn/
+
+# Arquivos do Gradle
+.gradle/
+
+# Arquivos de dependências baixadas
+.dependencies/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Configurações do Spring Boot
+spring-boot-loader/
+
+# Outros arquivos desnecessários
+*.class
+
+# Ignorar o arquivo de configurações sensíveis
+/src/main/resources/application.properties
