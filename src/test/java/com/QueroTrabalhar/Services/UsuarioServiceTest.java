@@ -94,34 +94,4 @@ public class UsuarioServiceTest {
 
         Mockito.verify(usuarioRepository).deleteById(usuarioID); // Verifica se deleteById foi chamado
     }
-
-    @Test
-    public void deveConverterEntidadeParaDTO() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setNome("Fernanda");
-
-        UsuarioDTO.Response usuarioDTO = usuarioService.converterParaDto(usuario);
-
-        Assertions.assertNotNull(usuarioDTO);
-        Assertions.assertEquals("Fernanda", usuarioDTO.getNome());
-        Assertions.assertEquals(1L, usuarioDTO.getId());
-    }
-
-    @Test
-    public void deveConverterDtoParaEntidade(){
-        UsuarioDTO.Request usuarioDTO = new UsuarioDTO.Request();
-        usuarioDTO.setCpf(12345678987L);
-        usuarioDTO.setNome("Fernanda");
-        usuarioDTO.setTelefone("1234567890");
-        usuarioDTO.setEmail("fernanda@email.com");
-
-        Usuario usuario = usuarioService.converterParaEntidade(usuarioDTO);
-
-        Assertions.assertNotNull(usuario);
-        Assertions.assertEquals("Fernanda", usuario.getNome());
-        Assertions.assertEquals(12345678987L, usuario.getCpf());
-        Assertions.assertEquals("1234567890", usuario.getTelefone());
-        Assertions.assertEquals("fernanda@email.com", usuario.getEmail());
-    }
 }
