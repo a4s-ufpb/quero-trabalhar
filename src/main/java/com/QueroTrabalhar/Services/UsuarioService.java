@@ -5,6 +5,7 @@ import com.QueroTrabalhar.Entity.ExperienciaProfissional;
 import com.QueroTrabalhar.Entity.InteresseEmEmprego;
 import com.QueroTrabalhar.Entity.Usuario;
 import com.QueroTrabalhar.Repository.UsuarioRepository;
+import com.QueroTrabalhar.Util.EntityDtoConverter;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class UsuarioService {
         List<Usuario> usuarios = usuarioRepository.findAll();
 
         return usuarios.stream()
-                .map(this::converterParaDto)
+                .map(usuario -> EntityDtoConverter.convertToDTO(usuario, UsuarioDTO.Response.class))
                 .collect(Collectors.toList());
     }
 
@@ -33,58 +34,20 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
-        return converterParaDto(usuario);
+        return EntityDtoConverter.convertToDTO(usuario, UsuarioDTO.Response.class);
     }
 
     public UsuarioDTO.Response salvarUsuario(UsuarioDTO.Request dto) {
-        Usuario usuario = converterParaEntidade(dto);
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
-        return converterParaDto(usuarioSalvo);
+        // Converte o DTO para entidade
+        Usuario usuario = EntityDtoConverter.convertToEntity(dto, Usuario.class);
+        usuarioRepository.save(usuario);
+
+        // Converte a entidade para DTO antes de retornar
+        return EntityDtoConverter.convertToDTO(usuario, UsuarioDTO.Response.class);
     }
 
     public void deletarUsuario(Long id) {
         usuarioRepository.deleteById(id);
     }
-
-    public UsuarioDTO.Response converterParaDto(Usuario usuario) {
-        UsuarioDTO.Response dto = new UsuarioDTO.Response();
-        dto.setId(usuario.getId());
-        dto.setCpf(usuario.getCpf());
-        dto.setNome(usuario.getNome());
-        dto.setTelefone(usuario.getTelefone());
-        dto.setEmail(usuario.getEmail());
-
-        // Populando lista de IDs dos relacionamentos
-        if (usuario.getExperienciaProfissionais() != null) {
-            List<Long> experienciaIds = usuario.getExperienciaProfissionais()
-                    .stream()
-                    .map(ExperienciaProfissional::getId)  // pega o id de cada experiência
-                    .collect(Collectors.toList());
-
-            dto.setExperienciaProfissionaisIds(experienciaIds);
-        }
-
-        if (usuario.getInteresseEmEmpregos() != null) {
-            List<Long> interesseIds = usuario.getInteresseEmEmpregos()
-                    .stream()
-                    .map(InteresseEmEmprego::getId)  // pega o id de cada interesse
-                    .collect(Collectors.toList());
-
-            dto.setInteresseEmEmpregosIds(interesseIds);
-        }
-
-        return dto;
-    }
-
-    public Usuario converterParaEntidade(UsuarioDTO.Request dto) {
-        Usuario usuario = new Usuario();
-        usuario.setCpf(dto.getCpf());
-        usuario.setNome(dto.getNome());
-        usuario.setTelefone(dto.getTelefone());
-        usuario.setEmail(dto.getEmail());
-        return usuario;
-    }
-
-
 }
