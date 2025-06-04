@@ -1,4 +1,4 @@
-package com.QueroTrabalhar.dtos;
+package com.QueroTrabalhar.dtos.user;
 
 
 public class UserRequestDTO {

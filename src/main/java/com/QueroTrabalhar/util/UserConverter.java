@@ -1,14 +1,13 @@
 package com.QueroTrabalhar.util;
 
-import com.QueroTrabalhar.dtos.UserRequestDTO;
-import com.QueroTrabalhar.dtos.UserResponseDTO;
+import com.QueroTrabalhar.dtos.user.UserRequestDTO;
+import com.QueroTrabalhar.dtos.user.UserResponseDTO;
 import com.QueroTrabalhar.entity.ExperienciaProfissional;
 import com.QueroTrabalhar.entity.InteresseEmEmprego;
 import com.QueroTrabalhar.entity.Usuario;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 

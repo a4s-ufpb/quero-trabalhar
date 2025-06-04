@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.dtos.UserRequestDTO;
-import com.QueroTrabalhar.dtos.UserResponseDTO;
+import com.QueroTrabalhar.dtos.user.UserRequestDTO;
+import com.QueroTrabalhar.dtos.user.UserResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
