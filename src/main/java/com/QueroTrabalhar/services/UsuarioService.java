@@ -1,12 +1,8 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.dtos.UserRequestDTO;
-import com.QueroTrabalhar.dtos.UserResponseDTO;
-import com.QueroTrabalhar.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.entity.InteresseEmEmprego;
+import com.QueroTrabalhar.dtos.user.UserRequestDTO;
+import com.QueroTrabalhar.dtos.user.UserResponseDTO;
 import com.QueroTrabalhar.entity.Usuario;
-import com.QueroTrabalhar.repository.ExperienciaProfissionalRepository;
-import com.QueroTrabalhar.repository.InteresseEmEmpregoRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.util.UserConverter;
 import jakarta.persistence.EntityNotFoundException;
@@ -24,8 +20,6 @@ public class UsuarioService {
 
     @Autowired
     private UserConverter userConverter;
-
-
 
     public List<UserResponseDTO> listarTodosUsuarios() {
         List<Usuario> users = usuarioRepository.findAll();

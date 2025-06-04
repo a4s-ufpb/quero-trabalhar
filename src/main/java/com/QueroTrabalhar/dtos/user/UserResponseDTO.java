@@ -1,11 +1,12 @@
-package com.QueroTrabalhar.dtos;
+package com.QueroTrabalhar.dtos.user;
 
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@AllArgsConstructor @NoArgsConstructor
 public class UserResponseDTO {
 
     private Long id;

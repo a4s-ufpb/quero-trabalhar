@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
@@ -37,5 +38,15 @@ public class Usuario {
     @OneToMany (mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<InteresseEmEmprego> interesseEmEmpregos;
 
+
+    public Usuario(Long id, Long cpf, String nome, String telefone, String email) {
+        this.id = id;
+        this.cpf = cpf;
+        this.nome = nome;
+        this.telefone = telefone;
+        this.email = email;
+        this.experienciaProfissionais = new ArrayList<>();
+        this.interesseEmEmpregos = new ArrayList<>();
+    }
 
 }
