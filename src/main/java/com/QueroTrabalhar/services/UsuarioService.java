@@ -1,10 +1,8 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.dtos.user.UserRequestDTO;
-import com.QueroTrabalhar.dtos.user.UserResponseDTO;
+import com.QueroTrabalhar.dtos.user.UserDTO;
 import com.QueroTrabalhar.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
-import com.QueroTrabalhar.util.UserConverter;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,30 +16,28 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private UserConverter userConverter;
 
-    public List<UserResponseDTO> listarTodosUsuarios() {
+    public List<UserDTO> listarTodosUsuarios() {
         List<Usuario> users = usuarioRepository.findAll();
         return users.stream()
-                .map(userConverter :: userEntityToDto)
+                .map(UserDTO::new)
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDTO buscarUsuarioPorId(Long id) {
+    public UserDTO buscarUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
-        return userConverter.userEntityToDto(usuario);
+        return new UserDTO(usuario);
     }
 
-    public UserResponseDTO salvarUsuario(UserRequestDTO userDto) {
+    public UserDTO salvarUsuario(UserDTO userDTO) {
 
-        Usuario user = userConverter.userDtoToEntity(userDto);
+        Usuario user = userDTO.userDtoToUser();
 
         Usuario userSaved = usuarioRepository.save(user);
 
-        return userConverter.userEntityToDto(userSaved);
+        return new UserDTO(userSaved);
     }
 
     public void deletarUsuario(Long id) {

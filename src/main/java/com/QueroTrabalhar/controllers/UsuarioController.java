@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.dtos.user.UserDTO;
 import com.QueroTrabalhar.dtos.user.UserRequestDTO;
 import com.QueroTrabalhar.dtos.user.UserResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
@@ -18,19 +19,19 @@ public class UsuarioController {
     private UsuarioService usuarioService; // Dependencia do Serviço
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> listarTodos() {
-        List<UserResponseDTO> usuarios = usuarioService.listarTodosUsuarios();
+    public ResponseEntity<List<UserDTO>> listarTodos() {
+        List<UserDTO> usuarios = usuarioService.listarTodosUsuarios();
         return ResponseEntity.ok(usuarios);
     }
     @GetMapping ("/{id}")
-    public ResponseEntity<UserResponseDTO> buscarPorId(@PathVariable Long id) {
-        UserResponseDTO response = usuarioService.buscarUsuarioPorId(id);
+    public ResponseEntity<UserDTO> buscarPorId(@PathVariable Long id) {
+        UserDTO response = usuarioService.buscarUsuarioPorId(id);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<UserResponseDTO> adicionarUsuario(@RequestBody UserRequestDTO userDto) {
-        UserResponseDTO usuarioSalvo = usuarioService.salvarUsuario(userDto);
+    public ResponseEntity<UserDTO> adicionarUsuario(@RequestBody UserDTO userDto) {
+        UserDTO usuarioSalvo = usuarioService.salvarUsuario(userDto);
         return ResponseEntity.ok(usuarioSalvo);
     }
 
