@@ -17,7 +17,7 @@ public class UserDTO {
     private String telefone;
     private String email;
     private List<ExperienciaProfissional> experienciaProfissionals;
-    private List<InteresseEmEmprego> interesseEmEmpregos;
+    private InteresseEmEmprego interesseEmEmpregos;
 
     public UserDTO() {}
 
@@ -29,7 +29,7 @@ public class UserDTO {
                 telefone,
                 email,
                 experienciaProfissionals = new ArrayList<>(),
-                interesseEmEmpregos = new ArrayList<>());
+                interesseEmEmpregos = new InteresseEmEmprego());
     }
 
     public UserDTO(Usuario user) {
@@ -90,11 +90,11 @@ public class UserDTO {
         this.experienciaProfissionals = experienciaProfissionals;
     }
 
-    public List<InteresseEmEmprego> getInteresseEmEmpregos() {
+    public InteresseEmEmprego getInteresseEmEmpregos() {
         return interesseEmEmpregos;
     }
 
-    public void setInteresseEmEmpregos(List<InteresseEmEmprego> interesseEmEmpregos) {
+    public void setInteresseEmEmpregos(InteresseEmEmprego interesseEmEmpregos) {
         this.interesseEmEmpregos = interesseEmEmpregos;
     }
 }

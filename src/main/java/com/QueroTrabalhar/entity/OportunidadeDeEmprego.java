@@ -13,14 +13,14 @@ import lombok.Setter;
 public class OportunidadeDeEmprego {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column (nullable = false, length = 500)
+    @Column(nullable = false, length = 500)
     private String descricao;
 
     @ManyToOne
-    @JoinColumn (name = "tipo_de_emprego_id")
+    @JoinColumn(name = "tipo_de_emprego_id")
     private TipoDeEmprego tipoDeEmprego;
 
     @Enumerated(EnumType.STRING)
@@ -29,8 +29,9 @@ public class OportunidadeDeEmprego {
     @Column(nullable = false, length = 50)
     private String cidade;
 
-    @Column (nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String estado;
 
     private String empresa;
+
 }
