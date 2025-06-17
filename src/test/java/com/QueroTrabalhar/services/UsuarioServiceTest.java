@@ -37,7 +37,7 @@ public class UsuarioServiceTest {
     private String defaultPhone;
     private String defaultEmail;
     private List<ExperienciaProfissional> defaultExperiencias;
-    private List<InteresseEmEmprego> defaultInteresses;
+    private InteresseEmEmprego defaultInteresse;
 
     // Objetos para teste
     private Usuario user;
@@ -57,7 +57,7 @@ public class UsuarioServiceTest {
         defaultPhone = "83912345678";
         defaultEmail = "fernanda23@email.com";
         defaultExperiencias = new ArrayList<>();
-        defaultInteresses = new ArrayList<>();
+        defaultInteresse = new InteresseEmEmprego();
 
         // Configura um User
         user = new Usuario(
@@ -75,7 +75,7 @@ public class UsuarioServiceTest {
         userDTO.setTelefone(defaultPhone);
         userDTO.setEmail(defaultEmail);
         userDTO.setExperienciaProfissionals(defaultExperiencias);
-        userDTO.setInteresseEmEmpregos(defaultInteresses);
+        userDTO.setInteresseEmEmpregos(defaultInteresse);
 
         // --- Configurações adicionais para o teste de lista de usuários ---
 

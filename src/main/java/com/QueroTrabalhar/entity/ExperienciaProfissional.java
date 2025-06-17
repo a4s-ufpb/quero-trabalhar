@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter  // Cria automaticamente os métodos get e set
@@ -22,6 +23,9 @@ public class ExperienciaProfissional {
     @ManyToOne //
     @JoinColumn(name = "tipo_de_emprego_id")
     private TipoDeEmprego tipoDeEmprego;
+
+    @OneToMany
+    private List<Indicacoes>  indicacoes;
 
     @Column (nullable = false, length = 500)
     private String descricao; // Descrição da experiência de trabalho

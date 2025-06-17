@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -35,8 +36,10 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ExperienciaProfissional> experienciaProfissionais;
 
-    @OneToMany (mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InteresseEmEmprego> interesseEmEmpregos;
+
+    @OneToOne (mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private InteresseEmEmprego interesseEmEmpregos;
 
 
     public Usuario(Long id, Long cpf, String nome, String telefone, String email) {
@@ -46,7 +49,7 @@ public class Usuario {
         this.telefone = telefone;
         this.email = email;
         this.experienciaProfissionais = new ArrayList<>();
-        this.interesseEmEmpregos = new ArrayList<>();
+        this.interesseEmEmpregos = new InteresseEmEmprego();
     }
 
 }

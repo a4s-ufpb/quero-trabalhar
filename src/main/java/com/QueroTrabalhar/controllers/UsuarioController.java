@@ -1,8 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
 import com.QueroTrabalhar.dtos.user.UserDTO;
-import com.QueroTrabalhar.dtos.user.UserRequestDTO;
-import com.QueroTrabalhar.dtos.user.UserResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +31,12 @@ public class UsuarioController {
     public ResponseEntity<UserDTO> adicionarUsuario(@RequestBody UserDTO userDto) {
         UserDTO usuarioSalvo = usuarioService.salvarUsuario(userDto);
         return ResponseEntity.ok(usuarioSalvo);
+    }
+
+    @PostMapping("/{usuarioID}/interesse-em-emprego/oportunidadeDeEmprego/{oportunidadeID}")
+    public ResponseEntity<UserDTO> registrarInteresseEmOportunidadeDeEmprego(@PathVariable Long usuarioID, @PathVariable Long oportunidadeID) {
+        UserDTO userUpdated = usuarioService.registrarInteresseEmOportunidadeDeEmprego(usuarioID,  oportunidadeID);
+        return ResponseEntity.ok(userUpdated);
     }
 
     @DeleteMapping ("/{id}")

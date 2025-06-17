@@ -1,25 +1,43 @@
 package com.QueroTrabalhar.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter // Cria automaticamente os métodos get e set
-@NoArgsConstructor @AllArgsConstructor  // Cria construtores padrão e com argumentos
+@AllArgsConstructor  // Cria construtores padrão e com argumentos
 
 public class InteresseEmEmprego {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "tipo_de_emprego_id", nullable = false)
-
-    private TipoDeEmprego tipoDeEmprego;
-
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
-
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id",nullable = false,unique = true)
+    @JsonBackReference
     private Usuario usuario;
+
+    @OneToMany ( cascade = CascadeType.ALL)
+    @JoinColumn( name = "interesseId")
+    private List<OportunidadeDeEmprego> oportunidades;
+
+    public InteresseEmEmprego() {
+        this.oportunidades = new ArrayList<>();
+    }
+
+
+    public void adicionarOportunidadeDeEmprego(OportunidadeDeEmprego oportunidade) {
+        if (oportunidades == null) {
+            oportunidades = new ArrayList<>();
+        }
+        oportunidades.add(oportunidade);
+    }
+
+
 
 }
