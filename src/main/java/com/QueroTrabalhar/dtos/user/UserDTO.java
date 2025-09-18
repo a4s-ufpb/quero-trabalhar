@@ -1,13 +1,11 @@
 package com.QueroTrabalhar.dtos.user;
 
 import com.QueroTrabalhar.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.entity.InteresseEmEmprego;
+import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.Usuario;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class UserDTO {
 
@@ -17,7 +15,7 @@ public class UserDTO {
     private String telefone;
     private String email;
     private List<ExperienciaProfissional> experienciaProfissionals;
-    private InteresseEmEmprego interesseEmEmpregos;
+    private InteresseEmOportunidades interesseEmEmpregos;
 
     public UserDTO() {}
 
@@ -29,7 +27,7 @@ public class UserDTO {
                 telefone,
                 email,
                 experienciaProfissionals = new ArrayList<>(),
-                interesseEmEmpregos = new InteresseEmEmprego());
+                interesseEmEmpregos = new InteresseEmOportunidades());
     }
 
     public UserDTO(Usuario user) {
@@ -39,7 +37,7 @@ public class UserDTO {
         this.telefone = user.getTelefone();
         this.email = user.getEmail();
         this.experienciaProfissionals = user.getExperienciaProfissionais();
-        this.interesseEmEmpregos = user.getInteresseEmEmpregos();
+        this.interesseEmEmpregos = user.getInteresseEmOportunidades();
     }
 
     public Long getId() {
@@ -90,11 +88,11 @@ public class UserDTO {
         this.experienciaProfissionals = experienciaProfissionals;
     }
 
-    public InteresseEmEmprego getInteresseEmEmpregos() {
+    public InteresseEmOportunidades getInteresseEmEmpregos() {
         return interesseEmEmpregos;
     }
 
-    public void setInteresseEmEmpregos(InteresseEmEmprego interesseEmEmpregos) {
+    public void setInteresseEmEmpregos(InteresseEmOportunidades interesseEmEmpregos) {
         this.interesseEmEmpregos = interesseEmEmpregos;
     }
 }

@@ -39,7 +39,7 @@ public class Usuario {
 
     @OneToOne (mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference
-    private InteresseEmEmprego interesseEmEmpregos;
+    private InteresseEmOportunidades interesseEmOportunidades;
 
 
     public Usuario(Long id, Long cpf, String nome, String telefone, String email) {
@@ -49,7 +49,7 @@ public class Usuario {
         this.telefone = telefone;
         this.email = email;
         this.experienciaProfissionais = new ArrayList<>();
-        this.interesseEmEmpregos = new InteresseEmEmprego();
+        this.interesseEmOportunidades = new InteresseEmOportunidades();
     }
 
 }
