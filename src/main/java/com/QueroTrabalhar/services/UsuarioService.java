@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.dtos.user.UserDTO;
-import com.QueroTrabalhar.entity.InteresseEmEmprego;
+import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.entity.Usuario;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
@@ -42,7 +42,7 @@ public class UsuarioService {
 
         Usuario user = userDTO.userDtoToUser();
 
-        user.getInteresseEmEmpregos().setUsuario(user);
+        user.getInteresseEmOportunidades().setUsuario(user);
 
         Usuario userSaved = usuarioRepository.save(user);
 
@@ -73,12 +73,12 @@ public class UsuarioService {
         OportunidadeDeEmprego oportunidade = oportunidadeOptional.get();
 
         // Adicionar Oportunidade a Lista de Interesses do Usuário.
-        if (user.getInteresseEmEmpregos() == null){
-            user.setInteresseEmEmpregos(new InteresseEmEmprego());
-            user.getInteresseEmEmpregos().setUsuario(user);
+        if (user.getInteresseEmOportunidades() == null){
+            user.setInteresseEmOportunidades(new InteresseEmOportunidades());
+            user.getInteresseEmOportunidades().setUsuario(user);
         }
-        if (!user.getInteresseEmEmpregos().getOportunidades().contains(oportunidade)) {
-            user.getInteresseEmEmpregos().adicionarOportunidadeDeEmprego(oportunidade);
+        if (!user.getInteresseEmOportunidades().getOportunidades().contains(oportunidade)) {
+            user.getInteresseEmOportunidades().adicionarOportunidadeDeEmprego(oportunidade);
         } else {
             System.out.println("A OPORTUNIDADE NÃO FOI REGISTRADA\nOportunidade já existe nos interesses do usuário");
         }

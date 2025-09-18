@@ -3,7 +3,7 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.dtos.user.UserDTO;
 import com.QueroTrabalhar.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.entity.InteresseEmEmprego;
+import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,7 +37,7 @@ public class UsuarioServiceTest {
     private String defaultPhone;
     private String defaultEmail;
     private List<ExperienciaProfissional> defaultExperiencias;
-    private InteresseEmEmprego defaultInteresse;
+    private InteresseEmOportunidades defaultInteresse;
 
     // Objetos para teste
     private Usuario user;
@@ -57,7 +57,7 @@ public class UsuarioServiceTest {
         defaultPhone = "83912345678";
         defaultEmail = "fernanda23@email.com";
         defaultExperiencias = new ArrayList<>();
-        defaultInteresse = new InteresseEmEmprego();
+        defaultInteresse = new InteresseEmOportunidades();
 
         // Configura um User
         user = new Usuario(

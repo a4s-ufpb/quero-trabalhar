@@ -1,43 +1,35 @@
 package com.QueroTrabalhar.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
-import lombok.*;
+// classe que o usuário terá, nela ele poderá indicar os interesses que ele tem, e suas exigências.
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+import com.QueroTrabalhar.enums.Modalidade;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.List;
 
-@Entity //Indica que esta classe será mapeada para uma tabela no banco
-@Getter @Setter // Cria automaticamente os métodos get e set
-@AllArgsConstructor  // Cria construtores padrão e com argumentos
-
+@Entity
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 public class InteresseEmEmprego {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id",nullable = false,unique = true)
-    @JsonBackReference
-    private Usuario usuario;
+    @ManyToMany(cascade = CascadeType.ALL)
+    private List<TipoDeEmprego> tipoDeEmprego;
 
-    @OneToMany ( cascade = CascadeType.ALL)
-    @JoinColumn( name = "interesseId")
-    private List<OportunidadeDeEmprego> oportunidades;
+    private boolean querTrabalharRemoto;
 
-    public InteresseEmEmprego() {
-        this.oportunidades = new ArrayList<>();
-    }
+    private boolean temRestricaoDeLugar;
 
+    private List<String> cidadesDeInteresse;
 
-    public void adicionarOportunidadeDeEmprego(OportunidadeDeEmprego oportunidade) {
-        if (oportunidades == null) {
-            oportunidades = new ArrayList<>();
-        }
-        oportunidades.add(oportunidade);
-    }
+    private List<String> estadosDeInteresse;
 
-
-
+    private List<String> paisesDeInteresse;
 }
