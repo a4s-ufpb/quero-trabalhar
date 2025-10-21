@@ -53,12 +53,14 @@ public class Usuario implements UserDetails {
     private InteresseEmOportunidades interesseEmOportunidades;
 
 
-    public Usuario(Long id, Long cpf, String nome, String telefone, String email) {
+    public Usuario(Long id, Long cpf, String nome, String telefone, String email, String senha, Role role) {
         this.id = id;
         this.cpf = cpf;
         this.nome = nome;
         this.telefone = telefone;
         this.email = email;
+        this.senha = senha;
+        this.role = role;
         this.experienciaProfissionais = new ArrayList<>();
         this.interesseEmOportunidades = new InteresseEmOportunidades();
     }
