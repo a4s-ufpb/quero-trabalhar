@@ -25,7 +25,7 @@ public class ExperienciaProfissional {
     private TipoDeEmprego tipoDeEmprego;
 
     @OneToMany
-    private List<Indicacoes>  indicacoes;
+    private List<Indicacoes>  indicacoes; // talvez separar para colocar apenas no usuario.
 
     @Column (nullable = false, length = 500)
     private String descricao; // Descrição da experiência de trabalho

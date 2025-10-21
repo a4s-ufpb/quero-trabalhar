@@ -3,41 +3,33 @@ package com.QueroTrabalhar.dtos.user;
 import com.QueroTrabalhar.entity.ExperienciaProfissional;
 import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.Usuario;
+import com.QueroTrabalhar.enums.Role;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class UserDTO {
-
+public class UserDTORequest {
     private Long id;
     private Long cpf;
     private String nome;
     private String telefone;
     private String email;
+    private String senha;
+    private Role role;
     private List<ExperienciaProfissional> experienciaProfissionals;
     private InteresseEmOportunidades interesseEmEmpregos;
 
-    public UserDTO() {}
 
-    public Usuario userDtoToUser() {
-        return new Usuario(
-                id,
-                cpf,
-                nome,
-                telefone,
-                email,
-                experienciaProfissionals = new ArrayList<>(),
-                interesseEmEmpregos = new InteresseEmOportunidades());
-    }
+    public Usuario toEntity(String senhaCriptografada) {
+        Usuario user = new Usuario();
+        user.setId(this.id);
+        user.setCpf(this.cpf);
+        user.setNome(this.nome);
+        user.setTelefone(this.telefone);
+        user.setEmail(this.email);
+        user.setSenha(senhaCriptografada);
+        user.setRole(this.role != null ? this.role : Role.USER);
 
-    public UserDTO(Usuario user) {
-        this.id = user.getId();
-        this.cpf = user.getCpf();
-        this.nome = user.getNome();
-        this.telefone = user.getTelefone();
-        this.email = user.getEmail();
-        this.experienciaProfissionals = user.getExperienciaProfissionais();
-        this.interesseEmEmpregos = user.getInteresseEmOportunidades();
+        return user;
     }
 
     public Long getId() {
@@ -78,6 +70,22 @@ public class UserDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public List<ExperienciaProfissional> getExperienciaProfissionals() {
