@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.dtos.user.UserDTO;
+import com.QueroTrabalhar.dtos.user.UserDTORequest;
+import com.QueroTrabalhar.dtos.user.UserDTOResponse;
 import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.entity.Usuario;
@@ -8,6 +9,9 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,7 +19,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UsuarioService {
+public class UsuarioService implements UserDetailsService {
+
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -23,30 +28,34 @@ public class UsuarioService {
     @Autowired
     private OportunidadeDeEmpregoRepository oportunidadeRepository;
 
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return usuarioRepository.findByEmail(email);
+    }
 
-    public List<UserDTO> listarTodosUsuarios() {
+    public List<UserDTOResponse> listarTodosUsuarios() {
         List<Usuario> users = usuarioRepository.findAll();
         return users.stream()
-                .map(UserDTO::new)
+                .map(UserDTOResponse::new)
                 .collect(Collectors.toList());
     }
 
-    public UserDTO buscarUsuarioPorId(Long id) {
+    public UserDTOResponse buscarUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
-        return new UserDTO(usuario);
+        return new UserDTOResponse(usuario);
     }
 
-    public UserDTO salvarUsuario(UserDTO userDTO) {
+    public UserDTOResponse salvarUsuario(UserDTORequest userDTORequest, String senha) {
 
-        Usuario user = userDTO.userDtoToUser();
+        Usuario user = userDTORequest.toEntity(senha);
 
         user.getInteresseEmOportunidades().setUsuario(user);
 
         Usuario userSaved = usuarioRepository.save(user);
 
-        return new UserDTO(userSaved);
+        return new UserDTOResponse(userSaved);
     }
 
     public void deletarUsuario(Long id) {
@@ -55,7 +64,7 @@ public class UsuarioService {
         }
         usuarioRepository.deleteById(id);
     }
-    public UserDTO registrarInteresseEmOportunidadeDeEmprego(Long userId, Long oportunidadeId){
+    public UserDTOResponse registrarInteresseEmOportunidadeDeEmprego(Long userId, Long oportunidadeId){
 
         // Escolhendo o Usuário
         Optional<Usuario> userOptional = usuarioRepository.findById(userId);
@@ -84,7 +93,7 @@ public class UsuarioService {
         }
 
         usuarioRepository.save(user);
-        return new UserDTO(user);
+        return new UserDTOResponse(user);
 
     }
 }
