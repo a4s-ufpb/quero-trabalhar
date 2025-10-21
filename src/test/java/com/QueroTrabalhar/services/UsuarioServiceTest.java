@@ -59,13 +59,13 @@ public class UsuarioServiceTest {
         defaultExperiencias = new ArrayList<>();
         defaultInteresse = new InteresseEmOportunidades();
 
-        // Configura um User
-        user = new Usuario(
-                defaultId,
-                defaultCpf,
-                defaultName,
-                defaultPhone,
-                defaultEmail);
+//        // Configura um User
+//        user = new Usuario(
+//                defaultId,
+//                defaultCpf,
+//                defaultName,
+//                defaultPhone,
+//                defaultEmail);
 
         // Configura um UserDTO
 

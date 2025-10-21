@@ -5,6 +5,7 @@ import com.QueroTrabalhar.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.entity.Usuario;
 import com.QueroTrabalhar.enums.Role;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserDTORequest {
@@ -19,15 +20,21 @@ public class UserDTORequest {
     private InteresseEmOportunidades interesseEmEmpregos;
 
 
-    public Usuario toEntity(String senhaCriptografada) {
+    public Usuario toEntity(String encryptedPassword) {
         Usuario user = new Usuario();
         user.setId(this.id);
         user.setCpf(this.cpf);
         user.setNome(this.nome);
         user.setTelefone(this.telefone);
         user.setEmail(this.email);
-        user.setSenha(senhaCriptografada);
+        user.setSenha(encryptedPassword);
         user.setRole(this.role != null ? this.role : Role.USER);
+        user.setExperienciaProfissionais(experienciaProfissionals);
+        user.setInteresseEmOportunidades(interesseEmEmpregos);
+
+        if (user.getExperienciaProfissionais() == null) { user.setExperienciaProfissionais(new ArrayList<>()); }
+        if (user.getInteresseEmOportunidades() == null) { user.setInteresseEmOportunidades(new InteresseEmOportunidades());}
+
 
         return user;
     }

@@ -47,9 +47,9 @@ public class UsuarioService implements UserDetailsService {
         return new UserDTOResponse(usuario);
     }
 
-    public UserDTOResponse salvarUsuario(UserDTORequest userDTORequest, String senha) {
+    public UserDTOResponse salvarUsuario(UserDTORequest userDTORequest, String encryptedPassword) {
 
-        Usuario user = userDTORequest.toEntity(senha);
+        Usuario user = userDTORequest.toEntity(encryptedPassword);
 
         user.getInteresseEmOportunidades().setUsuario(user);
 

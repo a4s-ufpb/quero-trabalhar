@@ -2,9 +2,12 @@ package com.QueroTrabalhar.controllers;
 
 import com.QueroTrabalhar.dtos.user.UserDTORequest;
 import com.QueroTrabalhar.dtos.user.UserDTOResponse;
+import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +20,9 @@ public class UsuarioController {
     @Autowired  // Injeta as instâncias
     private UsuarioService usuarioService; // Dependencia do Serviço
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     @GetMapping
     public ResponseEntity<List<UserDTOResponse>> listarTodos() {
         List<UserDTOResponse> usuarios = usuarioService.listarTodosUsuarios();
@@ -28,9 +34,12 @@ public class UsuarioController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
-    public ResponseEntity<UserDTOResponse> adicionarUsuario(@RequestBody UserDTORequest userDTORequest, String senha) {
-        UserDTOResponse usuarioSalvo = usuarioService.salvarUsuario(userDTORequest, senha);
+    @PostMapping ("/register")
+    public ResponseEntity<UserDTOResponse> adicionarUsuario(@RequestBody @Valid UserDTORequest userDTORequest) {
+        if (usuarioRepository.findByEmail(userDTORequest.getEmail()) != null) return ResponseEntity.badRequest().build();
+
+        String encryptedPassword = new BCryptPasswordEncoder().encode(userDTORequest.getSenha());
+        UserDTOResponse usuarioSalvo = usuarioService.salvarUsuario(userDTORequest, encryptedPassword);
         return ResponseEntity.ok(usuarioSalvo);
     }
 
