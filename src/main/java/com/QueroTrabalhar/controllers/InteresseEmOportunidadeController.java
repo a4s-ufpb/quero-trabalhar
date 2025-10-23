@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController // Indica que esta classe é um controlador REST
-@RequestMapping("api/interesse-em-emprego") // Define a URL base para endpoints deste controlador
+@RequestMapping("api/interesse-em-oportunidade") // Define a URL base para endpoints deste controlador
 public class InteresseEmOportunidadeController {
 
     @Autowired

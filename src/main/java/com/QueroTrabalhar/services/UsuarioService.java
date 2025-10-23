@@ -94,6 +94,20 @@ public class UsuarioService implements UserDetailsService {
 
         usuarioRepository.save(user);
         return new UserDTOResponse(user);
+    }
+
+    public void removerInteresseEmOportunidadeDeEmprego(Long userId, Long oportunidadeId) {
+        Optional<Usuario> userOptional = usuarioRepository.findById(userId);
+        Usuario user = userOptional.get();
+
+        Optional<OportunidadeDeEmprego> oportunidadeOptional = oportunidadeRepository.findById(oportunidadeId);
+        OportunidadeDeEmprego oportunidadeDeEmprego = oportunidadeOptional.get();
+
+        if (user.getInteresseEmOportunidades().getOportunidades().contains(oportunidadeDeEmprego)) {
+            user.getInteresseEmOportunidades().getOportunidades().remove(oportunidadeDeEmprego);
+        } else {
+            System.out.println("A OPORTUNIDADE INFORMADA NÃO ESTÁ NO REGISTRO DE INTERESSES DESSE USUÁRIO");
+        }
 
     }
 }
