@@ -43,10 +43,16 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioSalvo);
     }
 
-    @PostMapping("/{usuarioID}/interesse-em-emprego/oportunidadeDeEmprego/{oportunidadeID}")
+    @PostMapping("/{usuarioID}/interesse-em-oportunidade/{oportunidadeID}")
     public ResponseEntity<UserDTOResponse> registrarInteresseEmOportunidadeDeEmprego(@PathVariable Long usuarioID, @PathVariable Long oportunidadeID) {
         UserDTOResponse userUpdated = usuarioService.registrarInteresseEmOportunidadeDeEmprego(usuarioID,  oportunidadeID);
         return ResponseEntity.ok(userUpdated);
+    }
+
+    @DeleteMapping("/{userId}/interesse-em-oportunidade/{oportunidadeID}")
+    public ResponseEntity<Void> removerInteresseEmOportunidadeDeEmprego(@PathVariable Long usuarioID, @PathVariable Long oportunidadeID) {
+        usuarioService.removerInteresseEmOportunidadeDeEmprego(usuarioID, oportunidadeID);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping ("/{id}")
