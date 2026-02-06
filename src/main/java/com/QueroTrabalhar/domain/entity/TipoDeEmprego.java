@@ -1,4 +1,4 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

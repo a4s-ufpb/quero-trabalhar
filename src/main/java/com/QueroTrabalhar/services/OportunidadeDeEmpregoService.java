@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

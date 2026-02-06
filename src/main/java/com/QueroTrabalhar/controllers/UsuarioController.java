@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.dtos.user.UserDTORequest;
-import com.QueroTrabalhar.dtos.user.UserDTOResponse;
+import com.QueroTrabalhar.domain.dtos.UserDTORequest;
+import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.UsuarioService;
 import jakarta.validation.Valid;

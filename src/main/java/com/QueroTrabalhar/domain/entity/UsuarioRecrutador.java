@@ -1,4 +1,4 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter  // Cria automaticamente os métodos get e set
@@ -31,4 +34,6 @@ public class UsuarioRecrutador {
     @Column(nullable = false, length = 100)
     private String empresa;
 
+    @OneToMany(mappedBy = "recrutador", cascade = CascadeType.ALL)
+    private List<OportunidadeDeEmprego> oportunidadesPostadas = new ArrayList<>();
 }

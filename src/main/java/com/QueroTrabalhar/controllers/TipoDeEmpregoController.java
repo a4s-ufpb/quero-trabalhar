@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
+import com.QueroTrabalhar.domain.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
 import com.QueroTrabalhar.services.TipoDeEmpregoService; // Importa o serviço que contém a lógica de negócio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity; // Utilizado para retornar respostas HTTP

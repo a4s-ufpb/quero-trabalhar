@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.repository;
 
-import com.QueroTrabalhar.entity.Indicacoes;
+import com.QueroTrabalhar.domain.entity.Indicacoes;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

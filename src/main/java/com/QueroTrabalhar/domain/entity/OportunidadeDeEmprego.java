@@ -1,6 +1,6 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
-import com.QueroTrabalhar.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.Modalidade;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +14,7 @@ public class OportunidadeDeEmprego {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false, length = 500)
     private String descricao;
@@ -32,6 +32,7 @@ public class OportunidadeDeEmprego {
     @Column(nullable = false, length = 50)
     private String estado;
 
-    private String empresa;
-
+    @ManyToOne
+    @JoinColumn(name = "recrutador_id", nullable = false)
+    private UsuarioRecrutador recrutador; // Agora sabemos quem é o dono da vaga
 }

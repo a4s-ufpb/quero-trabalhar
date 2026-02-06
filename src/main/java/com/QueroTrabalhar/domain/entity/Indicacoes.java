@@ -1,11 +1,10 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter  // Cria automaticamente os métodos get e set
@@ -21,4 +20,9 @@ public class Indicacoes {
 
     private String mensagem;
 
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    @JsonBackReference
+    @ToString.Exclude
+    private Usuario usuario;
 }

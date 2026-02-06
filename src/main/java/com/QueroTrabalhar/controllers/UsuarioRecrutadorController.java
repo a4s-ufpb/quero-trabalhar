@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.entity.UsuarioRecrutador;
+import com.QueroTrabalhar.domain.entity.UsuarioRecrutador;
 import com.QueroTrabalhar.services.UsuarioRecrutadorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

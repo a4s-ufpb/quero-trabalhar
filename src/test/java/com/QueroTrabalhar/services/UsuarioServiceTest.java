@@ -1,10 +1,10 @@
 
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.dtos.user.UserDTOResponse;
-import com.QueroTrabalhar.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.entity.InteresseEmOportunidades;
-import com.QueroTrabalhar.entity.Usuario;
+import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
+import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
+import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
+import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Assertions;
@@ -33,7 +33,7 @@ public class UsuarioServiceTest {
     // Atributos dos objetos
     private Long defaultId;
     private String defaultName;
-    private Long defaultCpf;
+    private String defaultCpf;
     private String defaultPhone;
     private String defaultEmail;
     private List<ExperienciaProfissional> defaultExperiencias;
@@ -53,7 +53,7 @@ public class UsuarioServiceTest {
         // --- Configurações para salvar/buscar por ID ---
         defaultId = 1L;
         defaultName = "Fernanda";
-        defaultCpf = 12345678964L;
+        defaultCpf = "12345678964";
         defaultPhone = "83912345678";
         defaultEmail = "fernanda23@email.com";
         defaultExperiencias = new ArrayList<>();
@@ -83,7 +83,7 @@ public class UsuarioServiceTest {
         user1 = new Usuario();
         user1.setId(1L);
         user1.setNome("Fernanda");
-        user1.setCpf(12345678909L);
+        user1.setCpf("12345678909");
         user1.setEmail("fernanda@email.com");
         user1.setTelefone("1234567895");
 
@@ -91,7 +91,7 @@ public class UsuarioServiceTest {
         user2 = new Usuario();
         user2.setId(2L);
         user2.setNome("Vitória");
-        user2.setCpf(12345678911L);
+        user2.setCpf("12345678911");
         user2.setEmail("vitoria@email.com");
         user2.setTelefone("1234567894");
     }

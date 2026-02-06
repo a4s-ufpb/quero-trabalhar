@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.entity.ExperienciaProfissional;
+import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
 import com.QueroTrabalhar.repository.ExperienciaProfissionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,19 +1,19 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
-import com.QueroTrabalhar.enums.Role;
+import com.QueroTrabalhar.domain.enums.Role;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.validator.constraints.br.CPF;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter  // Cria automaticamente os métodos get e set
@@ -25,8 +25,9 @@ public class Usuario implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 11)
-    private Long cpf;
+    @CPF
+    @Column(unique = true)
+    private String cpf;
 
     @Column(nullable = false, length = 100)
     private String nome;
@@ -45,6 +46,7 @@ public class Usuario implements UserDetails {
     private Role role;
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<ExperienciaProfissional> experienciaProfissionais;
 
 
@@ -52,8 +54,15 @@ public class Usuario implements UserDetails {
     @JsonManagedReference
     private InteresseEmOportunidades interesseEmOportunidades;
 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Indicacoes> indicacoes = new ArrayList<>();
 
-    public Usuario(Long id, Long cpf, String nome, String telefone, String email, String senha, Role role) {
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "profiles")
+    protected Set<Integer> profiles = new HashSet<>();
+
+
+    public Usuario(Long id, String cpf, String nome, String telefone, String email, String senha, Role role) {
         this.id = id;
         this.cpf = cpf;
         this.nome = nome;
@@ -63,12 +72,21 @@ public class Usuario implements UserDetails {
         this.role = role;
         this.experienciaProfissionais = new ArrayList<>();
         this.interesseEmOportunidades = new InteresseEmOportunidades();
+        this.interesseEmOportunidades.setUsuario(this);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == Role.ADMIN) return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
         else return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    public Set<Role> getProfiles() {
+        return this.profiles.stream().map(Role::toEnum).collect(Collectors.toSet());
+    }
+
+    public void addProfile(Role profile) {
+        this.profiles.add(profile.getCode());
     }
 
     @Override

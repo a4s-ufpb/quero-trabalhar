@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.services;  // Pacote onde esta classe está localizada
 
 
-import com.QueroTrabalhar.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
+import com.QueroTrabalhar.domain.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository; // Importa o repositório para acessar o banco de dados
 import org.springframework.beans.factory.annotation.Autowired; // Importa anotação para injeção de classe
 import org.springframework.stereotype.Service; // Indica que esta classe é um serviço gerenciado pelo Spring

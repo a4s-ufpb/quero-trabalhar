@@ -1,16 +1,17 @@
-package com.QueroTrabalhar.dtos.user;
+package com.QueroTrabalhar.domain.dtos;
 
-import com.QueroTrabalhar.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.entity.InteresseEmOportunidades;
-import com.QueroTrabalhar.entity.Usuario;
-import com.QueroTrabalhar.enums.Role;
+
+import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
+import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
+import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.domain.enums.Role;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDTORequest {
     private Long id;
-    private Long cpf;
+    private String cpf;
     private String nome;
     private String telefone;
     private String email;
@@ -47,11 +48,11 @@ public class UserDTORequest {
         this.id = id;
     }
 
-    public Long getCpf() {
+    public String getCpf() {
         return cpf;
     }
 
-    public void setCpf(Long cpf) {
+    public void setCpf(String cpf) {
         this.cpf = cpf;
     }
 

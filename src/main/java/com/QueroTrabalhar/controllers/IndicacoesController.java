@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.controllers;
 
 
-import com.QueroTrabalhar.entity.Indicacoes;
+import com.QueroTrabalhar.domain.entity.Indicacoes;
 import com.QueroTrabalhar.services.IndicacoesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

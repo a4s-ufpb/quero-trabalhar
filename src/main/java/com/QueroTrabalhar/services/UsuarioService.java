@@ -1,10 +1,10 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.dtos.user.UserDTORequest;
-import com.QueroTrabalhar.dtos.user.UserDTOResponse;
-import com.QueroTrabalhar.entity.InteresseEmOportunidades;
-import com.QueroTrabalhar.entity.OportunidadeDeEmprego;
-import com.QueroTrabalhar.entity.Usuario;
+import com.QueroTrabalhar.domain.dtos.UserDTORequest;
+import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
+import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
+import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;

@@ -1,10 +1,11 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity //Indica que esta classe será mapeada para uma tabela no banco
 @Getter @Setter  // Cria automaticamente os métodos get e set
@@ -18,14 +19,13 @@ public class ExperienciaProfissional {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
+    @JsonBackReference
+    @ToString.Exclude
     private Usuario usuario;
 
     @ManyToOne //
     @JoinColumn(name = "tipo_de_emprego_id")
     private TipoDeEmprego tipoDeEmprego;
-
-    @OneToMany
-    private List<Indicacoes>  indicacoes; // talvez separar para colocar apenas no usuario.
 
     @Column (nullable = false, length = 500)
     private String descricao; // Descrição da experiência de trabalho
@@ -35,5 +35,11 @@ public class ExperienciaProfissional {
 
     @Column
     private LocalDate dataFim; // Data de fim da experiência
+
+    @AssertTrue(message = "A data de fim não pode ser anterior à data de início")
+    public boolean isDataValida() {
+        if (dataInicio == null || dataFim == null) return true;
+        return !dataFim.isBefore(dataInicio); // Garante a ordem cronológica
+    }
 
 }

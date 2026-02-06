@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.entity.InteresseEmOportunidades;
+import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.services.InteresseEmOportunidadesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

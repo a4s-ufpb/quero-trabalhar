@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.entity.ExperienciaProfissional;
+import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
 import com.QueroTrabalhar.services.ExperienciaProfissionalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

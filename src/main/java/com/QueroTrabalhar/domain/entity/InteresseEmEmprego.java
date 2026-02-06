@@ -1,8 +1,7 @@
-package com.QueroTrabalhar.entity;
+package com.QueroTrabalhar.domain.entity;
 
 // classe que o usuário terá, nela ele poderá indicar os interesses que ele tem, e suas exigências.
 
-import com.QueroTrabalhar.enums.Modalidade;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,9 +26,12 @@ public class InteresseEmEmprego {
 
     private boolean temRestricaoDeLugar;
 
+    @ElementCollection
     private List<String> cidadesDeInteresse;
 
+    @ElementCollection
     private List<String> estadosDeInteresse;
 
+    @ElementCollection
     private List<String> paisesDeInteresse;
 }

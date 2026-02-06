@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.repository;
 
-import com.QueroTrabalhar.entity.UsuarioRecrutador;
+import com.QueroTrabalhar.domain.entity.UsuarioRecrutador;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
