@@ -1,39 +1,30 @@
-# Ignorar diretórios de build
+# Compilação e Build
 /target/
 /bin/
-
-# Arquivos de dependências
-*.log
 *.jar
 *.war
-*.ear
+*.zip
+*.tar.gz
 
-# Arquivos do IntelliJ IDEA
+# IDEs (Essencial ignorar para não poluir o repositório)
 .idea/
-
-# Arquivos do Eclipse
-.project
+*.iml
 .classpath
+.project
 .settings/
+.vscode/
+.factorypath
 
-# Arquivos do Maven
-.mvn/
-
-# Arquivos do Gradle
-.gradle/
-
-# Arquivos de dependências baixadas
-.dependencies/
-
-# Arquivos do sistema
+# Logs e Arquivos Temporários
+*.log
 .DS_Store
 Thumbs.db
+temp/
 
-# Configurações do Spring Boot
-spring-boot-loader/
+# Maven Wrapper
+.mvn/
+mvnw
+mvnw.cmd
 
-# Outros arquivos desnecessários
-*.class
-
-# Ignorar o arquivo de configurações sensíveis
-/src/main/resources/application.properties
+#.env
+.env
