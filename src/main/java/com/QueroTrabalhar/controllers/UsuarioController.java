@@ -12,13 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController // Indica que esta classe é um controlador REST
-@RequestMapping ("api/usuario") // Define a URL base para endpoints deste controlador
-
+@RestController
+@RequestMapping("/api/usuarios") // Adicionada a barra inicial e o plural (padrão REST)
 public class UsuarioController {
 
-    @Autowired  // Injeta as instâncias
-    private UsuarioService usuarioService; // Dependencia do Serviço
+    @Autowired
+    private UsuarioService usuarioService;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -28,38 +27,34 @@ public class UsuarioController {
         List<UserDTOResponse> usuarios = usuarioService.listarTodosUsuarios();
         return ResponseEntity.ok(usuarios);
     }
-    @GetMapping ("/{id}")
+
+    @GetMapping("/{id}")
     public ResponseEntity<UserDTOResponse> buscarPorId(@PathVariable Long id) {
         UserDTOResponse response = usuarioService.buscarUsuarioPorId(id);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping ("/register")
+    @PostMapping("/register")
     public ResponseEntity<UserDTOResponse> adicionarUsuario(@RequestBody @Valid UserDTORequest userDTORequest) {
-        if (usuarioRepository.findByEmail(userDTORequest.getEmail()) != null) return ResponseEntity.badRequest().build();
+        // CORREÇÃO: Utilizando o .isPresent() do Optional para verificar se o email já existe
+        if (usuarioRepository.findByEmail(userDTORequest.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().build();
+        }
 
         String encryptedPassword = new BCryptPasswordEncoder().encode(userDTORequest.getSenha());
         UserDTOResponse usuarioSalvo = usuarioService.salvarUsuario(userDTORequest, encryptedPassword);
-        return ResponseEntity.ok(usuarioSalvo);
+
+        // Alterado para 201 Created (Melhor prática para recursos recém-criados)
+        return ResponseEntity.status(201).body(usuarioSalvo);
     }
 
-    @PostMapping("/{usuarioID}/interesse-em-oportunidade/{oportunidadeID}")
-    public ResponseEntity<UserDTOResponse> registrarInteresseEmOportunidadeDeEmprego(@PathVariable Long usuarioID, @PathVariable Long oportunidadeID) {
-        UserDTOResponse userUpdated = usuarioService.registrarInteresseEmOportunidadeDeEmprego(usuarioID,  oportunidadeID);
-        return ResponseEntity.ok(userUpdated);
-    }
+    // AVISO: Os métodos de registrar/remover interesse foram apagados daqui!
+    // Se o Front-end quiser adicionar um interesse, ele deve chamar:
+    // POST /api/candidatos/{id}/interesses/vagas/{vagaId} (O controlador que criamos antes)
 
-    @DeleteMapping("/{userId}/interesse-em-oportunidade/{oportunidadeID}")
-    public ResponseEntity<Void> removerInteresseEmOportunidadeDeEmprego(@PathVariable Long usuarioID, @PathVariable Long oportunidadeID) {
-        usuarioService.removerInteresseEmOportunidadeDeEmprego(usuarioID, oportunidadeID);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping ("/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerUsuario(@PathVariable Long id) {
         usuarioService.deletarUsuario(id);
         return ResponseEntity.noContent().build();
     }
-
-
 }

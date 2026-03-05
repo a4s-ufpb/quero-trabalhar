@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.security;
 
+import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,26 +10,32 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class UserSS implements UserDetails {
+public class UsuarioSecurity implements UserDetails {
 
-    private Integer id;
+    private Long id;
     private String email;
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserSS(Integer id, String email, String password, Set<Role> roles) {
+    public UsuarioSecurity(Long id, String email, String password, Set<Role> roles) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.authorities = roles.stream()
-                .map(
-                        x -> new SimpleGrantedAuthority(
-                                x.getDescription()
-                        ))
+                .map(x -> new SimpleGrantedAuthority(x.getDescription()))
                 .collect(Collectors.toSet());
     }
 
-    public Integer getId() {
+    public UsuarioSecurity(Usuario usuario) {
+        this.id = usuario.getId();
+        this.email = usuario.getEmail();
+        this.password = usuario.getSenha(); // Usa getSenha() da sua entidade
+        this.authorities = usuario.getProfiles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getDescription()))
+                .collect(Collectors.toSet());
+    }
+
+    public Long getId() {
         return id;
     }
 
@@ -44,7 +51,7 @@ public class UserSS implements UserDetails {
 
     @Override
     public String getUsername() {
-        return this.password;
+        return this.email;
     }
 
     @Override

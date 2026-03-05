@@ -18,7 +18,7 @@ public class UserDetailsImpl implements UserDetails {
 
     public UserDetailsImpl(Usuario user) {
         this.email = user.getEmail();
-        this.password = user.getPassword();
+        this.password = user.getSenha();
         this.roles = user.getProfiles(); // seu enum Profile
     }
 

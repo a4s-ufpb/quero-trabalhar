@@ -1,25 +1,19 @@
 package com.QueroTrabalhar.domain.entity;
 
 import com.QueroTrabalhar.domain.enums.Role;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
 import org.hibernate.validator.constraints.br.CPF;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Entity //Indica que esta classe será mapeada para uma tabela no banco
-@Getter @Setter  // Cria automaticamente os métodos get e set
-@NoArgsConstructor @AllArgsConstructor // Cria construtores padrão e com argumentos
-
-public class Usuario implements UserDetails {
+@Entity
+@Table(name = "usuario")
+public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,53 +26,106 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 100)
     private String nome;
 
+    //Talvez ser um Set<String> para dar a possibilidade de cadastrar mais de um número
     @Size(min = 10, max = 15, message = "Telefone deve ter entre 10 e 15 caracteres.")
     private String telefone;
 
     @Email(message = "Email deve ser válido")
     @NotNull(message = "Email é Obrigatório")
+    @Column(unique = true)
     private String email;
 
-    @NotNull(message = "Senha é Obrigatório")
+    //Ver alguns constrains de senha para dar mais segurança (Letra maiúscula, Caractere especial, entre outros)
+    @NotNull(message = "Senha é Obrigatória")
     private String senha;
-
-    @Enumerated(EnumType.STRING)
-    private Role role;
-
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
-    private List<ExperienciaProfissional> experienciaProfissionais;
-
-
-    @OneToOne (mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JsonManagedReference
-    private InteresseEmOportunidades interesseEmOportunidades;
-
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Indicacoes> indicacoes = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "profiles")
     protected Set<Integer> profiles = new HashSet<>();
+                                                          // Por algum motivo ta recomendando o fetch eager
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private PerfilCandidato perfilCandidato;
 
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private PerfilRecrutador perfilRecrutador;
 
-    public Usuario(Long id, String cpf, String nome, String telefone, String email, String senha, Role role) {
-        this.id = id;
+    @OneToMany(mappedBy = "usuarioIndicado", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Indicacoes> indicacoesRecebidas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Indicacoes> indicacoesDadas = new ArrayList<>();
+
+    public Usuario(String cpf, String nome, String telefone, String email, String senha) {
         this.cpf = cpf;
         this.nome = nome;
         this.telefone = telefone;
         this.email = email;
         this.senha = senha;
-        this.role = role;
-        this.experienciaProfissionais = new ArrayList<>();
-        this.interesseEmOportunidades = new InteresseEmOportunidades();
-        this.interesseEmOportunidades.setUsuario(this);
+        addProfile(Role.USER);
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (this.role == Role.ADMIN) return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
-        else return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    protected Usuario() {}
+
+    public Long getId() { return id; }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
+
+    public PerfilCandidato getPerfilCandidato() { return perfilCandidato; }
+    public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
+
+    public boolean ehCandidato() { return this.perfilCandidato != null; }
+    public boolean ehRecrutador() { return this.perfilRecrutador != null; }
+
+    public void adicionarPerfilCandidato(PerfilCandidato perfil) {
+        this.perfilCandidato = perfil;
+        perfil.setUsuario(this);
+    }
+
+    public void adicionarPerfilRecrutador(PerfilRecrutador perfil) {
+        this.perfilRecrutador = perfil;
+        perfil.setUsuario(this);
+    }
+
+    public void removerPerfilCandidato() {
+        if (this.perfilCandidato != null) {
+            this.perfilCandidato.setUsuario(null);
+            this.perfilCandidato = null;
+        }
+    }
+
+    public void removerPerfilRecrutador() {
+        if (this.perfilRecrutador != null) {
+            this.perfilRecrutador.setUsuario(null);
+            this.perfilRecrutador = null;
+        }
+    }
+
+    public List<Indicacoes> getIndicacoesRecebidas() {
+        return Collections.unmodifiableList(this.indicacoesRecebidas);
+    }
+
+    public void adicionarIndicacaoRecebida(Indicacoes indicacao) {
+        this.indicacoesRecebidas.add(indicacao);
+        indicacao.setUsuarioIndicado(this);
+    }
+
+    public List<Indicacoes> getIndicacoesDadas() {
+        return Collections.unmodifiableList(this.indicacoesDadas);
+    }
+
+    public void adicionarIndicacaoDada(Indicacoes indicacao) {
+        this.indicacoesDadas.add(indicacao);
+        indicacao.setAutor(this);
     }
 
     public Set<Role> getProfiles() {
@@ -90,33 +137,15 @@ public class Usuario implements UserDetails {
     }
 
     @Override
-    public String getPassword() {
-        return senha;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Usuario)) return false;
+        Usuario usuario = (Usuario) o;
+        return id != null && id.equals(usuario.id);
     }
 
     @Override
-    public String getUsername() {
-        return email;
+    public int hashCode() {
+        return getClass().hashCode();
     }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
-
 }

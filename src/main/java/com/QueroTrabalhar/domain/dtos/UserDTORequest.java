@@ -1,114 +1,45 @@
 package com.QueroTrabalhar.domain.dtos;
 
-
-import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.domain.entity.Usuario;
-import com.QueroTrabalhar.domain.enums.Role;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class UserDTORequest {
-    private Long id;
+
+    // Removido o ID (Não faz sentido enviar ID num Request de criação)
     private String cpf;
     private String nome;
     private String telefone;
     private String email;
     private String senha;
-    private Role role;
-    private List<ExperienciaProfissional> experienciaProfissionals;
-    private InteresseEmOportunidades interesseEmEmpregos;
 
+    // Removidas as listas de Experiência, Interesses e Roles.
+    // Isso agora é responsabilidade dos Perfis!
 
     public Usuario toEntity(String encryptedPassword) {
-        Usuario user = new Usuario();
-        user.setId(this.id);
-        user.setCpf(this.cpf);
-        user.setNome(this.nome);
-        user.setTelefone(this.telefone);
-        user.setEmail(this.email);
-        user.setSenha(encryptedPassword);
-        user.setRole(this.role != null ? this.role : Role.USER);
-        user.setExperienciaProfissionais(experienciaProfissionals);
-        user.setInteresseEmOportunidades(interesseEmEmpregos);
-
-        if (user.getExperienciaProfissionais() == null) { user.setExperienciaProfissionais(new ArrayList<>()); }
-        if (user.getInteresseEmOportunidades() == null) { user.setInteresseEmOportunidades(new InteresseEmOportunidades());}
-
-
-        return user;
+        // Usamos o construtor limpo que criamos na entidade Usuario.
+        // Ele já adiciona a Role.USER por padrão lá dentro.
+        return new Usuario(
+                this.cpf,
+                this.nome,
+                this.telefone,
+                this.email,
+                encryptedPassword
+        );
     }
 
-    public Long getId() {
-        return id;
-    }
+    // --- GETTERS E SETTERS ---
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public String getCpf() {
-        return cpf;
-    }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
 
-    public String getNome() {
-        return nome;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public String getTelefone() {
-        return telefone;
-    }
-
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public List<ExperienciaProfissional> getExperienciaProfissionals() {
-        return experienciaProfissionals;
-    }
-
-    public void setExperienciaProfissionals(List<ExperienciaProfissional> experienciaProfissionals) {
-        this.experienciaProfissionals = experienciaProfissionals;
-    }
-
-    public InteresseEmOportunidades getInteresseEmEmpregos() {
-        return interesseEmEmpregos;
-    }
-
-    public void setInteresseEmEmpregos(InteresseEmOportunidades interesseEmEmpregos) {
-        this.interesseEmEmpregos = interesseEmEmpregos;
-    }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 }

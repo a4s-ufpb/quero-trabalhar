@@ -1,37 +1,72 @@
 package com.QueroTrabalhar.domain.entity;
 
-// classe que o usuário terá, nela ele poderá indicar os interesses que ele tem, e suas exigências.
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Table(name = "interesse_em_emprego")
 public class InteresseEmEmprego {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany(cascade = CascadeType.ALL)
-    private List<TipoDeEmprego> tipoDeEmprego;
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "perfil_candidato_id")
+    @JsonIgnore
+    private PerfilCandidato perfilCandidato;
 
+    @ManyToMany
+    @JoinTable(
+            name = "candidato_tipo_emprego_interesse",
+            joinColumns = @JoinColumn(name = "interesse_id"),
+            inverseJoinColumns = @JoinColumn(name = "tipo_emprego_id")
+    )
+    private Set<TipoDeEmprego> tiposInteressados = new HashSet<>();
+
+    @Column(nullable = false)
     private boolean querTrabalharRemoto;
 
-    private boolean temRestricaoDeLugar;
-
     @ElementCollection
-    private List<String> cidadesDeInteresse;
+    @CollectionTable(name = "candidato_cidades_interesse", joinColumns = @JoinColumn(name = "interesse_id"))
+    private Set<Localizacao> locaisDeInteresse = new HashSet<>();
 
-    @ElementCollection
-    private List<String> estadosDeInteresse;
+    public InteresseEmEmprego(PerfilCandidato perfilCandidato, boolean querTrabalharRemoto) {
+        this.perfilCandidato = perfilCandidato;
+        this.querTrabalharRemoto = querTrabalharRemoto;
+    }
 
-    @ElementCollection
-    private List<String> paisesDeInteresse;
+    protected InteresseEmEmprego() {}
+
+    public Long getId() { return id; }
+
+    public PerfilCandidato getPerfilCandidato() { return perfilCandidato; }
+    void setPerfilCandidato(PerfilCandidato perfilCandidato) { this.perfilCandidato = perfilCandidato; }
+
+    public boolean isQuerTrabalharRemoto() { return querTrabalharRemoto; }
+    public void setQuerTrabalharRemoto(boolean querTrabalharRemoto) { this.querTrabalharRemoto = querTrabalharRemoto; }
+
+    public Set<Localizacao> getLocaisDeInteresse() { return Collections.unmodifiableSet(this.locaisDeInteresse); }
+    public void adicionarLocal(Localizacao local) { this.locaisDeInteresse.add(local); }
+    public void removerLocal(Localizacao local) { this.locaisDeInteresse.remove(local); }
+
+    public Set<TipoDeEmprego> getTiposInteressados() { return Collections.unmodifiableSet(this.tiposInteressados); }
+    public void adicionarTipoInteresse(TipoDeEmprego tipo) { this.tiposInteressados.add(tipo); }
+    public void removerTipoInteresse(TipoDeEmprego tipo) { this.tiposInteressados.remove(tipo); }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof InteresseEmEmprego)) return false;
+        InteresseEmEmprego that = (InteresseEmEmprego) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() { return Objects.hash(id); }
 }

@@ -1,46 +1,68 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
-import com.QueroTrabalhar.services.TipoDeEmpregoService; // Importa o serviço que contém a lógica de negócio
+import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
+import com.QueroTrabalhar.services.TipoDeEmpregoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity; // Utilizado para retornar respostas HTTP
-import org.springframework.web.bind.annotation.*; // Importa as anotações para criar um controlador REST
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List; // Importa List para lidar com coleções de objetos
-import java.util.Optional; // Importa Optional para evitar NullPointerException
+import java.util.List;
+import java.util.Optional;
 
-@RestController // Indica que esta classe é um controlador REST
-@RequestMapping ("api/tipos-de-emprego") // Define a URL base para endpoints deste controlador
+@RestController
+@RequestMapping("/api/tipos-de-emprego") // Adicionei a barra inicial (padrão REST)
 public class TipoDeEmpregoController {
 
-    @Autowired // Injeta as instâncias
-    private TipoDeEmpregoService tipoDeEmpregoService; // Dependencia do Serviço
+    @Autowired
+    private TipoDeEmpregoService tipoDeEmpregoService;
 
-    // Metodo para listar todos os Tipos de Emprego (GET)
+    // --- ENDPOINTS PÚBLICOS (Para uso no Front-end geral) ---
+
+    // 1. Listar apenas os cargos APROVADOS (Dropdown de cadastro)
     @GetMapping
     public List<TipoDeEmprego> listarTodos() {
-        return tipoDeEmpregoService.listarTodosOsTiposDeEmprego(); // Chama o serviço para obter a lista do banco de dados
+        // CORREÇÃO: Chama o novo método do Service
+        return tipoDeEmpregoService.listarTiposAprovados();
     }
 
-    // Metodo para buscar um Tipo de Emprego pelo ID (GET com parâmetro)
     @GetMapping("/{id}")
     public ResponseEntity<TipoDeEmprego> buscarPorId(@PathVariable Long id) {
         Optional<TipoDeEmprego> tipoDeEmprego = tipoDeEmpregoService.buscarPorId(id);
-        return tipoDeEmprego.map(ResponseEntity::ok) // se encontrado, retorna 200 OK com objeto
-                .orElseGet(() -> ResponseEntity.notFound().build()); // se não encontrado, retorna 404 Not Found
+        return tipoDeEmprego.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Metodo para criar um novo tipo de Emprego (POST)
+    // --- ENDPOINTS ADMINISTRATIVOS (Para você ou o Professor) ---
+
+    // 2. Listar sugestões pendentes enviadas pelos usuários
+    @GetMapping("/pendentes")
+    public List<TipoDeEmprego> listarPendentes() {
+        return tipoDeEmpregoService.listarSugestoesPendentes();
+    }
+
+    // 3. Criar um cargo oficial direto (Ignora o fluxo de sugestão)
     @PostMapping
-    public TipoDeEmprego criar(@RequestBody TipoDeEmprego tipoDeEmprego) {
-        return tipoDeEmpregoService.salvar(tipoDeEmprego); // Chama o serviço para salvar no banco
+    public ResponseEntity<TipoDeEmprego> criar(@RequestBody TipoDeEmprego tipoDeEmprego) {
+        // CORREÇÃO: Chama o método salvarOficial
+        TipoDeEmprego salvo = tipoDeEmpregoService.salvarOficial(tipoDeEmprego);
+        return ResponseEntity.status(201).body(salvo);
     }
 
-    // Metodo para deletar um tipo de emprego do banco pelo ID
+    // 4. Aprovar uma sugestão de usuário e torná-la oficial
+    @PutMapping("/{id}/aprovar")
+    public ResponseEntity<TipoDeEmprego> aprovarSugestao(
+            @PathVariable Long id,
+            @RequestParam String tituloCorrigido,
+            @RequestParam String descricao) {
 
+        TipoDeEmprego aprovado = tipoDeEmpregoService.aprovarSugestao(id, tituloCorrigido, descricao);
+        return ResponseEntity.ok(aprovado);
+    }
+
+    // 5. Deletar (Serve tanto para cargos oficiais quanto para recusar sugestões)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        tipoDeEmpregoService.deletar(id); // Chama o serviço para excluir pelo ID
-        return ResponseEntity.noContent().build(); // Retorna status 204 (No Content), indicando sucesso sem resposta
+        tipoDeEmpregoService.deletar(id);
+        return ResponseEntity.noContent().build();
     }
 }

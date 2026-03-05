@@ -2,112 +2,55 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.UserDTORequest;
 import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
-import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
-import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.domain.entity.Usuario;
-import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UsuarioService implements UserDetailsService {
-
+public class UsuarioService { // Repare que a interface UserDetailsService SUMIU!
 
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private OportunidadeDeEmpregoRepository oportunidadeRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return usuarioRepository.findByEmail(email);
-    }
+    // O método loadUserByUsername FOI REMOVIDO DAQUI!
+    // Ele agora vive exclusivamente na sua classe UserDetailsServiceImpl (ou AutenticacaoService).
 
     public List<UserDTOResponse> listarTodosUsuarios() {
-        List<Usuario> users = usuarioRepository.findAll();
-        return users.stream()
+        return usuarioRepository.findAll().stream()
                 .map(UserDTOResponse::new)
                 .collect(Collectors.toList());
     }
 
     public UserDTOResponse buscarUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
-
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado. ID: " + id));
         return new UserDTOResponse(usuario);
     }
 
+    @Transactional
     public UserDTOResponse salvarUsuario(UserDTORequest userDTORequest, String encryptedPassword) {
-
         Usuario user = userDTORequest.toEntity(encryptedPassword);
 
-        user.getInteresseEmOportunidades().setUsuario(user);
+        // Todo usuário nasce com perfil de candidato básico
+        PerfilCandidato perfilPadrao = new PerfilCandidato(user);
+        user.adicionarPerfilCandidato(perfilPadrao);
 
         Usuario userSaved = usuarioRepository.save(user);
-
         return new UserDTOResponse(userSaved);
     }
 
+    @Transactional
     public void deletarUsuario(Long id) {
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado");
+            throw new EntityNotFoundException("Usuário não encontrado. ID: " + id);
         }
         usuarioRepository.deleteById(id);
-    }
-    public UserDTOResponse registrarInteresseEmOportunidadeDeEmprego(Long userId, Long oportunidadeId){
-
-        // Escolhendo o Usuário
-        Optional<Usuario> userOptional = usuarioRepository.findById(userId);
-        if (!userOptional.isPresent()) {
-            throw new RuntimeException("Usuário não encontrada");
-        }
-
-        Usuario user = userOptional.get();
-
-        // Escolhendo o Interesse
-        Optional<OportunidadeDeEmprego> oportunidadeOptional = oportunidadeRepository.findById(oportunidadeId);
-        if(!oportunidadeOptional.isPresent()){
-            throw new RuntimeException("Oportunidade não encontrada");
-        }
-        OportunidadeDeEmprego oportunidade = oportunidadeOptional.get();
-
-        // Adicionar Oportunidade a Lista de Interesses do Usuário.
-        if (user.getInteresseEmOportunidades() == null){
-            user.setInteresseEmOportunidades(new InteresseEmOportunidades());
-            user.getInteresseEmOportunidades().setUsuario(user);
-        }
-        if (!user.getInteresseEmOportunidades().getOportunidades().contains(oportunidade)) {
-            user.getInteresseEmOportunidades().adicionarOportunidadeDeEmprego(oportunidade);
-        } else {
-            System.out.println("A OPORTUNIDADE NÃO FOI REGISTRADA\nOportunidade já existe nos interesses do usuário");
-        }
-
-        usuarioRepository.save(user);
-        return new UserDTOResponse(user);
-    }
-
-    public void removerInteresseEmOportunidadeDeEmprego(Long userId, Long oportunidadeId) {
-        Optional<Usuario> userOptional = usuarioRepository.findById(userId);
-        Usuario user = userOptional.get();
-
-        Optional<OportunidadeDeEmprego> oportunidadeOptional = oportunidadeRepository.findById(oportunidadeId);
-        OportunidadeDeEmprego oportunidadeDeEmprego = oportunidadeOptional.get();
-
-        if (user.getInteresseEmOportunidades().getOportunidades().contains(oportunidadeDeEmprego)) {
-            user.getInteresseEmOportunidades().getOportunidades().remove(oportunidadeDeEmprego);
-        } else {
-            System.out.println("A OPORTUNIDADE INFORMADA NÃO ESTÁ NO REGISTRO DE INTERESSES DESSE USUÁRIO");
-        }
-
     }
 }

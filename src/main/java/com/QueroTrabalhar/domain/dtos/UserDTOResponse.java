@@ -1,11 +1,9 @@
 package com.QueroTrabalhar.domain.dtos;
 
-import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.enums.Role;
 
-import java.util.List;
+import java.util.Set;
 
 public class UserDTOResponse {
 
@@ -14,9 +12,13 @@ public class UserDTOResponse {
     private String nome;
     private String telefone;
     private String email;
-    private Role role;
-    private List<ExperienciaProfissional> experienciaProfissionals;
-    private InteresseEmOportunidades interesseEmEmpregos;
+
+    // Substituímos a Role única pelo Set de Perfis de segurança
+    private Set<Role> profiles;
+
+    // Flags úteis para o Front-end saber o que renderizar
+    private boolean ehCandidato;
+    private boolean ehRecrutador;
 
     public UserDTOResponse() {}
 
@@ -26,72 +28,36 @@ public class UserDTOResponse {
         this.nome = user.getNome();
         this.telefone = user.getTelefone();
         this.email = user.getEmail();
-        this.role = user.getRole();
-        this.experienciaProfissionals = user.getExperienciaProfissionais();
-        this.interesseEmEmpregos = user.getInteresseEmOportunidades();
+
+        // Mapeamentos atualizados de acordo com a nova Entidade Usuario
+        this.profiles = user.getProfiles();
+        this.ehCandidato = user.ehCandidato();
+        this.ehRecrutador = user.ehRecrutador();
     }
 
-    public Long getId() {
-        return id;
-    }
+    // --- GETTERS E SETTERS ---
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getCpf() {
-        return cpf;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public String getNome() {
-        return nome;
-    }
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getTelefone() {
-        return telefone;
-    }
+    public Set<Role> getProfiles() { return profiles; }
+    public void setProfiles(Set<Role> profiles) { this.profiles = profiles; }
 
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
-    }
+    public boolean isEhCandidato() { return ehCandidato; }
+    public void setEhCandidato(boolean ehCandidato) { this.ehCandidato = ehCandidato; }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public List<ExperienciaProfissional> getExperienciaProfissionals() {
-        return experienciaProfissionals;
-    }
-
-    public void setExperienciaProfissionals(List<ExperienciaProfissional> experienciaProfissionals) {
-        this.experienciaProfissionals = experienciaProfissionals;
-    }
-
-    public InteresseEmOportunidades getInteresseEmEmpregos() {
-        return interesseEmEmpregos;
-    }
-
-    public void setInteresseEmEmpregos(InteresseEmOportunidades interesseEmEmpregos) {
-        this.interesseEmEmpregos = interesseEmEmpregos;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+    public boolean isEhRecrutador() { return ehRecrutador; }
+    public void setEhRecrutador(boolean ehRecrutador) { this.ehRecrutador = ehRecrutador; }
 }

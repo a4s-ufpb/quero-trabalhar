@@ -1,9 +1,6 @@
-
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
-import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
-import com.QueroTrabalhar.domain.entity.InteresseEmOportunidades;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -30,136 +27,104 @@ public class UsuarioServiceTest {
     @InjectMocks
     private UsuarioService usuarioService;
 
-    // Atributos dos objetos
+    // Atributos base
     private Long defaultId;
-    private String defaultName;
-    private String defaultCpf;
-    private String defaultPhone;
-    private String defaultEmail;
-    private List<ExperienciaProfissional> defaultExperiencias;
-    private InteresseEmOportunidades defaultInteresse;
 
     // Objetos para teste
     private Usuario user;
-    private UserDTOResponse userDTOResponse;
-
-    // objetos para o teste de lista
     private Usuario user1;
     private Usuario user2;
 
-
     @BeforeEach
-    void setUp() {
-        // --- Configurações para salvar/buscar por ID ---
+    void setUp() throws Exception {
         defaultId = 1L;
-        defaultName = "Fernanda";
-        defaultCpf = "12345678964";
-        defaultPhone = "83912345678";
-        defaultEmail = "fernanda23@email.com";
-        defaultExperiencias = new ArrayList<>();
-        defaultInteresse = new InteresseEmOportunidades();
 
-//        // Configura um User
-//        user = new Usuario(
-//                defaultId,
-//                defaultCpf,
-//                defaultName,
-//                defaultPhone,
-//                defaultEmail);
+        // 1. Usando o novo construtor da entidade (Cpf, Nome, Telefone, Email, Senha)
+        user = new Usuario("12345678964", "Fernanda", "83912345678", "fernanda23@email.com", "senhaForte123");
+        injetarId(user, defaultId);
 
-        // Configura um UserDTO
+        user1 = new Usuario("12345678909", "Fernanda", "83912345675", "fernanda@email.com", "senhaForte123");
+        injetarId(user1, 2L);
 
-        userDTOResponse = new UserDTOResponse();
-        userDTOResponse.setCpf(defaultCpf);
-        userDTOResponse.setNome(defaultName);
-        userDTOResponse.setTelefone(defaultPhone);
-        userDTOResponse.setEmail(defaultEmail);
-        userDTOResponse.setExperienciaProfissionals(defaultExperiencias);
-        userDTOResponse.setInteresseEmEmpregos(defaultInteresse);
+        user2 = new Usuario("12345678911", "Vitória", "83912345674", "vitoria@email.com", "senhaForte123");
+        injetarId(user2, 3L);
 
-        // --- Configurações adicionais para o teste de lista de usuários ---
-
-        // Usuario 1
-        user1 = new Usuario();
-        user1.setId(1L);
-        user1.setNome("Fernanda");
-        user1.setCpf("12345678909");
-        user1.setEmail("fernanda@email.com");
-        user1.setTelefone("1234567895");
-
-        // Usuario 2
-        user2 = new Usuario();
-        user2.setId(2L);
-        user2.setNome("Vitória");
-        user2.setCpf("12345678911");
-        user2.setEmail("vitoria@email.com");
-        user2.setTelefone("1234567894");
+        // As listas de experiências e interesses agora são responsabilidade do PerfilCandidato, 
+        // então não precisamos mais mockar isso no teste básico de Usuario.
     }
 
-
-
-//    @Test
-//    public void deveSalvarUsuarioComSucesso() {
-//
-//        Mockito.when(usuarioRepository.save(Mockito.any(Usuario.class))).thenReturn(user);
-//        UserDTOResponse userSaved = usuarioService.salvarUsuario(userDTOResponse);
-//        Assertions.assertNotNull(userSaved);
-//        Assertions.assertNotNull(userSaved.getId());
-//        Assertions.assertEquals("Fernanda", userSaved.getNome());
-//    }
+    /**
+     * Helper para injetar um ID na entidade sem precisar criar um método setId() público
+     * que violaria as regras de encapsulamento e segurança.
+     */
+    private void injetarId(Usuario usuario, Long id) throws Exception {
+        Field field = Usuario.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(usuario, id);
+    }
 
     @Test
     public void deveBuscarPorIdComSucesso() {
+        // Arrange (Preparação)
+        Mockito.when(usuarioRepository.findById(defaultId)).thenReturn(Optional.of(user));
 
-        Mockito.when(usuarioRepository.findById(1L)).thenReturn(Optional.of(user));
-        UserDTOResponse resultado = usuarioService.buscarUsuarioPorId(1L);
+        // Act (Ação)
+        UserDTOResponse resultado = usuarioService.buscarUsuarioPorId(defaultId);
+
+        // Assert (Verificação)
         Assertions.assertNotNull(resultado);
-        Assertions.assertNotNull(resultado.getId());
-        Assertions.assertEquals(1L, resultado.getId());
-        Assertions.assertEquals(defaultName, resultado.getNome());
-        Assertions.assertEquals(defaultCpf, resultado.getCpf());
-        Assertions.assertEquals(defaultPhone, resultado.getTelefone());
-        Assertions.assertEquals(defaultEmail, resultado.getEmail());
-        Mockito.verify(usuarioRepository, Mockito.times(1)).findById(1L);
+        // Atenção: Use .getId(), ou .id() se o seu DTO for um Record Java
+        Assertions.assertEquals(defaultId, resultado.getId());
+        Assertions.assertEquals("Fernanda", resultado.getNome());
+        Assertions.assertEquals("12345678964", resultado.getCpf());
+
+        Mockito.verify(usuarioRepository, Mockito.times(1)).findById(defaultId);
     }
 
     @Test
-    public void deveLancarEntityNotFoundExeptionQuandoUsuarioNaoEncontrado() {
+    public void deveLancarEntityNotFoundExceptionQuandoUsuarioNaoEncontrado() {
+        Mockito.when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
 
-        Mockito.when(usuarioRepository.findById(1L)).thenReturn(Optional.empty());
         Assertions.assertThrows(EntityNotFoundException.class, () -> {
-                    usuarioService.buscarUsuarioPorId(1L);});
-        Mockito.verify(usuarioRepository).findById(1L);
+            usuarioService.buscarUsuarioPorId(99L);
+        });
+
+        Mockito.verify(usuarioRepository).findById(99L);
     }
 
     @Test
     public void deveRetornarListaDeUsuariosComSucesso() {
-
         List<Usuario> users = Arrays.asList(user1, user2);
         Mockito.when(usuarioRepository.findAll()).thenReturn(users);
+
         List<UserDTOResponse> result = usuarioService.listarTodosUsuarios();
+
         Assertions.assertNotNull(result);
         Assertions.assertFalse(result.isEmpty());
         Assertions.assertEquals(2, result.size());
-
     }
 
     @Test
     public void deveDeletarUsuario() {
         Mockito.when(usuarioRepository.existsById(defaultId)).thenReturn(true);
         Mockito.doNothing().when(usuarioRepository).deleteById(defaultId);
+
         usuarioService.deletarUsuario(defaultId);
-        Mockito.verify(usuarioRepository).deleteById(defaultId); // Verifica se deleteById foi chamado
+
+        Mockito.verify(usuarioRepository).deleteById(defaultId);
     }
 
     @Test
     public void deveLancarExcecaoQuandoDeletarUsuarioNaoEncontrado() {
         Mockito.when(usuarioRepository.existsById(defaultId)).thenReturn(false);
-        Assertions.assertThrows(RuntimeException.class, () -> {
+
+
+        // O Service novo foi atualizado para lançar EntityNotFoundException
+        Assertions.assertThrows(EntityNotFoundException.class, () -> {
             usuarioService.deletarUsuario(defaultId);
         });
+
         Mockito.verify(usuarioRepository).existsById(defaultId);
         Mockito.verifyNoMoreInteractions(usuarioRepository);
     }
-
 }

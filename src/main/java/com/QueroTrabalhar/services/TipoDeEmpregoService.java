@@ -1,43 +1,80 @@
-package com.QueroTrabalhar.services;  // Pacote onde esta classe está localizada
+package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
+import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import com.QueroTrabalhar.domain.entity.TipoDeEmprego; // Importa a entidade TipoDeEmprego
-import com.QueroTrabalhar.repository.TipoDeEmpregoRepository; // Importa o repositório para acessar o banco de dados
-import org.springframework.beans.factory.annotation.Autowired; // Importa anotação para injeção de classe
-import org.springframework.stereotype.Service; // Indica que esta classe é um serviço gerenciado pelo Spring
+import java.util.List;
+import java.util.Optional;
 
-import java.util.List; // Importa a classe List para lidar com listas de objetos
-import java.util.Optional; // Importa a classe Optional para evitar NullPointerException
-
-@Service // Marca esta classe como um serviço do Spring
+@Service
 public class TipoDeEmpregoService {
 
-    @Autowired // Injeta as instâncias
-    private TipoDeEmpregoRepository tipoDeEmpregoRepository; // Dependencia do repositório
+    @Autowired
+    private TipoDeEmpregoRepository tipoDeEmpregoRepository;
 
+    // --- MÉTODOS DE BUSCA ---
 
-    public List<TipoDeEmprego> listarTodosOsTiposDeEmprego() {
-        return tipoDeEmpregoRepository.findAll(); // Retorna todos os registros do banco
+    // 1. Para o Dropdown do Front-end: Retorna APENAS os aprovados
+    public List<TipoDeEmprego> listarTiposAprovados() {
+        return tipoDeEmpregoRepository.findByAprovadoTrue();
     }
 
-    // Metodo para buscar um Tipo de Emprego pelo ID
+    // 2. Para o Painel do ADMIN: Retorna as sugestões que precisam de revisão
+    public List<TipoDeEmprego> listarSugestoesPendentes() {
+        return tipoDeEmpregoRepository.findByAprovadoFalse();
+    }
+
     public Optional<TipoDeEmprego> buscarPorId(Long id) {
-        return tipoDeEmpregoRepository.findById(id); // Retorna um Optional, que pode estar vazio ou conter um objeto
+        return tipoDeEmpregoRepository.findById(id);
     }
 
-    // Metodo para salvar um novo Tipo de Emprego
-    public TipoDeEmprego salvar(TipoDeEmprego tipoDeEmprego) { // TODO rever o tipo de retorno
-        // Verifica se já existe um tipo de emprego com o mesmo nome
-        Optional<TipoDeEmprego> existente = tipoDeEmpregoRepository.findByTitulo(tipoDeEmprego.getTitulo()); // cria um Objeto para guardar o possível Título
-        if (existente.isPresent()) { // usa o metodo isPresent para verificar se o Titulo está em existente
-            throw new IllegalArgumentException("Já existe um tipo de emprego com este nome!"); // TODO rever se deve lançar outra exceção ou retornar um Optional
+    // --- MÉTODOS DE CRIAÇÃO E VALIDAÇÃO ---
+
+    // 3. Usado pelo ADMIN para criar um cargo oficial no sistema
+    public TipoDeEmprego salvarOficial(TipoDeEmprego tipoDeEmprego) {
+        // Usamos IgnoreCase para evitar que criem "Dev" e "dev" como coisas diferentes
+        Optional<TipoDeEmprego> existente = tipoDeEmpregoRepository.findByTituloIgnoreCase(tipoDeEmprego.getTitulo());
+
+        if (existente.isPresent()) {
+            // Resolvendo seu TODO: EntityExistsException é a exceção padrão do JPA para conflitos
+            throw new EntityExistsException("Já existe um tipo de emprego com este título no sistema.");
         }
-        return tipoDeEmpregoRepository.save(tipoDeEmprego); // Salva no banco e retorna o objeto salvo
+
+        tipoDeEmprego.setAprovado(true);
+        return tipoDeEmpregoRepository.save(tipoDeEmprego);
     }
 
-    // Metodo para Deletar um tipo de Emprego pelo ID
-    public void deletar (Long id) {
-        tipoDeEmpregoRepository.deleteById(id); // Remove do Banco de dados pelo ID
+    // 4. A MÁGICA DO FLUXO DINÂMICO: Usado quando o usuário digita uma profissão nova
+    public TipoDeEmprego obterOuCriarSugestao(String tituloSugerido) {
+        // Se já existe (aprovado ou não), reaproveita para não duplicar a mesma sugestão
+        return tipoDeEmpregoRepository.findByTituloIgnoreCase(tituloSugerido)
+                .orElseGet(() -> {
+                    // Se não existe na base, cria como sugestão pendente (aprovado = false)
+                    TipoDeEmprego novaSugestao = new TipoDeEmprego(tituloSugerido);
+                    return tipoDeEmpregoRepository.save(novaSugestao);
+                });
     }
 
+    // 5. Usado pelo ADMIN para validar a sugestão de um usuário
+    public TipoDeEmprego aprovarSugestao(Long id, String tituloCorrigido, String descricao) {
+        TipoDeEmprego pendente = tipoDeEmpregoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Tipo de emprego não encontrado."));
+
+        // O Admin pode corrigir erros de português antes de aprovar
+        pendente.setTitulo(tituloCorrigido);
+        pendente.setDescricao(descricao);
+        pendente.setAprovado(true);
+
+        return tipoDeEmpregoRepository.save(pendente);
+    }
+
+    // --- MÉTODOS DE DELEÇÃO ---
+
+    public void deletar(Long id) {
+        tipoDeEmpregoRepository.deleteById(id);
+    }
 }

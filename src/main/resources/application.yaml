@@ -2,7 +2,7 @@ spring:
   config:
     import: "optional:file:.env[.properties]"
   application:
-    name: ${APP_NAME}
+    name: QueroTrabalhar
 
   profiles:
     # Se a variavel de ambiente nao existir, o perfil 'test' sera ativado por padrao
