@@ -1,13 +1,10 @@
 package com.QueroTrabalhar.domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.util.Objects;
 
 @Entity
 @Table(name = "indicacoes")
-public class Indicacoes {
+public class Indicacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,13 +21,13 @@ public class Indicacoes {
     @Column(nullable = false, length = 500)
     private String mensagem;
 
-    public Indicacoes(Usuario autor, Usuario usuarioIndicado, String mensagem) {
+    public Indicacao(Usuario autor, Usuario usuarioIndicado, String mensagem) {
         this.autor = autor;
         this.usuarioIndicado = usuarioIndicado;
         this.mensagem = mensagem;
     }
 
-    protected Indicacoes() {}
+    protected Indicacao() {}
 
     public Long getId() {
         return id;
@@ -63,8 +60,8 @@ public class Indicacoes {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Indicacoes)) return false;
-        Indicacoes that = (Indicacoes) o;
+        if (!(o instanceof Indicacao)) return false;
+        Indicacao that = (Indicacao) o;
         return id != null && id.equals(that.id);
     }
 

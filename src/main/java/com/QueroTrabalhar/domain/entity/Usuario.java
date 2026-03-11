@@ -51,11 +51,11 @@ public class Usuario {
 
     @OneToMany(mappedBy = "usuarioIndicado", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<Indicacoes> indicacoesRecebidas = new ArrayList<>();
+    private List<Indicacao> indicacaoRecebidas = new ArrayList<>();
 
     @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<Indicacoes> indicacoesDadas = new ArrayList<>();
+    private List<Indicacao> indicacaoDadas = new ArrayList<>();
 
     public Usuario(String cpf, String nome, String telefone, String email, String senha) {
         this.cpf = cpf;
@@ -110,21 +110,21 @@ public class Usuario {
         }
     }
 
-    public List<Indicacoes> getIndicacoesRecebidas() {
-        return Collections.unmodifiableList(this.indicacoesRecebidas);
+    public List<Indicacao> getIndicacoesRecebidas() {
+        return Collections.unmodifiableList(this.indicacaoRecebidas);
     }
 
-    public void adicionarIndicacaoRecebida(Indicacoes indicacao) {
-        this.indicacoesRecebidas.add(indicacao);
+    public void adicionarIndicacaoRecebida(Indicacao indicacao) {
+        this.indicacaoRecebidas.add(indicacao);
         indicacao.setUsuarioIndicado(this);
     }
 
-    public List<Indicacoes> getIndicacoesDadas() {
-        return Collections.unmodifiableList(this.indicacoesDadas);
+    public List<Indicacao> getIndicacoesDadas() {
+        return Collections.unmodifiableList(this.indicacaoDadas);
     }
 
-    public void adicionarIndicacaoDada(Indicacoes indicacao) {
-        this.indicacoesDadas.add(indicacao);
+    public void adicionarIndicacaoDada(Indicacao indicacao) {
+        this.indicacaoDadas.add(indicacao);
         indicacao.setAutor(this);
     }
 

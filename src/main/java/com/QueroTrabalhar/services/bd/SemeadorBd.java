@@ -17,7 +17,8 @@ public class SemeadorBd {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private TipoDeEmpregoRepository tipoDeEmpregoRepository;
     @Autowired private OportunidadeDeEmpregoRepository oportunidadeRepository;
-    @Autowired private IndicacoesRepository indicacoesRepository;
+    @Autowired private IndicacaoRepository indicacaoRepository;
+    @Autowired private CidadeRepository cidadeRepository;
     @Autowired private BCryptPasswordEncoder encoder;
 
     @Transactional
@@ -32,8 +33,10 @@ public class SemeadorBd {
         TipoDeEmprego ti = new TipoDeEmprego("Tecnologia", "Desenvolvimento e Infraestrutura");
         TipoDeEmprego design = new TipoDeEmprego("Design", "UX/UI e Produto");
         TipoDeEmprego manutencao = new TipoDeEmprego("Manutenção", "Serviços técnicos");
+        TipoDeEmprego jardineiro = new TipoDeEmprego("Jardineiro(a)", "Podar árvores");
+        TipoDeEmprego eletricista = new TipoDeEmprego("Eletricista", "Instalações elétricas");
 
-        tipoDeEmpregoRepository.saveAll(List.of(ti, design, manutencao));
+        tipoDeEmpregoRepository.saveAll(List.of(ti, design, manutencao, jardineiro, eletricista));
 
         // =========================================================
         // ONDA 2 - USUÁRIOS
@@ -52,6 +55,8 @@ public class SemeadorBd {
         Usuario recrutadorUser = new Usuario("81004206020", "Bob Red", "83988887777",
                 "rh@tech.com", encoder.encode("123"));
 
+        Usuario usuarioDuplo  = new Usuario("63700679033", "Jane LightPink", "83998765432", "jane@gmail.com", encoder.encode("123"));
+
         // =========================================================
         // ONDA 3 - PERFIS
         // =========================================================
@@ -67,7 +72,13 @@ public class SemeadorBd {
         PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser, "Tech Solutions");
         recrutadorUser.adicionarPerfilRecrutador(perfilRH);
 
-        usuarioRepository.saveAll(List.of(admin, candidato1, candidato2, recrutadorUser));
+        //Perfis duplo
+        PerfilRecrutador perfilRecrutadorDuplo = new PerfilRecrutador(usuarioDuplo, "Autonomo");
+        usuarioDuplo.adicionarPerfilRecrutador(perfilRecrutadorDuplo);
+        PerfilCandidato perfilCandidatoDuplo = new PerfilCandidato(usuarioDuplo);
+        usuarioDuplo.adicionarPerfilCandidato(perfilCandidatoDuplo);
+
+        usuarioRepository.saveAll(List.of(admin, candidato1, candidato2, recrutadorUser, usuarioDuplo));
         usuarioRepository.flush(); // força geração de IDs
 
         // =========================================================
@@ -84,6 +95,15 @@ public class SemeadorBd {
 
         perfilDan.adicionarExperiencia(exp1);
 
+        ExperienciaProfissional expJardineiro = new ExperienciaProfissional(
+                perfilCandidatoDuplo,
+                jardineiro,
+                "Trabalhei podando arvores para a prefeitura",
+                LocalDate.of(2022, 1, 10),
+                LocalDate.of(2024, 1, 10)
+        );
+        perfilCandidatoDuplo.adicionarExperiencia(expJardineiro);
+
         // =========================================================
         // ONDA 5 - INTERESSE EM EMPREGO
         // =========================================================
@@ -92,19 +112,37 @@ public class SemeadorBd {
         interesseDan.adicionarTipoInteresse(ti);
         interesseDan.adicionarTipoInteresse(design);
 
+
+        Cidade joaoPessoa = cidadeRepository.findById(2507507L)
+                .orElseGet(() -> cidadeRepository.save(new Cidade(2507507L, "João Pessoa", Estado.PB)));
+
         interesseDan.adicionarLocal(
-                new Localizacao("João Pessoa", Estado.PB, Pais.BR)
+                new Localizacao(joaoPessoa, Pais.BR)
+        );
+
+        interesseDan.adicionarLocal(
+                new Localizacao(joaoPessoa, Pais.BR)
         );
 
         interesseDan.adicionarLocal(new Localizacao(Pais.US));
 
         perfilDan.definirInteresse(interesseDan);
 
+        InteresseEmEmprego interesseCandidatoDuplo = new InteresseEmEmprego(perfilCandidatoDuplo, true);
+        interesseCandidatoDuplo.adicionarTipoInteresse(jardineiro);
+
+        Cidade rioTinto = cidadeRepository.findById(2512903L)
+                .orElseGet(() -> cidadeRepository.save(new Cidade(2512903L, "Rio Tinto", Estado.PB)));
+
+        interesseCandidatoDuplo.adicionarLocal(new Localizacao(rioTinto, Pais.BR));
+
+        perfilCandidatoDuplo.definirInteresse(interesseCandidatoDuplo);
+
         // =========================================================
         // ONDA 6 - OPORTUNIDADES
         // =========================================================
 
-        Localizacao loc = new Localizacao("João Pessoa", Estado.PB, Pais.BR);
+        Localizacao loc = new Localizacao(joaoPessoa, Pais.BR);
 
         OportunidadeDeEmprego vaga1 = new OportunidadeDeEmprego(
                 "Dev Spring Boot",
@@ -122,10 +160,19 @@ public class SemeadorBd {
                 perfilRH
         );
 
+        OportunidadeDeEmprego vaga3 = new OportunidadeDeEmprego(
+                "Eletrotécnico",
+                eletricista,
+                Modalidade.PRESENCIAL,
+                new Localizacao(rioTinto,Pais.BR),
+                perfilRecrutadorDuplo
+        );
+
         perfilRH.adicionarOportunidadePostada(vaga1);
         perfilRH.adicionarOportunidadePostada(vaga2);
+        perfilRecrutadorDuplo.adicionarOportunidadePostada(vaga3);
 
-        oportunidadeRepository.saveAll(List.of(vaga1, vaga2));
+        oportunidadeRepository.saveAll(List.of(vaga1, vaga2, vaga3));
 
         // =========================================================
         // ONDA 7 - INTERESSE EM VAGAS (ManyToMany)
@@ -133,27 +180,37 @@ public class SemeadorBd {
 
         perfilDan.demonstrarInteresse(vaga1);
         perfilEmma.demonstrarInteresse(vaga2);
+        perfilDan.demonstrarInteresse(vaga3);
 
         // =========================================================
         // ONDA 8 - INDICAÇÕES
         // =========================================================
 
-        Indicacoes indicacao = new Indicacoes(
+        Indicacao indicacao = new Indicacao(
                 candidato2,
                 candidato1,
                 "Excelente profissional backend!"
         );
 
+        Indicacao indicacao1 = new Indicacao(
+                perfilRH.getUsuario(),
+                perfilCandidatoDuplo.getUsuario(),
+                "Ótimo Jardineiro"
+        );
+
         candidato2.adicionarIndicacaoDada(indicacao);
         candidato1.adicionarIndicacaoRecebida(indicacao);
 
-        usuarioRepository.saveAll(List.of(candidato1, candidato2));
+        admin.adicionarIndicacaoDada(indicacao1);
+        usuarioDuplo.adicionarIndicacaoRecebida(indicacao1);
+
+        usuarioRepository.saveAll(List.of(candidato1, candidato2,admin, usuarioDuplo));
 
         System.out.println(">>> BANCO POPULADO COM SUCESSO <<<");
     }
 
     private void limparBd() {
-        indicacoesRepository.deleteAllInBatch();
+        indicacaoRepository.deleteAllInBatch();
         oportunidadeRepository.deleteAllInBatch();
         usuarioRepository.deleteAllInBatch();
         tipoDeEmpregoRepository.deleteAllInBatch();
