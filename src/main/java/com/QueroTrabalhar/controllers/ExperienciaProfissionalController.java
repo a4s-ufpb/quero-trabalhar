@@ -1,40 +1,51 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
+import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalRequestDTO;
+import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalResponseDTO;
 import com.QueroTrabalhar.services.ExperienciaProfissionalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
-@RestController // Indica que esta classe é um controlador REST
-@RequestMapping("api/experiencia-profissional") // Define a URL base para endpoints deste controlador
+@RestController
+@RequestMapping("/api/candidatos/{perfilCandidatoId}/experiencias")
 public class ExperienciaProfissionalController {
 
     @Autowired
     private ExperienciaProfissionalService experienciaProfissionalService;
 
     @GetMapping
-    public List<ExperienciaProfissional> listarExperienciasProfissionais() {
-        return experienciaProfissionalService.listarTodasAsExperienciaProfissionais();
+    public ResponseEntity<List<ExperienciaProfissionalResponseDTO>> listarExperienciasProfissionais() {
+        return ResponseEntity.ok().body(experienciaProfissionalService.listarTodasAsExperienciaProfissionais());
     }
 
     @GetMapping ("/{id}")
-    public ResponseEntity<ExperienciaProfissional> buscarExperienciaProfissionalPorId(@PathVariable Long id) {
-        Optional<ExperienciaProfissional> experienciaProfissional = experienciaProfissionalService.listarPorId(id);
-        return experienciaProfissional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ExperienciaProfissionalResponseDTO> buscarExperienciaProfissionalPorId(@PathVariable Long id) {
+        return ResponseEntity.ok().body(experienciaProfissionalService.buscarPorId(id));
     }
 
     @PostMapping
-    public ExperienciaProfissional cadastrarExperienciaProfissional(@RequestBody ExperienciaProfissional experienciaProfissional) {
-        return experienciaProfissionalService.cadastrarExperienciaProfissional(experienciaProfissional);
+    public ResponseEntity<ExperienciaProfissionalResponseDTO> cadastrarExperienciaProfissional
+            (@PathVariable Long perfilCandidatoId, @RequestBody ExperienciaProfissionalRequestDTO experienciaProfissional) {
+        ExperienciaProfissionalResponseDTO expEmprego = experienciaProfissionalService.criarExperienciaProfissional(perfilCandidatoId, experienciaProfissional);
+
+        URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(
+                        expEmprego.id()
+                ).toUri();
+
+        return ResponseEntity.created(uri).body(expEmprego);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarExperienciaProfissional(@PathVariable Long id){
-        experienciaProfissionalService.deletarExperienciaProfissional(id);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("/{experienciaId}")
+    public ResponseEntity<Void> deletarExperienciaProfissional(@PathVariable Long perfilCandidatoId, @PathVariable Long experienciaId){
+            experienciaProfissionalService.deletarExperiencia(perfilCandidatoId, experienciaId);
+            return ResponseEntity.noContent().build();
     }
 }

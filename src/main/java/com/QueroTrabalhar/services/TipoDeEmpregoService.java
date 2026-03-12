@@ -35,8 +35,9 @@ public class TipoDeEmpregoService {
     public TipoDeEmpregoResponseDTO buscarPorId(Long id) {
         return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmpregoRepository
                 .findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Tipo de emprego não encontrado, id: "+ id)
-                ));
+                .orElseThrow(
+                        () -> new ObjectNotFoundException("Tipo de emprego não encontrado, id: "+ id))
+        );
     }
 
     public TipoDeEmpregoResponseDTO criarNoCatalogo(TipoDeEmpregoRequestDTO tipoDeEmprego) {
