@@ -1,8 +1,6 @@
 package com.QueroTrabalhar.domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.*;
@@ -24,7 +22,7 @@ public class PerfilCandidato {
     private List<ExperienciaProfissional> experiencias = new ArrayList<>();
 
     @OneToOne(mappedBy = "perfilCandidato", cascade = CascadeType.ALL, orphanRemoval = true)
-    private InteresseEmEmprego interesseEmEmprego;
+    private Preferencia preferencia;
 
     @ManyToMany
     @JoinTable(
@@ -59,17 +57,17 @@ public class PerfilCandidato {
         exp.setPerfilCandidato(null);
     }
 
-    public InteresseEmEmprego getInteresseEmEmprego() { return interesseEmEmprego; }
+    public Preferencia getInteresseEmEmprego() { return preferencia; }
 
-    public void definirInteresse(InteresseEmEmprego interesse) {
-        this.interesseEmEmprego = interesse;
+    public void definirInteresse(Preferencia interesse) {
+        this.preferencia = interesse;
         interesse.setPerfilCandidato(this);
     }
 
     public void removerInteresseEmEmprego() {
-        if (this.interesseEmEmprego != null) {
-            this.interesseEmEmprego.setPerfilCandidato(null);
-            this.interesseEmEmprego = null;
+        if (this.preferencia != null) {
+            this.preferencia.setPerfilCandidato(null);
+            this.preferencia = null;
         }
     }
 

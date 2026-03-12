@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Embeddable
-public class Localizacao {
+public class Local {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_ibge")
@@ -16,18 +16,18 @@ public class Localizacao {
     @Column(length = 2)
     private Pais pais;
 
-    public Localizacao(Cidade Cidade, Pais pais) {
+    public Local(Cidade Cidade, Pais pais) {
         this.Cidade = Cidade;
         this.pais = pais;
     }
 
     //Caso seja um pais internacional, inicializa só o país para evitar a possibilidade de pais = EUA, estado = PB, Cidade Rio Tinto
-    public Localizacao(Pais pais){
+    public Local(Pais pais){
         this.Cidade = null;
         this.pais = pais;
     }
 
-    protected Localizacao(){}
+    protected Local(){}
 
     public Cidade getCidade() {
         return Cidade;
@@ -40,7 +40,7 @@ public class Localizacao {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Localizacao that)) return false;
+        if (!(o instanceof Local that)) return false;
         return Objects.equals(getCidade(), that.getCidade()) && getPais() == that.getPais();
     }
 

@@ -24,18 +24,18 @@ public class OportunidadeDeEmprego {
     private Modalidade modalidade;
 
     @Embedded
-    private Localizacao localizacao;
+    private Local local;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "perfil_recrutador_id", nullable = false)
     @JsonIgnore
     private PerfilRecrutador perfilRecrutador;
 
-    public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Localizacao localizacao, PerfilRecrutador perfilRecrutador) {
+    public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Local local, PerfilRecrutador perfilRecrutador) {
         this.descricao = descricao;
         this.tipoDeEmprego = tipoDeEmprego;
         this.modalidade = modalidade;
-        this.localizacao = localizacao;
+        this.local = local;
         this.perfilRecrutador = perfilRecrutador;
     }
 
@@ -52,9 +52,9 @@ public class OportunidadeDeEmprego {
     public Modalidade getModalidade() { return modalidade; }
     public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
 
-    public Localizacao getLocalizacao() { return localizacao; }
-    // Ao mudar de cidade, o usuário envia um novo objeto Localizacao inteiro (Imutabilidade!)
-    public void setLocalizacao(Localizacao localizacao) { this.localizacao = localizacao; }
+    public Local getLocalizacao() { return local; }
+    // Ao mudar de cidade, o usuário envia um novo objeto Local inteiro (Imutabilidade!)
+    public void setLocalizacao(Local local) { this.local = local; }
 
     public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
     public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) { this.perfilRecrutador = perfilRecrutador; }

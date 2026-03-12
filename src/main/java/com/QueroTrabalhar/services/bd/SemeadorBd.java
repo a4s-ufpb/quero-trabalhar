@@ -112,7 +112,7 @@ public class SemeadorBd {
         // ONDA 5 - INTERESSE EM EMPREGO
         // =========================================================
 
-        InteresseEmEmprego interesseDan = new InteresseEmEmprego(perfilDan, true);
+        Preferencia interesseDan = new Preferencia(perfilDan, true);
         interesseDan.adicionarTipoInteresse(ti);
         interesseDan.adicionarTipoInteresse(design);
 
@@ -121,24 +121,24 @@ public class SemeadorBd {
                 .orElseGet(() -> cidadeRepository.save(new Cidade(2507507L, "João Pessoa", Estado.PB)));
 
         interesseDan.adicionarLocal(
-                new Localizacao(joaoPessoa, Pais.BR)
+                new Local(joaoPessoa, Pais.BR)
         );
 
         interesseDan.adicionarLocal(
-                new Localizacao(joaoPessoa, Pais.BR)
+                new Local(joaoPessoa, Pais.BR)
         );
 
-        interesseDan.adicionarLocal(new Localizacao(Pais.US));
+        interesseDan.adicionarLocal(new Local(Pais.US));
 
         perfilDan.definirInteresse(interesseDan);
 
-        InteresseEmEmprego interesseCandidatoDuplo = new InteresseEmEmprego(perfilCandidatoDuplo, true);
+        Preferencia interesseCandidatoDuplo = new Preferencia(perfilCandidatoDuplo, true);
         interesseCandidatoDuplo.adicionarTipoInteresse(jardineiro);
 
         Cidade rioTinto = cidadeRepository.findById(2512903L)
                 .orElseGet(() -> cidadeRepository.save(new Cidade(2512903L, "Rio Tinto", Estado.PB)));
 
-        interesseCandidatoDuplo.adicionarLocal(new Localizacao(rioTinto, Pais.BR));
+        interesseCandidatoDuplo.adicionarLocal(new Local(rioTinto, Pais.BR));
 
         perfilCandidatoDuplo.definirInteresse(interesseCandidatoDuplo);
 
@@ -146,7 +146,7 @@ public class SemeadorBd {
         // ONDA 6 - OPORTUNIDADES
         // =========================================================
 
-        Localizacao loc = new Localizacao(joaoPessoa, Pais.BR);
+        Local loc = new Local(joaoPessoa, Pais.BR);
 
         OportunidadeDeEmprego vaga1 = new OportunidadeDeEmprego(
                 "Dev Spring Boot",
@@ -168,7 +168,7 @@ public class SemeadorBd {
                 "Eletrotécnico",
                 eletricista,
                 Modalidade.PRESENCIAL,
-                new Localizacao(rioTinto,Pais.BR),
+                new Local(rioTinto,Pais.BR),
                 perfilRecrutadorDuplo
         );
 

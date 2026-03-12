@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.Set;
 
 @Entity
-@Table(name = "interesse_em_emprego")
-public class InteresseEmEmprego {
+@Table(name = "preferencia")
+public class Preferencia {
 
     @Id
     private Long id;
@@ -34,14 +34,14 @@ public class InteresseEmEmprego {
 
     @ElementCollection
     @CollectionTable(name = "localizacao_cidade_interesse", joinColumns = @JoinColumn(name = "interesse_id"))
-    private Set<Localizacao> locaisDeInteresse = new HashSet<>();
+    private Set<Local> locaisDeInteresse = new HashSet<>();
 
-    public InteresseEmEmprego(PerfilCandidato perfilCandidato, boolean querTrabalharRemoto) {
+    public Preferencia(PerfilCandidato perfilCandidato, boolean querTrabalharRemoto) {
         this.perfilCandidato = perfilCandidato;
         this.querTrabalharRemoto = querTrabalharRemoto;
     }
 
-    protected InteresseEmEmprego() {}
+    protected Preferencia() {}
 
     public Long getId() { return id; }
 
@@ -51,9 +51,9 @@ public class InteresseEmEmprego {
     public boolean isQuerTrabalharRemoto() { return querTrabalharRemoto; }
     public void setQuerTrabalharRemoto(boolean querTrabalharRemoto) { this.querTrabalharRemoto = querTrabalharRemoto; }
 
-    public Set<Localizacao> getLocaisDeInteresse() { return Collections.unmodifiableSet(this.locaisDeInteresse); }
-    public void adicionarLocal(Localizacao local) { this.locaisDeInteresse.add(local); }
-    public void removerLocal(Localizacao local) { this.locaisDeInteresse.remove(local); }
+    public Set<Local> getLocaisDeInteresse() { return Collections.unmodifiableSet(this.locaisDeInteresse); }
+    public void adicionarLocal(Local local) { this.locaisDeInteresse.add(local); }
+    public void removerLocal(Local local) { this.locaisDeInteresse.remove(local); }
 
     public Set<TipoDeEmprego> getTiposInteressados() { return Collections.unmodifiableSet(this.tiposInteressados); }
     public void adicionarTipoInteresse(TipoDeEmprego tipo) { this.tiposInteressados.add(tipo); }
@@ -62,8 +62,8 @@ public class InteresseEmEmprego {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof InteresseEmEmprego)) return false;
-        InteresseEmEmprego that = (InteresseEmEmprego) o;
+        if (!(o instanceof Preferencia)) return false;
+        Preferencia that = (Preferencia) o;
         return id != null && id.equals(that.id);
     }
 
