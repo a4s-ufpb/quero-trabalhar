@@ -33,7 +33,7 @@ public class InteresseEmEmprego {
     private boolean querTrabalharRemoto;
 
     @ElementCollection
-    @CollectionTable(name = "candidato_cidades_interesse", joinColumns = @JoinColumn(name = "interesse_id"))
+    @CollectionTable(name = "localizacao_cidade_interesse", joinColumns = @JoinColumn(name = "interesse_id"))
     private Set<Localizacao> locaisDeInteresse = new HashSet<>();
 
     public InteresseEmEmprego(PerfilCandidato perfilCandidato, boolean querTrabalharRemoto) {

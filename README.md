@@ -8,7 +8,7 @@ Este é um sistema desenvolvido em **Spring Boot** que conecta pessoas interessa
 ### Para Pessoas em Busca de Emprego
 - Cadastro de usuário interessado em emprego
 - Registro de interesse em uma vaga específica
-- Registro de interesse em empregos por cargo e localização (cidade/estado)
+- Registro de interesse em empregos por cargo e localização (cidadeEstado/estado)
 - Listagem de oportunidades de emprego de acordo com os interesses cadastrados
 - Cadastro de experiência profissional
 - Cadastro de indicações de outros profissionais

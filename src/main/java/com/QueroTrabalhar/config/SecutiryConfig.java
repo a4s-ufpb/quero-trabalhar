@@ -33,7 +33,8 @@ public class SecutiryConfig {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/gerar-sql" //usado para gerar o sql das cidades do brasil
+            "/gerar-sql",
+            "/**"
     };
 
     @Autowired

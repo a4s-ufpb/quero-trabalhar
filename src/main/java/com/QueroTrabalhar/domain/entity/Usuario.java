@@ -1,10 +1,12 @@
 package com.QueroTrabalhar.domain.entity;
 
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.br.CPF;
 
@@ -21,22 +23,25 @@ public class Usuario {
 
     @CPF
     @Column(unique = true)
+    @NotBlank(message = "CPF é obrigatório")
     private String cpf;
 
     @Column(nullable = false, length = 100)
+    @NotBlank(message = "Nome é obrigatório")
     private String nome;
 
     //Talvez ser um Set<String> para dar a possibilidade de cadastrar mais de um número
     @Size(min = 10, max = 15, message = "Telefone deve ter entre 10 e 15 caracteres.")
+    @NotBlank(message = "Telefone é obrigatório")
     private String telefone;
 
     @Email(message = "Email deve ser válido")
-    @NotNull(message = "Email é Obrigatório")
+    @NotBlank(message = "Email é Obrigatório")
     @Column(unique = true)
     private String email;
 
     //Ver alguns constrains de senha para dar mais segurança (Letra maiúscula, Caractere especial, entre outros)
-    @NotNull(message = "Senha é Obrigatória")
+    @NotBlank(message = "Senha é Obrigatória")
     private String senha;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -64,6 +69,14 @@ public class Usuario {
         this.email = email;
         this.senha = senha;
         addProfile(Role.USER);
+    }
+
+    public Usuario(UsuarioRequestDTO usuario) {
+        this.cpf = usuario.cpf();
+        this.nome = usuario.nome();
+        this.telefone = usuario.telefone();
+        this.email = usuario.email();
+        this.senha = usuario.senha();
     }
 
     protected Usuario() {}

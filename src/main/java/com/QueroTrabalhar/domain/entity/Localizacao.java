@@ -1,6 +1,5 @@
 package com.QueroTrabalhar.domain.entity;
 
-import com.QueroTrabalhar.domain.enums.Estado;
 import com.QueroTrabalhar.domain.enums.Pais;
 import jakarta.persistence.*;
 
@@ -10,28 +9,28 @@ import java.util.Objects;
 public class Localizacao {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cidade_id")
-    private Cidade cidade;
+    @JoinColumn(name = "id_ibge")
+    private Cidade Cidade;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 2)
     private Pais pais;
 
-    public Localizacao(Cidade cidade, Pais pais) {
-        this.cidade = cidade;
+    public Localizacao(Cidade Cidade, Pais pais) {
+        this.Cidade = Cidade;
         this.pais = pais;
     }
 
     //Caso seja um pais internacional, inicializa só o país para evitar a possibilidade de pais = EUA, estado = PB, Cidade Rio Tinto
     public Localizacao(Pais pais){
-        this.cidade = null;
+        this.Cidade = null;
         this.pais = pais;
     }
 
     protected Localizacao(){}
 
     public Cidade getCidade() {
-        return cidade;
+        return Cidade;
     }
 
 

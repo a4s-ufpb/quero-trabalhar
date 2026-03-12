@@ -3,7 +3,7 @@ package com.QueroTrabalhar.domain.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "indicacoes")
+@Table(name = "indicacao")
 public class Indicacao {
 
     @Id

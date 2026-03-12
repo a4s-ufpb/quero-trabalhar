@@ -26,10 +26,10 @@ public class LocalidadeSyncService {
         CidadeIbgeDTO[] dados = restTemplate.getForObject(url, CidadeIbgeDTO[].class);
 
         if (dados != null) {
-            List<Cidade> cidades = Arrays.stream(dados)
+            List<Cidade> Cidades = Arrays.stream(dados)
                     .map(dto -> new Cidade(dto.id(), dto.nome(), Estado.valueOf(dto.getSiglaEstado())))
                     .toList();
-            repository.saveAll(cidades); // Realiza o "Upsert"
+            repository.saveAll(Cidades); // Realiza o "Upsert"
         }
     }
 }

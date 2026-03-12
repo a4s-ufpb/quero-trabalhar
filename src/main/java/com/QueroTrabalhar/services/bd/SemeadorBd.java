@@ -30,13 +30,15 @@ public class SemeadorBd {
         // ONDA 1 - TIPOS DE EMPREGO
         // =========================================================
 
-        TipoDeEmprego ti = new TipoDeEmprego("Tecnologia", "Desenvolvimento e Infraestrutura");
-        TipoDeEmprego design = new TipoDeEmprego("Design", "UX/UI e Produto");
-        TipoDeEmprego manutencao = new TipoDeEmprego("Manutenção", "Serviços técnicos");
-        TipoDeEmprego jardineiro = new TipoDeEmprego("Jardineiro(a)", "Podar árvores");
-        TipoDeEmprego eletricista = new TipoDeEmprego("Eletricista", "Instalações elétricas");
+        TipoDeEmprego ti = TipoDeEmprego.criarTipoDeEmpregoAdmin("Tecnologia", "Desenvolvimento e Infraestrutura");
+        TipoDeEmprego design = TipoDeEmprego.criarTipoDeEmpregoAdmin("Design", "UX/UI e Produto");
+        TipoDeEmprego manutencao = TipoDeEmprego.criarTipoDeEmpregoAdmin("Manutenção", "Serviços técnicos");
+        TipoDeEmprego jardineiro = TipoDeEmprego.criarTipoDeEmpregoAdmin("Jardineiro(a)", "Podar árvores");
+        TipoDeEmprego eletricista = TipoDeEmprego.criarTipoDeEmpregoAdmin("Eletricista", "Instalações elétricas");
 
-        tipoDeEmpregoRepository.saveAll(List.of(ti, design, manutencao, jardineiro, eletricista));
+        TipoDeEmprego tipoUsario = TipoDeEmprego.criarTipoDeEmpregoSugeridoPeloUsuario("Atendente de caixa","Trabalhar em supermercado");
+
+        tipoDeEmpregoRepository.saveAll(List.of(ti, design, manutencao, jardineiro, eletricista,tipoUsario));
 
         // =========================================================
         // ONDA 2 - USUÁRIOS
@@ -69,11 +71,13 @@ public class SemeadorBd {
         candidato2.adicionarPerfilCandidato(perfilEmma);
 
         // Recrutador
-        PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser, "Tech Solutions");
+        PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser);
+        perfilRH.setEmpresa("Tech Solutions");
         recrutadorUser.adicionarPerfilRecrutador(perfilRH);
 
         //Perfis duplo
-        PerfilRecrutador perfilRecrutadorDuplo = new PerfilRecrutador(usuarioDuplo, "Autonomo");
+        PerfilRecrutador perfilRecrutadorDuplo = new PerfilRecrutador(usuarioDuplo);
+        perfilRecrutadorDuplo.setEmpresa("Autonomo");
         usuarioDuplo.adicionarPerfilRecrutador(perfilRecrutadorDuplo);
         PerfilCandidato perfilCandidatoDuplo = new PerfilCandidato(usuarioDuplo);
         usuarioDuplo.adicionarPerfilCandidato(perfilCandidatoDuplo);

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "cidades", indexes = {@Index(columnList = "estado")})
+@Table(name = "cidade", indexes = {@Index(columnList = "estado")})
 public class Cidade {
 
     @Id

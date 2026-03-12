@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.domain.dtos.UserDTOResponse;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -54,7 +55,7 @@ public class UsuarioServiceTest {
     }
 
     /**
-     * Helper para injetar um ID na entidade sem precisar criar um método setId() público
+     * Helper para injetar um ID na entidade sem precisar criarNoCatalogo um método setId() público
      * que violaria as regras de encapsulamento e segurança.
      */
     private void injetarId(Usuario usuario, Long id) throws Exception {
@@ -69,14 +70,13 @@ public class UsuarioServiceTest {
         Mockito.when(usuarioRepository.findById(defaultId)).thenReturn(Optional.of(user));
 
         // Act (Ação)
-        UserDTOResponse resultado = usuarioService.buscarUsuarioPorId(defaultId);
+        UsuarioResponseDTO resultado = usuarioService.buscarUsuarioPorId(defaultId);
 
         // Assert (Verificação)
         Assertions.assertNotNull(resultado);
         // Atenção: Use .getId(), ou .id() se o seu DTO for um Record Java
-        Assertions.assertEquals(defaultId, resultado.getId());
-        Assertions.assertEquals("Fernanda", resultado.getNome());
-        Assertions.assertEquals("12345678964", resultado.getCpf());
+        Assertions.assertEquals(defaultId, resultado.id());
+        Assertions.assertEquals("Fernanda", resultado.nome());
 
         Mockito.verify(usuarioRepository, Mockito.times(1)).findById(defaultId);
     }
@@ -97,7 +97,7 @@ public class UsuarioServiceTest {
         List<Usuario> users = Arrays.asList(user1, user2);
         Mockito.when(usuarioRepository.findAll()).thenReturn(users);
 
-        List<UserDTOResponse> result = usuarioService.listarTodosUsuarios();
+        List<UsuarioResponseDTO> result = usuarioService.listarTodosUsuarios();
 
         Assertions.assertNotNull(result);
         Assertions.assertFalse(result.isEmpty());

@@ -1,65 +1,84 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.TipoDeEmpregoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/tipos-de-emprego") // Adicionei a barra inicial (padrão REST)
+@RequestMapping("/api/tipos-de-emprego")
 public class TipoDeEmpregoController {
 
     @Autowired
     private TipoDeEmpregoService tipoDeEmpregoService;
 
-    // --- ENDPOINTS PÚBLICOS (Para uso no Front-end geral) ---
+    @GetMapping("/aprovados")
+    public ResponseEntity<List<TipoDeEmpregoResponseDTO>> listarAprovados() {
+        return ResponseEntity.ok().body(tipoDeEmpregoService.listarAprovados());
+    }
 
-    // 1. Listar apenas os cargos APROVADOS (Dropdown de cadastro)
-    @GetMapping
-    public List<TipoDeEmprego> listarTodos() {
-        // CORREÇÃO: Chama o novo método do Service
-        return tipoDeEmpregoService.listarTiposAprovados();
+    //Usado por admins
+    @GetMapping("/nao-aprovados")
+    public ResponseEntity<List<TipoDeEmpregoResponseDTO>> listarNaoAprovados() {
+        return ResponseEntity.ok().body(tipoDeEmpregoService.listarNaoAprovados());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoDeEmprego> buscarPorId(@PathVariable Long id) {
-        Optional<TipoDeEmprego> tipoDeEmprego = tipoDeEmpregoService.buscarPorId(id);
-        return tipoDeEmprego.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<TipoDeEmpregoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok().body(tipoDeEmpregoService.buscarPorId(id));
     }
 
-    // --- ENDPOINTS ADMINISTRATIVOS (Para você ou o Professor) ---
+    //Usado por admins
+    @PostMapping("/criar")
+    public ResponseEntity<TipoDeEmpregoResponseDTO> criarNoCatalogo(@Valid @RequestBody TipoDeEmpregoRequestDTO tipoDeEmprego) {
+        TipoDeEmpregoResponseDTO tipoDeEmpregoCriado = tipoDeEmpregoService.criarNoCatalogo(tipoDeEmprego);
 
-    // 2. Listar sugestões pendentes enviadas pelos usuários
-    @GetMapping("/pendentes")
-    public List<TipoDeEmprego> listarPendentes() {
-        return tipoDeEmpregoService.listarSugestoesPendentes();
+        URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(
+                        tipoDeEmpregoCriado.id()
+                ).toUri();
+        return ResponseEntity.created(uri).body(tipoDeEmpregoCriado);
     }
 
-    // 3. Criar um cargo oficial direto (Ignora o fluxo de sugestão)
-    @PostMapping
-    public ResponseEntity<TipoDeEmprego> criar(@RequestBody TipoDeEmprego tipoDeEmprego) {
-        // CORREÇÃO: Chama o método salvarOficial
-        TipoDeEmprego salvo = tipoDeEmpregoService.salvarOficial(tipoDeEmprego);
-        return ResponseEntity.status(201).body(salvo);
+    @PostMapping("/sugerir")
+    public ResponseEntity<TipoDeEmpregoResponseDTO> sugerirNoCatalogo(@Valid @RequestBody TipoDeEmpregoRequestDTO tipoDeEmprego) {
+        TipoDeEmpregoResponseDTO tipoDeEmpregoSugerido = tipoDeEmpregoService.sugerirNoCatalogo(tipoDeEmprego);
+
+        URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(
+                        tipoDeEmpregoSugerido.id()
+                ).toUri();
+
+        return ResponseEntity.created(uri).body(tipoDeEmpregoSugerido);
     }
 
-    // 4. Aprovar uma sugestão de usuário e torná-la oficial
+    //Usado por admins
+    //Pode ser que tenha uma melhor forma de fazer isso, mas acredito que seja uma decisão entre back e front
     @PutMapping("/{id}/aprovar")
-    public ResponseEntity<TipoDeEmprego> aprovarSugestao(
-            @PathVariable Long id,
-            @RequestParam String tituloCorrigido,
-            @RequestParam String descricao) {
-
-        TipoDeEmprego aprovado = tipoDeEmpregoService.aprovarSugestao(id, tituloCorrigido, descricao);
-        return ResponseEntity.ok(aprovado);
+    public ResponseEntity<TipoDeEmpregoResponseDTO> aprovarSugestao(@PathVariable Long id,@Valid @RequestBody TipoDeEmpregoRequestDTO tipoDeEmprego) {
+        TipoDeEmpregoResponseDTO aprovado = tipoDeEmpregoService.aprovarSugestao(id, tipoDeEmprego.titulo(), tipoDeEmprego.descricao());
+        return ResponseEntity.ok().body(aprovado);
     }
 
-    // 5. Deletar (Serve tanto para cargos oficiais quanto para recusar sugestões)
+    //Usado por admins
+    @PatchMapping("/aprovar-lote")
+    public ResponseEntity<Void> aprovarEmLote(@RequestBody List<Long> ids) {
+        tipoDeEmpregoService.aprovarEmLote(ids);
+        return ResponseEntity.noContent().build();
+    }
+
+    //Usado por admins
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         tipoDeEmpregoService.deletar(id);

@@ -1,14 +1,18 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
+import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
+import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TipoDeEmpregoService {
@@ -16,65 +20,83 @@ public class TipoDeEmpregoService {
     @Autowired
     private TipoDeEmpregoRepository tipoDeEmpregoRepository;
 
-    // --- MÉTODOS DE BUSCA ---
-
-    // 1. Para o Dropdown do Front-end: Retorna APENAS os aprovados
-    public List<TipoDeEmprego> listarTiposAprovados() {
-        return tipoDeEmpregoRepository.findByAprovadoTrue();
+    public List<TipoDeEmpregoResponseDTO> listarAprovados() {
+        return tipoDeEmpregoRepository.findByAprovadoTrue().stream()
+                .map(TipoDeEmpregoResponseDTO::daEntidade)
+                .collect(Collectors.toList());
     }
 
-    // 2. Para o Painel do ADMIN: Retorna as sugestões que precisam de revisão
-    public List<TipoDeEmprego> listarSugestoesPendentes() {
-        return tipoDeEmpregoRepository.findByAprovadoFalse();
+    public List<TipoDeEmpregoResponseDTO> listarNaoAprovados(){
+        return tipoDeEmpregoRepository.findByAprovadoFalse().stream()
+                .map(TipoDeEmpregoResponseDTO::daEntidade)
+                .collect(Collectors.toList());
     }
 
-    public Optional<TipoDeEmprego> buscarPorId(Long id) {
-        return tipoDeEmpregoRepository.findById(id);
+    public TipoDeEmpregoResponseDTO buscarPorId(Long id) {
+        return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmpregoRepository
+                .findById(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Tipo de emprego não encontrado, id: "+ id)
+                ));
     }
 
-    // --- MÉTODOS DE CRIAÇÃO E VALIDAÇÃO ---
+    public TipoDeEmpregoResponseDTO criarNoCatalogo(TipoDeEmpregoRequestDTO tipoDeEmprego) {
+        if(tipoDeEmpregoRepository.existsByTitulo(tipoDeEmprego.titulo()))
+            throw new DataIntegrityViolationException("Já existe um tipo de emprego com o título: "+ tipoDeEmprego.titulo());
 
-    // 3. Usado pelo ADMIN para criar um cargo oficial no sistema
-    public TipoDeEmprego salvarOficial(TipoDeEmprego tipoDeEmprego) {
-        // Usamos IgnoreCase para evitar que criem "Dev" e "dev" como coisas diferentes
-        Optional<TipoDeEmprego> existente = tipoDeEmpregoRepository.findByTituloIgnoreCase(tipoDeEmprego.getTitulo());
+        TipoDeEmprego tipoDeEmpregoCriar = TipoDeEmprego
+                .criarTipoDeEmpregoAdmin(
+                        tipoDeEmprego.titulo()
+                        ,tipoDeEmprego.descricao());
 
-        if (existente.isPresent()) {
-            // Resolvendo seu TODO: EntityExistsException é a exceção padrão do JPA para conflitos
-            throw new EntityExistsException("Já existe um tipo de emprego com este título no sistema.");
-        }
+        tipoDeEmpregoRepository.save(tipoDeEmpregoCriar);
 
-        tipoDeEmprego.setAprovado(true);
-        return tipoDeEmpregoRepository.save(tipoDeEmprego);
+        return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmpregoCriar);
     }
 
-    // 4. A MÁGICA DO FLUXO DINÂMICO: Usado quando o usuário digita uma profissão nova
-    public TipoDeEmprego obterOuCriarSugestao(String tituloSugerido) {
-        // Se já existe (aprovado ou não), reaproveita para não duplicar a mesma sugestão
-        return tipoDeEmpregoRepository.findByTituloIgnoreCase(tituloSugerido)
-                .orElseGet(() -> {
-                    // Se não existe na base, cria como sugestão pendente (aprovado = false)
-                    TipoDeEmprego novaSugestao = new TipoDeEmprego(tituloSugerido);
-                    return tipoDeEmpregoRepository.save(novaSugestao);
-                });
+    public TipoDeEmpregoResponseDTO sugerirNoCatalogo(TipoDeEmpregoRequestDTO tipoDeEmprego) {
+        if(tipoDeEmpregoRepository.existsByTitulo(tipoDeEmprego.titulo()))
+            throw new DataIntegrityViolationException("Já existe um tipo de emprego com o título: "+ tipoDeEmprego.titulo());
+
+        TipoDeEmprego tipoDeEmpregoSugerir = TipoDeEmprego
+                .criarTipoDeEmpregoSugeridoPeloUsuario(
+                        tipoDeEmprego.titulo()
+                        ,tipoDeEmprego.descricao());
+
+        tipoDeEmpregoRepository.save(tipoDeEmpregoSugerir);
+
+        return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmpregoSugerir);
     }
 
-    // 5. Usado pelo ADMIN para validar a sugestão de um usuário
-    public TipoDeEmprego aprovarSugestao(Long id, String tituloCorrigido, String descricao) {
-        TipoDeEmprego pendente = tipoDeEmpregoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tipo de emprego não encontrado."));
+    public TipoDeEmpregoResponseDTO aprovarSugestao(Long id, String tituloCorrigido, String descricao) {
+        TipoDeEmprego pendenteAprovar = tipoDeEmpregoRepository.findById(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Tipo de emprego não encontrado, id: " + id));
 
         // O Admin pode corrigir erros de português antes de aprovar
-        pendente.setTitulo(tituloCorrigido);
-        pendente.setDescricao(descricao);
-        pendente.setAprovado(true);
+        pendenteAprovar.setTitulo(tituloCorrigido);
+        pendenteAprovar.setDescricao(descricao);
+        pendenteAprovar.setAprovado(true);
 
-        return tipoDeEmpregoRepository.save(pendente);
+        tipoDeEmpregoRepository.save(pendenteAprovar);
+
+        return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmpregoRepository.save(pendenteAprovar));
     }
 
-    // --- MÉTODOS DE DELEÇÃO ---
+    @Transactional
+    public void aprovarEmLote(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new DataIntegrityViolationException("A lista de IDs não pode estar vazia.");
+        }
+
+        int registrosAtualizados = tipoDeEmpregoRepository.aprovarEmLote(ids);
+
+        if (registrosAtualizados == 0) {
+            throw new DataIntegrityViolationException("Nenhum tipo de emprego encontrado para os IDs informados.");
+        }
+    }
 
     public void deletar(Long id) {
+        if(!tipoDeEmpregoRepository.existsById(id))
+            throw new ObjectNotFoundException("Não existe um tipo de emprego com o id: "+id);
         tipoDeEmpregoRepository.deleteById(id);
     }
 }
