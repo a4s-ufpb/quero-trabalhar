@@ -4,6 +4,10 @@ import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "oportunidade_de_emprego")
 public class OportunidadeDeEmprego {
@@ -25,6 +29,11 @@ public class OportunidadeDeEmprego {
 
     @Embedded
     private Local local;
+
+    // mappedBy deve ter exatamente o nome da variável que está em PerfilCandidato
+    @ManyToMany(mappedBy = "vagasDeInteresse")
+    @JsonIgnore // MUITO IMPORTANTE para não dar loop infinito no JSON (Vaga chama Candidato que chama Vaga...)
+    private Set<PerfilCandidato> candidatosInteressados = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "perfil_recrutador_id", nullable = false)
@@ -55,6 +64,27 @@ public class OportunidadeDeEmprego {
     public Local getLocalizacao() { return local; }
     // Ao mudar de cidade, o usuário envia um novo objeto Local inteiro (Imutabilidade!)
     public void setLocalizacao(Local local) { this.local = local; }
+
+    public Set<PerfilCandidato> getCandidatosInteressados(){
+        return Collections.unmodifiableSet(candidatosInteressados);
+    }
+
+    public void adicionarInteressado(PerfilCandidato perfilCandidato){
+        this.candidatosInteressados.add(perfilCandidato);
+        perfilCandidato.demonstrarInteresse(this);
+    }
+
+    public void removerInteressado(PerfilCandidato perfilCandidato){
+        this.candidatosInteressados.remove(perfilCandidato);
+        perfilCandidato.removerInteresse(this);
+    }
+
+    @PreRemove
+    private void removerVinculosAntesDeDeletar() {
+        for (PerfilCandidato candidato : this.candidatosInteressados) {
+            candidato.removerInteresse(this);
+        }
+    }
 
     public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
     public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) { this.perfilRecrutador = perfilRecrutador; }
