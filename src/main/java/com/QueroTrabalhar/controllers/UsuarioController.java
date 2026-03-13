@@ -4,7 +4,6 @@ import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
 import jakarta.validation.Valid;
-import org.aspectj.apache.bcel.generic.LocalVariableGen;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,33 +50,73 @@ public class UsuarioController {
         return ResponseEntity.ok().body(usuarioService.atualizarUsuario(id, usuarioRequest));
     }
 
-    @PutMapping("/{id}/remover_perfil_usuario")
-    public ResponseEntity<Void> removerPerfilCandidato(@PathVariable Long id) {
-        usuarioService.removerPerfilCandidato(id);
+    @DeleteMapping("/perfil_candidato/me")
+    public ResponseEntity<Void> removerMeuPerfilCandidato() {
+        usuarioService.removerMeuPerfilCandidato();
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/remover_perfil_recrutador")
-    public ResponseEntity<Void> removerPerfilRecrutador(@PathVariable Long id) {
-        usuarioService.removerPerfilRecrutador(id);
+    //Usado por admins/superadmin vou configurar certinho depois
+    //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @DeleteMapping("/{id}/perfil_candidato")
+    public ResponseEntity<Void> removerPerfilCandidatoPorId(@PathVariable Long id) {
+        usuarioService.removerPerfilCandidatoPorId(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/adicionar_perfil_usuario")
+    @DeleteMapping("/perfil-recrutador/me")
+    public ResponseEntity<Void> removerMeuPerfilRecrutador(){
+        usuarioService.removerMeuPerfilRecrutador();
+        return ResponseEntity.noContent().build();
+    }
+
+    //Usado por admins/superadmin vou configurar certinho depois
+    //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @DeleteMapping("/{id}/perfil_recrutador")
+    public ResponseEntity<Void> removerPerfilRecrutadorPorId(@PathVariable Long id) {
+        usuarioService.removerPerfilRecrutadorPorId(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("perfil-candidato/me")
+    public ResponseEntity<Void> adicionarMeuPerfilCandidato(){
+        usuarioService.adicionarMeuPerfilCandidato();
+        return ResponseEntity.noContent().build();
+    }
+
+    //Usado por admins/superadmin vou configurar certinho depois
+    //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PutMapping("/{id}/perfil_candidato")
     public ResponseEntity<Void> adicionarPerfilCandidato(@PathVariable Long id) {
-        usuarioService.adicionarPerfilCandidato(id);
+        usuarioService.adicionarPerfilCandidatoPorId(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/adicionar_perfil_recrutador")
+    @PutMapping("perfil-recrutador/me")
+    public ResponseEntity<Void> adicionarMeuPerfilRecrutador(){
+        usuarioService.adicioncarMeuPerfilRecrutador();
+        return ResponseEntity.noContent().build();
+    }
+
+    //Usado por admins/superadmin vou configurar certinho depois
+    //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PutMapping("/{id}/perfil_recrutador")
     public ResponseEntity<Void> adicionarPerfilRecrutador(@PathVariable Long id) {
-        usuarioService.adicionarPerfilRecrutador(id);
+        usuarioService.adicionarPerfilRecrutadorPorId(id);
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> meRemover(){
+        usuarioService.meRemover();
+        return ResponseEntity.noContent().build();
+    }
+
+    //Usado por admins/superadmin vou configurar certinho depois
+    //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removerUsuario(@PathVariable Long id) {
-        usuarioService.deletarUsuario(id);
+    public ResponseEntity<Void> removerUsuarioPorId(@PathVariable Long id) {
+        usuarioService.deletarUsuarioPorId(id);
         return ResponseEntity.noContent().build();
     }
 }

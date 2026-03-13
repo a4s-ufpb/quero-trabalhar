@@ -11,6 +11,7 @@ import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -59,48 +60,88 @@ public class UsuarioService {
     }
 
     public UsuarioResponseDTO atualizarUsuario(Long id,UsuarioRequestDTO usuarioRequest) {
-        if (!usuarioRepository.existsById(id))
-            throw new DataIntegrityViolationException("Não existe usuario com o id: " +id);
+        Usuario usuarioExistente = encontrarUsuario(id);
 
-        Usuario usuarioAtualizado = new Usuario(
-                usuarioRequest.cpf(),
-                usuarioRequest.nome(),
-                usuarioRequest.telefone(),
-                usuarioRequest.email(),
-                usuarioRequest.senha()
-        );
-        return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuarioAtualizado));
+        usuarioExistente.setSenha(usuarioRequest.senha());
+        usuarioExistente.setNome(usuarioRequest.nome());
+        usuarioExistente.setTelefone(usuarioRequest.telefone());
+        usuarioExistente.setEmail(usuarioRequest.email());
+        usuarioExistente.setSenha(usuarioRequest.senha());
+
+        return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuarioExistente));
     }
 
-    public void removerPerfilCandidato(Long id) {
+    public void removerMeuPerfilCandidato(){
+        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado).orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
+
+        processarRemocaoCandidato(usuario);
+    }
+
+
+    //Usado por admins ou superAdmins
+    public void removerPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
 
-        if(!perfilCandidatoRepository.existsById(usuario.getId()))
-            throw new ObjectNotFoundException("Perfil candidato não encontrado. ID: " + id);
+        processarRemocaoCandidato(usuario);
+    }
 
-        if(usuario.ehRecrutador()){
+    private void processarRemocaoCandidato(Usuario usuario) {
+        if(!perfilCandidatoRepository.existsById(usuario.getId())) {
+            throw new ObjectNotFoundException("Perfil candidato não encontrado para o usuário ID: " + usuario.getId());
+        }
+
+        if(usuario.ehRecrutador()) {
             usuario.removerPerfilCandidato();
+            usuarioRepository.save(usuario);
         } else {
-            throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo");
+            throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo.");
         }
     }
 
-    public void removerPerfilRecrutador(Long id) {
+    public void removerMeuPerfilRecrutador() {
+        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado).orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
+
+        processarRemocaoRecrutador(usuario);
+    }
+
+    public void removerPerfilRecrutadorPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
 
+        processarRemocaoRecrutador(usuario);
+    }
+
+    private void processarRemocaoRecrutador(Usuario usuario) {
         if(!perfilRecrutadorRepository.existsById(usuario.getId()))
-            throw new ObjectNotFoundException("Perfil recrutador não encontrado. ID: " + id);
+            throw new ObjectNotFoundException("Perfil recrutador não encontrado para o usuario ID: " + usuario.getId());
 
         if(usuario.ehCandidato()){
             usuario.removerPerfilRecrutador();
+            usuarioRepository.save(usuario);
         } else {
             throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo");
         }
     }
 
-    public void adicionarPerfilCandidato(Long id) {
+    public void adicionarMeuPerfilCandidato(){
+        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
+                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
+
+        processarAdicionarCandidato(usuario);
+    }
+
+    public void adicionarPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
 
+        processarAdicionarCandidato(usuario);
+    }
+
+    private void processarAdicionarCandidato(Usuario usuario) {
         if(usuario.ehCandidato()){
             throw new DataIntegrityViolationException("O usuário já é um candidato");
         }
@@ -112,9 +153,22 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public void adicionarPerfilRecrutador(Long id) {
+    public void adicioncarMeuPerfilRecrutador() {
+        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
+                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
+
+        processarAdicionarRecrutador(usuario);
+    }
+
+    public void adicionarPerfilRecrutadorPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
 
+        processarAdicionarRecrutador(usuario);
+    }
+
+    private void processarAdicionarRecrutador(Usuario usuario) {
         if(usuario.ehRecrutador()){
             throw new DataIntegrityViolationException("O usuário já é um recrutador");
         }
@@ -126,15 +180,27 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    public void meRemover(){
+        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
+                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
+
+        processarRemocaoUsuario(usuario);
+    }
+
+    public void deletarUsuarioPorId(Long id) {
+        Usuario usuario = encontrarUsuario(id);
+
+        processarRemocaoUsuario(usuario);
+    }
+
+    private void processarRemocaoUsuario(Usuario usuario) {
+        usuarioRepository.delete(usuario);
+    }
+
     private Usuario encontrarUsuario(Long id){
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado. ID: " + id));
-    }
-
-    public void deletarUsuario(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new ObjectNotFoundException("Usuário não encontrado. ID: " + id);
-        }
-        usuarioRepository.deleteById(id);
     }
 }

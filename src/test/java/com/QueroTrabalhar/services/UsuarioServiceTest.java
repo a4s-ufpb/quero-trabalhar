@@ -109,7 +109,7 @@ public class UsuarioServiceTest {
         Mockito.when(usuarioRepository.existsById(defaultId)).thenReturn(true);
         Mockito.doNothing().when(usuarioRepository).deleteById(defaultId);
 
-        usuarioService.deletarUsuario(defaultId);
+        usuarioService.deletarUsuarioPorId(defaultId);
 
         Mockito.verify(usuarioRepository).deleteById(defaultId);
     }
@@ -121,7 +121,7 @@ public class UsuarioServiceTest {
 
         // O Service novo foi atualizado para lançar EntityNotFoundException
         Assertions.assertThrows(EntityNotFoundException.class, () -> {
-            usuarioService.deletarUsuario(defaultId);
+            usuarioService.deletarUsuarioPorId(defaultId);
         });
 
         Mockito.verify(usuarioRepository).existsById(defaultId);
