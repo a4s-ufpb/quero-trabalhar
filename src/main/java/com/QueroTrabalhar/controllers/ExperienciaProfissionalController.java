@@ -12,7 +12,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/candidatos/{perfilCandidatoId}/experiencias")
+@RequestMapping("/api/usuarios/me/perfil-candidato/experiencias")
 public class ExperienciaProfissionalController {
 
     @Autowired
@@ -24,14 +24,13 @@ public class ExperienciaProfissionalController {
     }
 
     @GetMapping ("/{id}")
-    public ResponseEntity<ExperienciaProfissionalResponseDTO> buscarExperienciaProfissionalPorId(@PathVariable Long id) {
-        return ResponseEntity.ok().body(experienciaProfissionalService.buscarPorId(id));
+    public ResponseEntity<ExperienciaProfissionalResponseDTO> buscarMinhaExperienciaProfissionalPorId(@PathVariable Long id) {
+        return ResponseEntity.ok().body(experienciaProfissionalService.buscarMinhaExperienciaPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<ExperienciaProfissionalResponseDTO> cadastrarExperienciaProfissional
-            (@PathVariable Long perfilCandidatoId, @RequestBody ExperienciaProfissionalRequestDTO experienciaProfissional) {
-        ExperienciaProfissionalResponseDTO expEmprego = experienciaProfissionalService.criarExperienciaProfissional(perfilCandidatoId, experienciaProfissional);
+    public ResponseEntity<ExperienciaProfissionalResponseDTO> cadastrarExperienciaProfissional(@RequestBody ExperienciaProfissionalRequestDTO experienciaProfissional) {
+        ExperienciaProfissionalResponseDTO expEmprego = experienciaProfissionalService.adicionarMinhaExperienciaProfissional(experienciaProfissional);
 
         URI uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -44,8 +43,8 @@ public class ExperienciaProfissionalController {
     }
 
     @DeleteMapping("/{experienciaId}")
-    public ResponseEntity<Void> deletarExperienciaProfissional(@PathVariable Long perfilCandidatoId, @PathVariable Long experienciaId){
-            experienciaProfissionalService.deletarExperiencia(perfilCandidatoId, experienciaId);
+    public ResponseEntity<Void> deletarMinhaExperienciaProfissional(@PathVariable Long experienciaId){
+            experienciaProfissionalService.deletarMinhaExperiencia(experienciaId);
             return ResponseEntity.noContent().build();
     }
 }

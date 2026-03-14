@@ -50,7 +50,7 @@ public class UsuarioController {
         return ResponseEntity.ok().body(usuarioService.atualizarUsuario(id, usuarioRequest));
     }
 
-    @DeleteMapping("/perfil_candidato/me")
+    @DeleteMapping("/me/perfil-candidato")
     public ResponseEntity<Void> removerMeuPerfilCandidato() {
         usuarioService.removerMeuPerfilCandidato();
         return ResponseEntity.noContent().build();
@@ -64,7 +64,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/perfil-recrutador/me")
+    @DeleteMapping("/me/perfil-recrutador")
     public ResponseEntity<Void> removerMeuPerfilRecrutador(){
         usuarioService.removerMeuPerfilRecrutador();
         return ResponseEntity.noContent().build();
@@ -78,7 +78,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("perfil-candidato/me")
+    @PutMapping("me/perfil-candidato")
     public ResponseEntity<Void> adicionarMeuPerfilCandidato(){
         usuarioService.adicionarMeuPerfilCandidato();
         return ResponseEntity.noContent().build();
@@ -92,7 +92,7 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("perfil-recrutador/me/{nomeDaEmpresa}")
+    @PutMapping("me/perfil-recrutador/{nomeDaEmpresa}")
     public ResponseEntity<Void> adicionarMeuPerfilRecrutador(@PathVariable String nomeDaEmpresa){
         usuarioService.adicioncarMeuPerfilRecrutador(nomeDaEmpresa);
         return ResponseEntity.noContent().build();

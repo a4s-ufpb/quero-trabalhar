@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public record ExperienciaProfissionalResponseDTO(
         Long id,
-        TipoDeEmprego tipoDeEmprego,
+        Long tipoDeEmprego,
         String descricao,
         LocalDate dataInicio,
         LocalDate dataFim
@@ -15,7 +15,7 @@ public record ExperienciaProfissionalResponseDTO(
     public static ExperienciaProfissionalResponseDTO daEntidade(ExperienciaProfissional entidade) {
         return new ExperienciaProfissionalResponseDTO(
                 entidade.getId(),
-                entidade.getTipoDeEmprego(),
+                entidade.getTipoDeEmprego().getId(),
                 entidade.getDescricao(),
                 entidade.getDataInicio(),
                 entidade.getDataFim()
