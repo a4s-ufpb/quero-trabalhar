@@ -71,13 +71,11 @@ public class SemeadorBd {
         candidato2.adicionarPerfilCandidato(perfilEmma);
 
         // Recrutador
-        PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser);
-        perfilRH.setEmpresa("Tech Solutions");
+        PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser, "Tech Solutions");
         recrutadorUser.adicionarPerfilRecrutador(perfilRH);
 
         //Perfis duplo
-        PerfilRecrutador perfilRecrutadorDuplo = new PerfilRecrutador(usuarioDuplo);
-        perfilRecrutadorDuplo.setEmpresa("Autonomo");
+        PerfilRecrutador perfilRecrutadorDuplo = new PerfilRecrutador(usuarioDuplo, "Autonomo");
         usuarioDuplo.adicionarPerfilRecrutador(perfilRecrutadorDuplo);
         PerfilCandidato perfilCandidatoDuplo = new PerfilCandidato(usuarioDuplo);
         usuarioDuplo.adicionarPerfilCandidato(perfilCandidatoDuplo);

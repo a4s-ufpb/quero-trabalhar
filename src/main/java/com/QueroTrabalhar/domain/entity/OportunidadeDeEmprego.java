@@ -79,12 +79,7 @@ public class OportunidadeDeEmprego {
         perfilCandidato.removerInteresse(this);
     }
 
-    @PreRemove
-    private void removerVinculosAntesDeDeletar() {
-        for (PerfilCandidato candidato : this.candidatosInteressados) {
-            candidato.removerInteresse(this);
-        }
-    }
+
 
     public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
     public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) { this.perfilRecrutador = perfilRecrutador; }

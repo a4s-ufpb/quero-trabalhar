@@ -92,17 +92,17 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("perfil-recrutador/me")
-    public ResponseEntity<Void> adicionarMeuPerfilRecrutador(){
-        usuarioService.adicioncarMeuPerfilRecrutador();
+    @PutMapping("perfil-recrutador/me/{nomeDaEmpresa}")
+    public ResponseEntity<Void> adicionarMeuPerfilRecrutador(@PathVariable String nomeDaEmpresa){
+        usuarioService.adicioncarMeuPerfilRecrutador(nomeDaEmpresa);
         return ResponseEntity.noContent().build();
     }
 
     //Usado por admins/superadmin vou configurar certinho depois
     //@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    @PutMapping("/{id}/perfil_recrutador")
-    public ResponseEntity<Void> adicionarPerfilRecrutador(@PathVariable Long id) {
-        usuarioService.adicionarPerfilRecrutadorPorId(id);
+    @PutMapping("/{id}/perfil_recrutador/{nomeDaEmpresa}")
+    public ResponseEntity<Void> adicionarPerfilRecrutador(@PathVariable Long id, @PathVariable String nomeDaEmpresa) {
+        usuarioService.adicionarPerfilRecrutadorPorId(id, nomeDaEmpresa);
         return ResponseEntity.noContent().build();
     }
 

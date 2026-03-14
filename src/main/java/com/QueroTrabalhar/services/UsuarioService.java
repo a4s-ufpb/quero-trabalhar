@@ -2,9 +2,11 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
+import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +32,9 @@ public class UsuarioService {
 
     @Autowired
     private PerfilRecrutadorRepository perfilRecrutadorRepository;
+
+    @Autowired
+    private OportunidadeDeEmpregoRepository oportunidadeRepository;
 
     @Autowired
     private BCryptPasswordEncoder encoder;
@@ -100,6 +106,7 @@ public class UsuarioService {
         }
     }
 
+    @Transactional
     public void removerMeuPerfilRecrutador() {
         String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
 
@@ -108,6 +115,7 @@ public class UsuarioService {
         processarRemocaoRecrutador(usuario);
     }
 
+    @Transactional
     public void removerPerfilRecrutadorPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
 
@@ -119,6 +127,14 @@ public class UsuarioService {
             throw new ObjectNotFoundException("Perfil recrutador não encontrado para o usuario ID: " + usuario.getId());
 
         if(usuario.ehCandidato()){
+            PerfilRecrutador perfil = usuario.getPerfilRecrutador();
+
+            if (!perfil.getOportunidadesPostadas().isEmpty()) {
+                for (OportunidadeDeEmprego vaga : perfil.getOportunidadesPostadas()) {
+                    oportunidadeRepository.removerTodosInteressesDaVaga(vaga.getId());
+                }
+            }
+
             usuario.removerPerfilRecrutador();
             usuarioRepository.save(usuario);
         } else {
@@ -153,27 +169,27 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public void adicioncarMeuPerfilRecrutador() {
+    public void adicioncarMeuPerfilRecrutador(String nomeDaEmpresa) {
         String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Usuario usuario = usuarioRepository.findByEmail(emailLogado)
                 .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
 
-        processarAdicionarRecrutador(usuario);
+        processarAdicionarRecrutador(usuario, nomeDaEmpresa);
     }
 
-    public void adicionarPerfilRecrutadorPorId(Long id) {
+    public void adicionarPerfilRecrutadorPorId(Long id, String nomeDaEmpresa) {
         Usuario usuario = encontrarUsuario(id);
 
-        processarAdicionarRecrutador(usuario);
+        processarAdicionarRecrutador(usuario, nomeDaEmpresa);
     }
 
-    private void processarAdicionarRecrutador(Usuario usuario) {
+    private void processarAdicionarRecrutador(Usuario usuario, String nomeDaEmpresa) {
         if(usuario.ehRecrutador()){
             throw new DataIntegrityViolationException("O usuário já é um recrutador");
         }
 
-        PerfilRecrutador perfilRecrutador = new PerfilRecrutador(usuario);
+        PerfilRecrutador perfilRecrutador = new PerfilRecrutador(usuario, nomeDaEmpresa);
         usuario.adicionarPerfilRecrutador(perfilRecrutador);
 
         perfilRecrutadorRepository.save(perfilRecrutador);

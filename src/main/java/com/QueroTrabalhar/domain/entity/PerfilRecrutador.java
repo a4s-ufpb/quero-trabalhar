@@ -30,8 +30,9 @@ public class PerfilRecrutador {
     @JsonIgnore
     private List<OportunidadeDeEmprego> oportunidadesPostadas = new ArrayList<>();
 
-    public PerfilRecrutador(Usuario usuario) {
+    public PerfilRecrutador(Usuario usuario, String empresa) {
         this.usuario = usuario;
+        this.empresa = empresa;
     }
 
     protected PerfilRecrutador() {}
