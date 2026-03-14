@@ -78,6 +78,7 @@ public class TipoDeEmpregoController {
         return ResponseEntity.noContent().build();
     }
 
+    //Só pode apagar tipos que não foram referenciados ainda
     //Usado por admins
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {

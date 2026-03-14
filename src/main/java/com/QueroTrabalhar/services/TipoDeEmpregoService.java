@@ -98,6 +98,10 @@ public class TipoDeEmpregoService {
     public void deletar(Long id) {
         if(!tipoDeEmpregoRepository.existsById(id))
             throw new ObjectNotFoundException("Não existe um tipo de emprego com o id: "+id);
-        tipoDeEmpregoRepository.deleteById(id);
+        try{
+            tipoDeEmpregoRepository.deleteById(id);
+        } catch (org.springframework.dao.DataIntegrityViolationException e){
+            throw new DataIntegrityViolationException("Não é possível deletar o Tipo de Emprego(id: "+id+") pois existem vagas associadas a ele.");
+        }
     }
 }
