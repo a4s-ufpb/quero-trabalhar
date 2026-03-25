@@ -1,9 +1,16 @@
 package com.QueroTrabalhar.services.bd;
 
 import com.QueroTrabalhar.domain.entity.*;
+import com.QueroTrabalhar.domain.entity.localidade.Cidade;
+import com.QueroTrabalhar.domain.entity.localidade.Estado;
+import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.*;
 import com.QueroTrabalhar.repository.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +26,53 @@ public class SemeadorBd {
     @Autowired private OportunidadeDeEmpregoRepository oportunidadeRepository;
     @Autowired private IndicacaoRepository indicacaoRepository;
     @Autowired private CidadeRepository cidadeRepository;
+    @Autowired private EstadoRepository estadoRepository;
+    @Autowired private PaisRepository paisRepository;
     @Autowired private BCryptPasswordEncoder encoder;
+
+    @Autowired private ObjectMapper objectMapper;
+    //pequeno record para popular o banco
+    record PaisJsonDto(String nome, String sigla){}
 
     @Transactional
     public void popularBd() {
 
         limparBd();
+        // =========================================================
+        // ONDA 0 - LOCALIDADE (PAISES, ESTADOS E CIDADES)
+        // =========================================================
+
+        System.out.println("Semeando Países do arquivo JSON...");
+
+        try {
+            // Lê o arquivo da pasta resources
+            ClassPathResource resource = new ClassPathResource("paises.json");
+
+            // Converte o JSON para uma Lista do nosso DTO temporário
+            List<PaisJsonDto> paisesJson = objectMapper.readValue(
+                    resource.getInputStream(),
+                    new TypeReference<>() {}
+            );
+
+            // Transforma os DTOs em Entidades reais do Hibernate
+            List<Pais> paisesParaSalvar = paisesJson.stream()
+                    .map(dto -> new Pais(dto.nome(), dto.sigla()))
+                    .toList();
+
+            // Salva todos os 195 de uma vez só! (Super rápido)
+            paisRepository.saveAll(paisesParaSalvar);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao carregar o JSON de Países: " + e.getMessage());
+        }
+
+        Pais brasil = paisRepository.findBySigla("BR").orElseThrow(() -> new RuntimeException("Brasil sumiu do JSON!"));
+
+        Pais eua = paisRepository.findBySigla("US").orElseThrow(() -> new RuntimeException("US sumiu do JSON!"));
+
+        Estado paraiba = estadoRepository.save(new Estado("Paraíba","PB", brasil));
+        Cidade joaoPessoa = cidadeRepository.save(new Cidade("João Pessoa", paraiba));
+        Cidade rioTinto = cidadeRepository.save(new Cidade("Rio Tinto", paraiba));
 
         // =========================================================
         // ONDA 1 - TIPOS DE EMPREGO
@@ -115,28 +163,19 @@ public class SemeadorBd {
         interesseDan.adicionarTipoInteresse(design);
 
 
-        Cidade joaoPessoa = cidadeRepository.findById(2507507L)
-                .orElseGet(() -> cidadeRepository.save(new Cidade(2507507L, "João Pessoa", Estado.PB)));
+        interesseDan.adicionarLocal(new Localidade(brasil, paraiba, joaoPessoa));
 
-        interesseDan.adicionarLocal(
-                new Local(joaoPessoa, Pais.BR)
-        );
+        interesseDan.adicionarLocal(new Localidade(brasil, paraiba, rioTinto));
 
-        interesseDan.adicionarLocal(
-                new Local(joaoPessoa, Pais.BR)
-        );
-
-        interesseDan.adicionarLocal(new Local(Pais.US));
+        interesseDan.adicionarLocal(new Localidade(eua));
 
         perfilDan.definirInteresse(interesseDan);
 
         Preferencia interesseCandidatoDuplo = new Preferencia(perfilCandidatoDuplo, true);
         interesseCandidatoDuplo.adicionarTipoInteresse(jardineiro);
 
-        Cidade rioTinto = cidadeRepository.findById(2512903L)
-                .orElseGet(() -> cidadeRepository.save(new Cidade(2512903L, "Rio Tinto", Estado.PB)));
 
-        interesseCandidatoDuplo.adicionarLocal(new Local(rioTinto, Pais.BR));
+        interesseCandidatoDuplo.adicionarLocal(new Localidade(brasil,paraiba,rioTinto));
 
         perfilCandidatoDuplo.definirInteresse(interesseCandidatoDuplo);
 
@@ -144,7 +183,7 @@ public class SemeadorBd {
         // ONDA 6 - OPORTUNIDADES
         // =========================================================
 
-        Local loc = new Local(joaoPessoa, Pais.BR);
+        Localidade loc = new Localidade(brasil, paraiba, joaoPessoa);
 
         OportunidadeDeEmprego vaga1 = new OportunidadeDeEmprego(
                 "Dev Spring Boot",
@@ -166,7 +205,7 @@ public class SemeadorBd {
                 "Eletrotécnico",
                 eletricista,
                 Modalidade.PRESENCIAL,
-                new Local(rioTinto,Pais.BR),
+                new Localidade(brasil, paraiba, rioTinto),
                 perfilRecrutadorDuplo
         );
 

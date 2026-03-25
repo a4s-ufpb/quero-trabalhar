@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.domain.entity;
 
+import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -28,7 +29,7 @@ public class OportunidadeDeEmprego {
     private Modalidade modalidade;
 
     @Embedded
-    private Local local;
+    private Localidade localidade;
 
     // mappedBy deve ter exatamente o nome da variável que está em PerfilCandidato
     @ManyToMany(mappedBy = "vagasDeInteresse")
@@ -40,11 +41,11 @@ public class OportunidadeDeEmprego {
     @JsonIgnore
     private PerfilRecrutador perfilRecrutador;
 
-    public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Local local, PerfilRecrutador perfilRecrutador) {
+    public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Localidade localidade, PerfilRecrutador perfilRecrutador) {
         this.descricao = descricao;
         this.tipoDeEmprego = tipoDeEmprego;
         this.modalidade = modalidade;
-        this.local = local;
+        this.localidade = localidade;
         this.perfilRecrutador = perfilRecrutador;
     }
 
@@ -61,9 +62,9 @@ public class OportunidadeDeEmprego {
     public Modalidade getModalidade() { return modalidade; }
     public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
 
-    public Local getLocalizacao() { return local; }
-    // Ao mudar de cidade, o usuário envia um novo objeto Local inteiro (Imutabilidade!)
-    public void setLocalizacao(Local local) { this.local = local; }
+    public Localidade getLocalizacao() { return localidade; }
+    // Ao mudar de cidade, o usuário envia um novo objeto Localidade inteiro (Imutabilidade!)
+    public void setLocalizacao(Localidade localidade) { this.localidade = localidade; }
 
     public Set<PerfilCandidato> getCandidatosInteressados(){
         return Collections.unmodifiableSet(candidatosInteressados);

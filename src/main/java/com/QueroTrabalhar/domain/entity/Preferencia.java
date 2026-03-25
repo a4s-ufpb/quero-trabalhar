@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.domain.entity;
 
+import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -34,7 +35,7 @@ public class Preferencia {
 
     @ElementCollection
     @CollectionTable(name = "localizacao_cidade_interesse", joinColumns = @JoinColumn(name = "interesse_id"))
-    private Set<Local> locaisDeInteresse = new HashSet<>();
+    private Set<Localidade> locaisDeInteresse = new HashSet<>();
 
     public Preferencia(PerfilCandidato perfilCandidato, boolean querTrabalharRemoto) {
         this.perfilCandidato = perfilCandidato;
@@ -51,9 +52,9 @@ public class Preferencia {
     public boolean isQuerTrabalharRemoto() { return querTrabalharRemoto; }
     public void setQuerTrabalharRemoto(boolean querTrabalharRemoto) { this.querTrabalharRemoto = querTrabalharRemoto; }
 
-    public Set<Local> getLocaisDeInteresse() { return Collections.unmodifiableSet(this.locaisDeInteresse); }
-    public void adicionarLocal(Local local) { this.locaisDeInteresse.add(local); }
-    public void removerLocal(Local local) { this.locaisDeInteresse.remove(local); }
+    public Set<Localidade> getLocaisDeInteresse() { return Collections.unmodifiableSet(this.locaisDeInteresse); }
+    public void adicionarLocal(Localidade localidade) { this.locaisDeInteresse.add(localidade); }
+    public void removerLocal(Localidade localidade) { this.locaisDeInteresse.remove(localidade); }
 
     public Set<TipoDeEmprego> getTiposInteressados() { return Collections.unmodifiableSet(this.tiposInteressados); }
     public void adicionarTipoInteresse(TipoDeEmprego tipo) { this.tiposInteressados.add(tipo); }

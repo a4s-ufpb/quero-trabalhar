@@ -20,3 +20,10 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
+
+google:
+  maps:
+    api:
+      url: ${GOOGLE_MAPS_API_URL}
+      path: ${GOOGLE_MAPS_API_PATH}
+      key: ${GOOGLE_MAPS_API_KEY}
