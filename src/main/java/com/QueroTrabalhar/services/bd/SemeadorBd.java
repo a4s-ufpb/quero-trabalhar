@@ -93,19 +93,19 @@ public class SemeadorBd {
         // =========================================================
 
         Usuario admin = new Usuario("27128833064", "Admin Master", "83999990000",
-                "admin@qt.com", encoder.encode("123"));
+                "admin@gmail.com", encoder.encode("123456"));
         admin.addProfile(Role.ADMIN);
 
         Usuario candidato1 = new Usuario("63069141021", "Dan Pink", "83999990001",
-                "dan@gmail.com", encoder.encode("123"));
+                "dan@gmail.com", encoder.encode("123456"));
 
         Usuario candidato2 = new Usuario("75772202057", "Emma Black", "83999990002",
-                "emma@gmail.com", encoder.encode("123"));
+                "emma@gmail.com", encoder.encode("123456"));
 
         Usuario recrutadorUser = new Usuario("81004206020", "Bob Red", "83988887777",
-                "rh@tech.com", encoder.encode("123"));
+                "rh@tech.com", encoder.encode("123456"));
 
-        Usuario usuarioDuplo  = new Usuario("63700679033", "Jane LightPink", "83998765432", "jane@gmail.com", encoder.encode("123"));
+        Usuario usuarioDuplo  = new Usuario("63700679033", "Jane LightPink", "83998765432", "jane@gmail.com", encoder.encode("123456"));
 
         // =========================================================
         // ONDA 3 - PERFIS
