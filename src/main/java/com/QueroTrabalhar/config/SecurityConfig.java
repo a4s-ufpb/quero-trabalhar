@@ -64,9 +64,8 @@ public class SecurityConfig {
     @Bean
     @Profile("test")
     public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-        if (Arrays.asList(env.getActiveProfiles()).contains("test")) {
-            http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
-        }
+        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+
 
         http
                 .csrf(csrf -> csrf.disable())
@@ -84,9 +83,8 @@ public class SecurityConfig {
             HttpSecurity http,
             AuthenticationManager authenticationManager
     ) throws Exception {
-        if (Arrays.asList(env.getActiveProfiles()).contains("demo")) {
-            http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
-        }
+        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+
 
         JWTAuthenticationFilter authenticationFilter =
                 new JWTAuthenticationFilter("/login", authenticationManager, jwtUtil);
@@ -132,7 +130,6 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_MATCHES).permitAll()
-                        .requestMatchers("/integrations/marketing/leads/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
