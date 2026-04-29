@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.security;
 
+import com.QueroTrabalhar.controllers.exceptions.StandardError;
 import com.QueroTrabalhar.domain.dtos.CredentialsDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -13,15 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 import java.io.IOException;
-import java.util.Date;
 
-/**
- * Este filtro é responsável por interceptar requisições POST para o endpoint "/login",
- * que é reservado pelo Spring Security para autenticação.
- *
- * Ao estender UsernamePasswordAuthenticationFilter, o Spring automaticamente entende
- * que esta classe será usada para o processo de login.
- */
 public class JWTAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
     private final JWTUtil jwtUtil;
@@ -31,17 +24,8 @@ public class JWTAuthenticationFilter extends AbstractAuthenticationProcessingFil
         super(defaultFilterProcessesUrl);
         setAuthenticationManager(authenticationManager);
         this.jwtUtil = jwtUtil;
-        setFilterProcessesUrl("/login"); // Define o endpoint que será interceptado por este filtro
     }
 
-    /**
-     * Tenta autenticar o usuário com base nas credenciais enviadas na requisição.
-     *
-     * @param request  Requisição HTTP contendo o corpo com email e senha
-     * @param response Resposta HTTP
-     * @return Objeto Authentication representando o usuário autenticado
-     * @throws AuthenticationException se a autenticação falhar
-     */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException, IOException {
         CredentialsDTO credentials = new ObjectMapper().readValue(request.getInputStream(), CredentialsDTO.class);
@@ -52,15 +36,6 @@ public class JWTAuthenticationFilter extends AbstractAuthenticationProcessingFil
         return getAuthenticationManager().authenticate(authenticationToken);
     }
 
-    /**
-     * Este método é chamado automaticamente quando a autenticação for bem-sucedida.
-     * Ele gera o token JWT e o adiciona no cabeçalho da resposta.
-     *
-     * @param request     Requisição HTTP
-     * @param response    Resposta HTTP
-     * @param chain       Filtro da requisição
-     * @param authResult  Resultado da autenticação
-     */
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult)
@@ -73,37 +48,23 @@ public class JWTAuthenticationFilter extends AbstractAuthenticationProcessingFil
         response.setHeader("Authorization", "Bearer " + token);
     }
 
-    /**
-     * Este método é chamado automaticamente quando a autenticação falha.
-     * Aqui você pode personalizar a resposta de erro (401 - Unauthorized).
-     *
-     * @param request  Requisição HTTP
-     * @param response Resposta HTTP
-     * @param failed   Exceção lançada na tentativa de autenticação
-     */
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                               AuthenticationException failed)
-            throws IOException, ServletException {
+            throws IOException {
 
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
-        response.setContentType("application/json");
-        response.getWriter().write(buildJsonError());
-    }
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
 
-    /**
-     * Gera a estrutura JSON da resposta de erro 401.
-     *
-     * @return String JSON com detalhes do erro
-     */
-    private String buildJsonError() {
-        long timestamp = new Date().getTime();
-        return "{"
-                + "\"timestamp\": " + timestamp + ","
-                + "\"status\": 401,"
-                + "\"error\": \"Não autorizado\","
-                + "\"message\": \"Email ou senha inválidos\","
-                + "\"path\": \"/login\""
-                + "}";
+        StandardError error = new StandardError(
+                System.currentTimeMillis(),
+                HttpServletResponse.SC_UNAUTHORIZED,
+                "Não autorizado",
+                "Email ou senha inválidos",
+                request.getRequestURI()
+        );
+
+        new ObjectMapper().writeValue(response.getWriter(), error);
     }
 }

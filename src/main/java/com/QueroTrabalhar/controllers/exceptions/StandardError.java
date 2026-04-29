@@ -1,10 +1,16 @@
 package com.QueroTrabalhar.controllers.exceptions;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class StandardError  {
     private Long timestamp;
+
     private Integer status;
+
     private String error;
+
     private String message;
+
     private String path;
 
     public StandardError() {
