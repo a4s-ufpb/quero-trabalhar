@@ -119,6 +119,8 @@ public class SemeadorBd {
         candidato2.adicionarPerfilCandidato(perfilEmma);
 
         // Recrutador
+        PerfilRecrutador perfilAdmin = new PerfilRecrutador(admin,"Admin Corp");
+        admin.adicionarPerfilRecrutador(perfilAdmin);
         PerfilRecrutador perfilRH = new PerfilRecrutador(recrutadorUser, "Tech Solutions");
         recrutadorUser.adicionarPerfilRecrutador(perfilRH);
 
