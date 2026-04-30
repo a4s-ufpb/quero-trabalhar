@@ -1,25 +1,25 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.PerfilRecrutadorService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/recrutadores")
 public class PerfilRecrutadorController {
 
-    @Autowired
-    private PerfilRecrutadorService recrutadorService;
+    private final PerfilRecrutadorService recrutadorService;
 
-    // POST /api/recrutadores/2/vagas
-    @PostMapping("/{recrutadorId}/vagas")
-    public ResponseEntity<String> postarVaga(
-            @PathVariable Long recrutadorId,
-            @RequestBody OportunidadeDeEmprego vagaRequisicao) { // Futuramente troque por um Record (VagaDTORequest)
-
-        recrutadorService.postarNovaVaga(recrutadorId, vagaRequisicao);
-        return ResponseEntity.status(201).body("Vaga publicada com sucesso!");
+    public PerfilRecrutadorController(PerfilRecrutadorService recrutadorService) {
+        this.recrutadorService = recrutadorService;
     }
+
+    //@GetMapping("/me/vagas") /vagas para a url ficar mais semantica
+    //endpoint que pegue as vagas com /me
 }
