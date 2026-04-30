@@ -1,0 +1,114 @@
+package com.QueroTrabalhar.services;
+
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorResponseDTO;
+import com.QueroTrabalhar.domain.entity.Empresa;
+import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
+import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.repository.EmpresaRepository;
+import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.only;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class PerfilRecrutadorMeServiceTest {
+
+    @Mock
+    private PerfilRecrutadorRepository perfilRecrutadorRepository;
+
+    @Mock
+    private EmpresaRepository empresaRepository;
+
+    @Mock
+    private UsuarioAutenticadoService usuarioAutenticadoService;
+
+    @InjectMocks
+    private PerfilRecrutadorService perfilRecrutadorService;
+
+    @Test
+    void deveRetornarDadosDoPerfilRecrutadorAutenticadoSemEmpresaVinculada() {
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(10L, "João Pessoa", "Empresa Legada");
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+
+        PerfilRecrutadorResponseDTO resposta = perfilRecrutadorService.buscarMeuPerfil();
+
+        assertAll(
+                () -> assertEquals(10L, resposta.id()),
+                () -> assertEquals("João Pessoa", resposta.nome()),
+                () -> assertEquals("Empresa Legada", resposta.empresaLegada()),
+                () -> assertNull(resposta.empresaVinculadaId()),
+                () -> assertNull(resposta.empresaVinculadaNome()),
+                () -> assertNull(resposta.statusVinculoEmpresa())
+        );
+        verifyNoInteractions(perfilRecrutadorRepository, empresaRepository);
+    }
+
+    @Test
+    void deveRetornarDadosDoPerfilRecrutadorAutenticadoComEmpresaVinculadaAprovada() {
+        Empresa empresa = criarEmpresa(30L, "Empresa Ágil");
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(10L, "Marina Araújo", "Empresa Legada");
+        perfilRecrutador.setEmpresaVinculada(empresa);
+        perfilRecrutador.setStatusVinculoEmpresa(StatusVinculoEmpresa.APROVADO);
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+
+        PerfilRecrutadorResponseDTO resposta = perfilRecrutadorService.buscarMeuPerfil();
+
+        assertAll(
+                () -> assertEquals(10L, resposta.id()),
+                () -> assertEquals("Marina Araújo", resposta.nome()),
+                () -> assertEquals("Empresa Legada", resposta.empresaLegada()),
+                () -> assertEquals(30L, resposta.empresaVinculadaId()),
+                () -> assertEquals("Empresa Ágil", resposta.empresaVinculadaNome()),
+                () -> assertEquals(StatusVinculoEmpresa.APROVADO, resposta.statusVinculoEmpresa())
+        );
+        verifyNoInteractions(perfilRecrutadorRepository, empresaRepository);
+    }
+
+    @Test
+    void deveDelegarAObtencaoDoPerfilAutenticadoParaUsuarioAutenticadoService() {
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(22L, "Carlos Lima", "Consultoria João Pessoa");
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+
+        perfilRecrutadorService.buscarMeuPerfil();
+
+        verify(usuarioAutenticadoService, only()).obterPerfilRecrutadorAutenticado();
+    }
+
+    private PerfilRecrutador criarPerfilRecrutadorAutenticado(Long id, String nomeUsuario, String empresaLegada) {
+        Usuario usuario = new Usuario(
+                "12345678909",
+                nomeUsuario,
+                "83999999999",
+                "recrutador" + id + "@teste.com",
+                "Senha@123"
+        );
+        ReflectionTestUtils.setField(usuario, "id", id);
+
+        PerfilRecrutador perfilRecrutador = new PerfilRecrutador(null, empresaLegada);
+        ReflectionTestUtils.setField(perfilRecrutador, "id", id);
+        usuario.adicionarPerfilRecrutador(perfilRecrutador);
+
+        return perfilRecrutador;
+    }
+
+    private Empresa criarEmpresa(Long id, String nome) {
+        Empresa empresa = new Empresa(nome, null, null, null, null, null);
+        ReflectionTestUtils.setField(empresa, "id", id);
+        return empresa;
+    }
+}
