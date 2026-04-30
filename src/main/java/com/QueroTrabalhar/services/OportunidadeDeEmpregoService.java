@@ -61,6 +61,15 @@ public class OportunidadeDeEmpregoService {
         return OportunidadeDeEmpregoResponseDTO.daEntidade(buscarEntidadePorId(id));
     }
 
+    @Transactional(readOnly = true)
+    public List<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDoRecrutadorAutenticado() {
+        PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
+
+        return oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(perfilRecrutador.getId()).stream()
+                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
+                .toList();
+    }
+
     @Transactional
     public OportunidadeDeEmpregoResponseDTO criarOportunidadeDeEmprego(OportunidadeDeEmpregoRequestDTO dto) {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();

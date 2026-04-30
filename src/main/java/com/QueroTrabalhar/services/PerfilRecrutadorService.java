@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorEmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
@@ -52,6 +53,12 @@ public class PerfilRecrutadorService {
         }
 
         return PerfilRecrutadorEmpresaResponseDTO.daEntidade(perfilRecrutador);
+    }
+
+    @Transactional(readOnly = true)
+    public PerfilRecrutadorResponseDTO buscarMeuPerfil() {
+        PerfilRecrutador perfilRecrutador = usuarioAutenticadoService.obterPerfilRecrutadorAutenticado();
+        return PerfilRecrutadorResponseDTO.daEntidade(perfilRecrutador);
     }
 
     @Transactional

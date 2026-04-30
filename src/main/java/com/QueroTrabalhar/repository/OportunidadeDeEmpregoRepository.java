@@ -14,6 +14,8 @@ public interface OportunidadeDeEmpregoRepository extends JpaRepository<Oportunid
 
     List<OportunidadeDeEmprego> findByEmpresaId(Long empresaId);
 
+    List<OportunidadeDeEmprego> findByPerfilRecrutadorId(Long perfilRecrutadorId);
+
     @Modifying
     @Query(value = "DELETE FROM candidato_vaga_interesse " +
                    "WHERE oportunidade_id = :idVaga",  nativeQuery = true)
