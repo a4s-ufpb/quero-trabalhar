@@ -26,6 +26,8 @@ public record OportunidadeDeEmpregoRequestDTO(
         Long estadoId,
 
         @Positive(message = "A cidade informada é inválida.")
-        Long cidadeId
+        Long cidadeId,
+
+        Boolean publicarComoEmpresa
 ) {
 }

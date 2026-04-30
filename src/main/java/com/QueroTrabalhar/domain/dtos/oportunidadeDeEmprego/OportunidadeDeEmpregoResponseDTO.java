@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego;
 
+import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
@@ -26,7 +27,8 @@ public record OportunidadeDeEmpregoResponseDTO(
         String cidade,
         Long recrutadorId,
         String recrutadorNome,
-        String empresa
+        Long empresaId,
+        String empresaNome
 ) {
     public static OportunidadeDeEmpregoResponseDTO daEntidade(OportunidadeDeEmprego entidade) {
         TipoDeEmprego tipoDeEmprego = entidade.getTipoDeEmprego();
@@ -36,6 +38,7 @@ public record OportunidadeDeEmpregoResponseDTO(
         Cidade cidade = localidade != null ? localidade.getCidade() : null;
         PerfilRecrutador recrutador = entidade.getPerfilRecrutador();
         Usuario usuario = recrutador != null ? recrutador.getUsuario() : null;
+        Empresa empresa = entidade.getEmpresa();
 
         return new OportunidadeDeEmpregoResponseDTO(
                 entidade.getId(),
@@ -53,7 +56,8 @@ public record OportunidadeDeEmpregoResponseDTO(
                 cidade != null ? cidade.getNome() : null,
                 recrutador != null ? recrutador.getId() : null,
                 usuario != null ? usuario.getNome() : null,
-                recrutador != null ? recrutador.getEmpresa() : null
+                empresa != null ? empresa.getId() : null,
+                empresa != null ? empresa.getNome() : null
         );
     }
 }

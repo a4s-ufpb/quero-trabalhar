@@ -2,6 +2,7 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
@@ -9,6 +10,7 @@ import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
@@ -64,13 +66,18 @@ public class OportunidadeDeEmpregoService {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
         TipoDeEmprego tipoDeEmprego = buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId());
         Localidade localidade = montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId());
+        Empresa empresaDaOportunidade = resolverEmpresaDaOportunidade(
+                perfilRecrutador,
+                dto.publicarComoEmpresa()
+        );
 
         OportunidadeDeEmprego oportunidadeDeEmprego = new OportunidadeDeEmprego(
                 dto.descricao(),
                 tipoDeEmprego,
                 dto.modalidade(),
                 localidade,
-                perfilRecrutador
+                perfilRecrutador,
+                empresaDaOportunidade
         );
 
         perfilRecrutador.adicionarOportunidadePostada(oportunidadeDeEmprego);
@@ -90,6 +97,7 @@ public class OportunidadeDeEmpregoService {
 
         validarDonoDaOportunidade(oportunidadeDeEmprego, perfilRecrutador);
 
+        // Nesta fase, o contexto original de publicação da oportunidade é preservado.
         oportunidadeDeEmprego.setDescricao(dto.descricao());
         oportunidadeDeEmprego.setTipoDeEmprego(buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId()));
         oportunidadeDeEmprego.setModalidade(dto.modalidade());
@@ -166,6 +174,29 @@ public class OportunidadeDeEmpregoService {
         }
 
         return new Localidade(pais, estado, cidade);
+    }
+
+    private Empresa resolverEmpresaDaOportunidade(
+            PerfilRecrutador perfilRecrutador,
+            Boolean publicarComoEmpresa
+    ) {
+        if (!Boolean.TRUE.equals(publicarComoEmpresa)) {
+            return null;
+        }
+
+        if (perfilRecrutador.getEmpresaVinculada() == null) {
+            throw new BusinessRuleException(
+                    "Para publicar uma oportunidade em nome da empresa, o recrutador autenticado precisa possuir empresa vinculada."
+            );
+        }
+
+        if (perfilRecrutador.getStatusVinculoEmpresa() != StatusVinculoEmpresa.APROVADO) {
+            throw new BusinessRuleException(
+                    "Para publicar uma oportunidade em nome da empresa, o vínculo com a empresa precisa estar aprovado."
+            );
+        }
+
+        return perfilRecrutador.getEmpresaVinculada();
     }
 
     private void validarDonoDaOportunidade(

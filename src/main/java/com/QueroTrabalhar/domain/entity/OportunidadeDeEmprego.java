@@ -31,9 +31,8 @@ public class OportunidadeDeEmprego {
     @Embedded
     private Localidade localidade;
 
-    // mappedBy deve ter exatamente o nome da variável que está em PerfilCandidato
     @ManyToMany(mappedBy = "vagasDeInteresse")
-    @JsonIgnore // MUITO IMPORTANTE para não dar loop infinito no JSON (Vaga chama Candidato que chama Vaga...)
+    @JsonIgnore
     private Set<PerfilCandidato> candidatosInteressados = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,12 +40,28 @@ public class OportunidadeDeEmprego {
     @JsonIgnore
     private PerfilRecrutador perfilRecrutador;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
+
     public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Localidade localidade, PerfilRecrutador perfilRecrutador) {
+        this(descricao, tipoDeEmprego, modalidade, localidade, perfilRecrutador, null);
+    }
+
+    public OportunidadeDeEmprego(
+            String descricao,
+            TipoDeEmprego tipoDeEmprego,
+            Modalidade modalidade,
+            Localidade localidade,
+            PerfilRecrutador perfilRecrutador,
+            Empresa empresa
+    ) {
         this.descricao = descricao;
         this.tipoDeEmprego = tipoDeEmprego;
         this.modalidade = modalidade;
         this.localidade = localidade;
         this.perfilRecrutador = perfilRecrutador;
+        this.empresa = empresa;
     }
 
     protected OportunidadeDeEmprego() {}
@@ -63,7 +78,7 @@ public class OportunidadeDeEmprego {
     public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
 
     public Localidade getLocalizacao() { return localidade; }
-    // Ao mudar de cidade, o usuário envia um novo objeto Localidade inteiro (Imutabilidade!)
+
     public void setLocalizacao(Localidade localidade) { this.localidade = localidade; }
 
     public Set<PerfilCandidato> getCandidatosInteressados(){
@@ -80,10 +95,11 @@ public class OportunidadeDeEmprego {
         perfilCandidato.removerInteresse(this);
     }
 
-
-
     public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
     public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) { this.perfilRecrutador = perfilRecrutador; }
+
+    public Empresa getEmpresa() { return empresa; }
+    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
 
     @Override
     public boolean equals(Object o) {
