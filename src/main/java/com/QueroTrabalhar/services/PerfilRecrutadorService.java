@@ -54,6 +54,30 @@ public class PerfilRecrutadorService {
         return PerfilRecrutadorEmpresaResponseDTO.daEntidade(perfilRecrutador);
     }
 
+    @Transactional
+    public PerfilRecrutadorEmpresaResponseDTO aprovarVinculoEmpresaComoAdmin(Long recrutadorId) {
+        PerfilRecrutador perfilRecrutador = buscarPerfilRecrutadorPorId(recrutadorId);
+
+        validarVinculoPendenteParaAnalise(perfilRecrutador);
+        perfilRecrutador.aprovarVinculoEmpresa();
+
+        return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
+                perfilRecrutadorRepository.save(perfilRecrutador)
+        );
+    }
+
+    @Transactional
+    public PerfilRecrutadorEmpresaResponseDTO recusarVinculoEmpresaComoAdmin(Long recrutadorId) {
+        PerfilRecrutador perfilRecrutador = buscarPerfilRecrutadorPorId(recrutadorId);
+
+        validarVinculoPendenteParaAnalise(perfilRecrutador);
+        perfilRecrutador.recusarVinculoEmpresa();
+
+        return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
+                perfilRecrutadorRepository.save(perfilRecrutador)
+        );
+    }
+
     private void validarSolicitacaoDeVinculo(PerfilRecrutador perfilRecrutador) {
         StatusVinculoEmpresa statusVinculoEmpresa = perfilRecrutador.getStatusVinculoEmpresa();
 
@@ -61,6 +85,23 @@ public class PerfilRecrutadorService {
                 || statusVinculoEmpresa == StatusVinculoEmpresa.APROVADO) {
             throw new BusinessRuleException(
                     "O recrutador autenticado já possui um vínculo pendente ou aprovado com uma empresa."
+            );
+        }
+    }
+
+    private PerfilRecrutador buscarPerfilRecrutadorPorId(Long recrutadorId) {
+        return perfilRecrutadorRepository.findById(recrutadorId)
+                .orElseThrow(() -> new ObjectNotFoundException("Perfil de recrutador não encontrado. ID: " + recrutadorId));
+    }
+
+    private void validarVinculoPendenteParaAnalise(PerfilRecrutador perfilRecrutador) {
+        if (perfilRecrutador.getEmpresaVinculada() == null) {
+            throw new BusinessRuleException("O recrutador informado não possui empresa vinculada.");
+        }
+
+        if (perfilRecrutador.getStatusVinculoEmpresa() != StatusVinculoEmpresa.PENDENTE) {
+            throw new BusinessRuleException(
+                    "O vínculo de empresa do recrutador informado precisa estar pendente para esta operação."
             );
         }
     }

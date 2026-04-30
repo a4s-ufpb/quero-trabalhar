@@ -99,6 +99,14 @@ public class PerfilRecrutador {
         this.statusVinculoEmpresa = StatusVinculoEmpresa.PENDENTE;
     }
 
+    public void aprovarVinculoEmpresa() {
+        this.statusVinculoEmpresa = StatusVinculoEmpresa.APROVADO;
+    }
+
+    public void recusarVinculoEmpresa() {
+        this.statusVinculoEmpresa = StatusVinculoEmpresa.RECUSADO;
+    }
+
     public List<OportunidadeDeEmprego> getOportunidadesPostadas() {
         return Collections.unmodifiableList(this.oportunidadesPostadas);
     }
