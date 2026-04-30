@@ -7,31 +7,31 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record EmpresaRequestDTO(
-        @NotBlank(message = "O nome da empresa e obrigatorio.")
-        @Size(max = 150, message = "O nome da empresa deve ter no maximo 150 caracteres.")
+        @NotBlank(message = "O nome da empresa é obrigatório.")
+        @Size(max = 150, message = "O nome da empresa deve ter no máximo 150 caracteres.")
         String nome,
 
-        @Size(max = 1000, message = "A descricao da empresa deve ter no maximo 1000 caracteres.")
+        @Size(max = 1000, message = "A descrição da empresa deve ter no máximo 1000 caracteres.")
         String descricao,
 
-        @Size(max = 255, message = "O site da empresa deve ter no maximo 255 caracteres.")
+        @Size(max = 255, message = "O site da empresa deve ter no máximo 255 caracteres.")
         String site,
 
-        @Email(message = "O email publico deve ser valido.")
-        @Size(max = 150, message = "O email publico deve ter no maximo 150 caracteres.")
+        @Email(message = "O e-mail público deve ser válido.")
+        @Size(max = 150, message = "O e-mail público deve ter no máximo 150 caracteres.")
         String emailPublico,
 
-        @Size(max = 20, message = "O telefone publico deve ter no maximo 20 caracteres.")
+        @Size(max = 20, message = "O telefone público deve ter no máximo 20 caracteres.")
         String telefonePublico,
 
-        @NotNull(message = "O pais e obrigatorio.")
-        @Positive(message = "O pais informado e invalido.")
+        @NotNull(message = "O país é obrigatório.")
+        @Positive(message = "O país informado é inválido.")
         Long paisId,
 
-        @Positive(message = "O estado informado e invalido.")
+        @Positive(message = "O estado informado é inválido.")
         Long estadoId,
 
-        @Positive(message = "A cidade informada e invalida.")
+        @Positive(message = "A cidade informada é inválida.")
         Long cidadeId
 ) {
 }
