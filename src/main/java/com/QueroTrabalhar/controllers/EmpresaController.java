@@ -2,6 +2,8 @@ package com.QueroTrabalhar.controllers;
 
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.services.EmpresaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +49,15 @@ public class EmpresaController {
     @GetMapping("/{id}")
     public ResponseEntity<EmpresaResponseDTO> buscarEmpresaPorId(@PathVariable Long id) {
         return ResponseEntity.ok(empresaService.buscarEmpresaPorId(id));
+    }
+
+    @GetMapping("/{id}/recrutadores")
+    public ResponseEntity<List<RecrutadorDaEmpresaResponseDTO>> listarRecrutadoresDaEmpresa(@PathVariable Long id) {
+        return ResponseEntity.ok(empresaService.listarRecrutadoresAprovadosDaEmpresa(id));
+    }
+
+    @GetMapping("/{id}/oportunidades")
+    public ResponseEntity<List<OportunidadeDeEmpregoResponseDTO>> listarOportunidadesDaEmpresa(@PathVariable Long id) {
+        return ResponseEntity.ok(empresaService.listarOportunidadesDaEmpresa(id));
     }
 }

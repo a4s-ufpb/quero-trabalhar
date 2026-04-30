@@ -2,37 +2,49 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
+import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final PerfilRecrutadorRepository perfilRecrutadorRepository;
+    private final OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository;
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
 
     public EmpresaService(
             EmpresaRepository empresaRepository,
+            PerfilRecrutadorRepository perfilRecrutadorRepository,
+            OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository,
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository
     ) {
         this.empresaRepository = empresaRepository;
+        this.perfilRecrutadorRepository = perfilRecrutadorRepository;
+        this.oportunidadeDeEmpregoRepository = oportunidadeDeEmpregoRepository;
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
@@ -64,6 +76,30 @@ public class EmpresaService {
     @Transactional(readOnly = true)
     public EmpresaResponseDTO buscarEmpresaPorId(Long id) {
         return EmpresaResponseDTO.daEntidade(buscarEntidadePorId(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecrutadorDaEmpresaResponseDTO> listarRecrutadoresAprovadosDaEmpresa(Long empresaId) {
+        buscarEntidadePorId(empresaId);
+
+        return perfilRecrutadorRepository
+                .findByEmpresaVinculadaIdAndStatusVinculoEmpresa(empresaId, StatusVinculoEmpresa.APROVADO)
+                .stream()
+                .map(RecrutadorDaEmpresaResponseDTO::daEntidade)
+                .sorted(Comparator.comparing(
+                        RecrutadorDaEmpresaResponseDTO::nome,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDaEmpresa(Long empresaId) {
+        buscarEntidadePorId(empresaId);
+
+        return oportunidadeDeEmpregoRepository.findByEmpresaId(empresaId).stream()
+                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
+                .toList();
     }
 
     private Empresa buscarEntidadePorId(Long id) {

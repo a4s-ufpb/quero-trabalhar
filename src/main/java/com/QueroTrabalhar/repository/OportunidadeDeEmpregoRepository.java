@@ -7,8 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface OportunidadeDeEmpregoRepository extends JpaRepository<OportunidadeDeEmprego, Long> {
+
+    List<OportunidadeDeEmprego> findByEmpresaId(Long empresaId);
 
     @Modifying
     @Query(value = "DELETE FROM candidato_vaga_interesse " +
