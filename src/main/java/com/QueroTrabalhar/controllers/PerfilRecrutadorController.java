@@ -1,14 +1,13 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
-import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorEmpresaResponseDTO;
 import com.QueroTrabalhar.services.PerfilRecrutadorService;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.URI;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/recrutadores")
@@ -20,6 +19,13 @@ public class PerfilRecrutadorController {
         this.recrutadorService = recrutadorService;
     }
 
-    //@GetMapping("/me/vagas") /vagas para a url ficar mais semantica
-    //endpoint que pegue as vagas com /me
+    @PostMapping("/me/empresa/{empresaId}/solicitar-vinculo")
+    public ResponseEntity<PerfilRecrutadorEmpresaResponseDTO> solicitarVinculoEmpresa(@PathVariable Long empresaId) {
+        return ResponseEntity.ok(recrutadorService.solicitarVinculoEmpresa(empresaId));
+    }
+
+    @GetMapping("/me/empresa")
+    public ResponseEntity<PerfilRecrutadorEmpresaResponseDTO> buscarMinhaEmpresa() {
+        return ResponseEntity.ok(recrutadorService.buscarMinhaEmpresa());
+    }
 }

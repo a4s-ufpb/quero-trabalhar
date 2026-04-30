@@ -5,7 +5,6 @@ import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpreg
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
-import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
@@ -15,11 +14,8 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
-import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,25 +26,25 @@ public class OportunidadeDeEmpregoService {
 
     private final OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository;
     private final TipoDeEmpregoRepository tipoDeEmpregoRepository;
-    private final UsuarioRepository usuarioRepository;
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public OportunidadeDeEmpregoService(
             OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository,
             TipoDeEmpregoRepository tipoDeEmpregoRepository,
-            UsuarioRepository usuarioRepository,
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
-            CidadeRepository cidadeRepository
+            CidadeRepository cidadeRepository,
+            UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.oportunidadeDeEmpregoRepository = oportunidadeDeEmpregoRepository;
         this.tipoDeEmpregoRepository = tipoDeEmpregoRepository;
-        this.usuarioRepository = usuarioRepository;
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
     @Transactional(readOnly = true)
@@ -121,28 +117,7 @@ public class OportunidadeDeEmpregoService {
     }
 
     PerfilRecrutador obterPerfilRecrutadorAutenticado() {
-        Usuario usuarioAutenticado = obterUsuarioAutenticado();
-
-        if (!usuarioAutenticado.ehRecrutador()) {
-            throw new BusinessRuleException(
-                    "O usuário autenticado precisa possuir um perfil de recrutador para gerenciar oportunidades."
-            );
-        }
-
-        return usuarioAutenticado.getPerfilRecrutador();
-    }
-
-    private Usuario obterUsuarioAutenticado() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()
-                || authentication.getName() == null
-                || "anonymousUser".equals(authentication.getName())) {
-            throw new BusinessRuleException("Usuário autenticado não encontrado no contexto de segurança.");
-        }
-
-        return usuarioRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário autenticado não encontrado."));
+        return usuarioAutenticadoService.obterPerfilRecrutadorAutenticado();
     }
 
     private TipoDeEmprego buscarTipoDeEmpregoValido(Long tipoDeEmpregoId) {
