@@ -3,7 +3,19 @@ package com.QueroTrabalhar.domain.entity;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,7 +56,13 @@ public class OportunidadeDeEmprego {
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
-    public OportunidadeDeEmprego(String descricao, TipoDeEmprego tipoDeEmprego, Modalidade modalidade, Localidade localidade, PerfilRecrutador perfilRecrutador) {
+    public OportunidadeDeEmprego(
+            String descricao,
+            TipoDeEmprego tipoDeEmprego,
+            Modalidade modalidade,
+            Localidade localidade,
+            PerfilRecrutador perfilRecrutador
+    ) {
         this(descricao, tipoDeEmprego, modalidade, localidade, perfilRecrutador, null);
     }
 
@@ -64,48 +82,83 @@ public class OportunidadeDeEmprego {
         this.empresa = empresa;
     }
 
-    protected OportunidadeDeEmprego() {}
+    protected OportunidadeDeEmprego() {
+    }
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public String getDescricao() {
+        return descricao;
+    }
 
-    public TipoDeEmprego getTipoDeEmprego() { return tipoDeEmprego; }
-    public void setTipoDeEmprego(TipoDeEmprego tipoDeEmprego) { this.tipoDeEmprego = tipoDeEmprego; }
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
 
-    public Modalidade getModalidade() { return modalidade; }
-    public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
+    public TipoDeEmprego getTipoDeEmprego() {
+        return tipoDeEmprego;
+    }
 
-    public Localidade getLocalizacao() { return localidade; }
+    public void setTipoDeEmprego(TipoDeEmprego tipoDeEmprego) {
+        this.tipoDeEmprego = tipoDeEmprego;
+    }
 
-    public void setLocalizacao(Localidade localidade) { this.localidade = localidade; }
+    public Modalidade getModalidade() {
+        return modalidade;
+    }
 
-    public Set<PerfilCandidato> getCandidatosInteressados(){
+    public void setModalidade(Modalidade modalidade) {
+        this.modalidade = modalidade;
+    }
+
+    public Localidade getLocalizacao() {
+        return localidade;
+    }
+
+    public void setLocalizacao(Localidade localidade) {
+        this.localidade = localidade;
+    }
+
+    public Set<PerfilCandidato> getCandidatosInteressados() {
         return Collections.unmodifiableSet(candidatosInteressados);
     }
 
-    public void adicionarInteressado(PerfilCandidato perfilCandidato){
+    public void adicionarInteressado(PerfilCandidato perfilCandidato) {
         this.candidatosInteressados.add(perfilCandidato);
         perfilCandidato.demonstrarInteresse(this);
     }
 
-    public void removerInteressado(PerfilCandidato perfilCandidato){
+    public void removerInteressado(PerfilCandidato perfilCandidato) {
         this.candidatosInteressados.remove(perfilCandidato);
         perfilCandidato.removerInteresse(this);
     }
 
-    public PerfilRecrutador getPerfilRecrutador() { return perfilRecrutador; }
-    public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) { this.perfilRecrutador = perfilRecrutador; }
+    public PerfilRecrutador getPerfilRecrutador() {
+        return perfilRecrutador;
+    }
 
-    public Empresa getEmpresa() { return empresa; }
-    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
+    public void setPerfilRecrutador(PerfilRecrutador perfilRecrutador) {
+        this.perfilRecrutador = perfilRecrutador;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OportunidadeDeEmprego)) return false;
-        OportunidadeDeEmprego that = (OportunidadeDeEmprego) o;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof OportunidadeDeEmprego that)) {
+            return false;
+        }
         return id != null && id.equals(that.id);
     }
 
