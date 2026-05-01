@@ -1,5 +1,7 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.usuario.AlterarSenhaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
@@ -43,6 +45,19 @@ public class UsuarioController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> buscarMeuUsuario() {
         return ResponseEntity.ok(usuarioService.buscarUsuarioAutenticado());
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> atualizarMeuUsuario(
+            @Valid @RequestBody UsuarioAtualizacaoRequestDTO usuarioAtualizacaoRequest
+    ) {
+        return ResponseEntity.ok(usuarioService.atualizarMeuUsuario(usuarioAtualizacaoRequest));
+    }
+
+    @PutMapping("/me/senha")
+    public ResponseEntity<Void> alterarMinhaSenha(@Valid @RequestBody AlterarSenhaRequestDTO alterarSenhaRequest) {
+        usuarioService.alterarMinhaSenha(alterarSenhaRequest);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me/perfil-candidato")

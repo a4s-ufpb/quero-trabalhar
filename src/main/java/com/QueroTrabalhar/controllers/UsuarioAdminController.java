@@ -1,6 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
-import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
 import jakarta.validation.Valid;
@@ -40,9 +40,9 @@ public class UsuarioAdminController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(
             @PathVariable Long id,
-            @Valid @RequestBody UsuarioRequestDTO usuarioRequest
+            @Valid @RequestBody UsuarioAtualizacaoRequestDTO usuarioRequest
     ) {
-        return ResponseEntity.ok(usuarioService.atualizarUsuario(id, usuarioRequest));
+        return ResponseEntity.ok(usuarioService.atualizarUsuarioComoAdmin(id, usuarioRequest));
     }
 
     @DeleteMapping("/{id}/perfil_candidato")

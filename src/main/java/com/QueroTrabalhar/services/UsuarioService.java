@@ -1,5 +1,7 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.usuario.AlterarSenhaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
@@ -10,9 +12,10 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
+import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +29,7 @@ public class UsuarioService {
     private final PerfilCandidatoRepository perfilCandidatoRepository;
     private final PerfilRecrutadorRepository perfilRecrutadorRepository;
     private final OportunidadeDeEmpregoRepository oportunidadeRepository;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public UsuarioService(
@@ -34,38 +37,42 @@ public class UsuarioService {
             PerfilCandidatoRepository perfilCandidatoRepository,
             PerfilRecrutadorRepository perfilRecrutadorRepository,
             OportunidadeDeEmpregoRepository oportunidadeRepository,
-            BCryptPasswordEncoder encoder,
+            PasswordEncoder passwordEncoder,
             UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.perfilCandidatoRepository = perfilCandidatoRepository;
         this.perfilRecrutadorRepository = perfilRecrutadorRepository;
         this.oportunidadeRepository = oportunidadeRepository;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
+    @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodosUsuarios() {
         return usuarioRepository.findAll().stream()
                 .map(UsuarioResponseDTO::daEntidade)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarUsuarioPorId(Long id) {
         return UsuarioResponseDTO.daEntidade(encontrarUsuario(id));
     }
 
+    @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarUsuarioAutenticado() {
         return UsuarioResponseDTO.daEntidade(obterUsuarioAutenticado());
     }
 
+    @Transactional
     public UsuarioResponseDTO cadastrarUsuario(UsuarioRequestDTO usuarioRequest) {
         if (usuarioRepository.existsByCpf(usuarioRequest.cpf())) {
             throw new DataIntegrityViolationException("Já existe um usuário com o CPF: " + usuarioRequest.cpf());
         }
 
         Usuario usuario = new Usuario(usuarioRequest);
-        usuario.setSenha(encoder.encode(usuarioRequest.senha()));
+        usuario.setSenha(passwordEncoder.encode(usuarioRequest.senha()));
 
         PerfilCandidato perfilPadrao = new PerfilCandidato(usuario);
         usuario.adicionarPerfilCandidato(perfilPadrao);
@@ -73,21 +80,42 @@ public class UsuarioService {
         return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuario));
     }
 
-    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO usuarioRequest) {
+    @Transactional
+    public UsuarioResponseDTO atualizarMeuUsuario(UsuarioAtualizacaoRequestDTO dto) {
+        Usuario usuarioAutenticado = obterUsuarioAutenticado();
+        atualizarDadosCadastrais(usuarioAutenticado, dto);
+        return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuarioAutenticado));
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizarUsuarioComoAdmin(Long id, UsuarioAtualizacaoRequestDTO dto) {
         Usuario usuarioExistente = encontrarUsuario(id);
-
-        usuarioExistente.setNome(usuarioRequest.nome());
-        usuarioExistente.setTelefone(usuarioRequest.telefone());
-        usuarioExistente.setEmail(usuarioRequest.email());
-        usuarioExistente.setSenha(usuarioRequest.senha());
-
+        atualizarDadosCadastrais(usuarioExistente, dto);
         return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuarioExistente));
     }
 
+    @Transactional
+    public void alterarMinhaSenha(AlterarSenhaRequestDTO dto) {
+        Usuario usuarioAutenticado = obterUsuarioAutenticado();
+
+        if (!passwordEncoder.matches(dto.senhaAtual(), usuarioAutenticado.getSenha())) {
+            throw new BusinessRuleException("A senha atual informada está incorreta.");
+        }
+
+        if (!dto.novaSenha().equals(dto.confirmacaoNovaSenha())) {
+            throw new BusinessRuleException("A nova senha e a confirmação da nova senha devem ser iguais.");
+        }
+
+        usuarioAutenticado.setSenha(passwordEncoder.encode(dto.novaSenha()));
+        usuarioRepository.save(usuarioAutenticado);
+    }
+
+    @Transactional
     public void removerMeuPerfilCandidato() {
         processarRemocaoCandidato(obterUsuarioAutenticado());
     }
 
+    @Transactional
     public void removerPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
         processarRemocaoCandidato(usuario);
@@ -140,10 +168,12 @@ public class UsuarioService {
         throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo");
     }
 
+    @Transactional
     public void adicionarMeuPerfilCandidato() {
         processarAdicionarCandidato(obterUsuarioAutenticado());
     }
 
+    @Transactional
     public void adicionarPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
         processarAdicionarCandidato(usuario);
@@ -161,10 +191,12 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    @Transactional
     public void adicioncarMeuPerfilRecrutador(String nomeDaEmpresa) {
         processarAdicionarRecrutador(obterUsuarioAutenticado(), nomeDaEmpresa);
     }
 
+    @Transactional
     public void adicionarPerfilRecrutadorPorId(Long id, String nomeDaEmpresa) {
         Usuario usuario = encontrarUsuario(id);
         processarAdicionarRecrutador(usuario, nomeDaEmpresa);
@@ -182,10 +214,12 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    @Transactional
     public void meRemover() {
         processarRemocaoUsuario(obterUsuarioAutenticado());
     }
 
+    @Transactional
     public void deletarUsuarioPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
         processarRemocaoUsuario(usuario);
@@ -193,6 +227,12 @@ public class UsuarioService {
 
     private void processarRemocaoUsuario(Usuario usuario) {
         usuarioRepository.delete(usuario);
+    }
+
+    private void atualizarDadosCadastrais(Usuario usuario, UsuarioAtualizacaoRequestDTO dto) {
+        usuario.setNome(dto.nome());
+        usuario.setTelefone(dto.telefone());
+        usuario.setEmail(dto.email());
     }
 
     private Usuario obterUsuarioAutenticado() {
