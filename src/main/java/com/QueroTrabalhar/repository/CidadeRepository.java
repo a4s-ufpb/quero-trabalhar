@@ -13,4 +13,8 @@ public interface CidadeRepository extends JpaRepository<Cidade, Long> {
     List<Cidade> findByEstadoAndNomeContainingIgnoreCase(Estado estado, String termoBusca);
 
     Optional<Cidade> findByNomeAndEstado(String s, Estado estado);
+
+    List<Cidade> findAllByNomeIgnoreCase(String nome);
+
+    Optional<Cidade> findFirstByNomeIgnoreCaseAndEstado(String nome, Estado estado);
 }

@@ -13,4 +13,8 @@ public interface EstadoRepository extends JpaRepository<Estado, Long> {
     List<Estado> findByPaisAndNomeContainingIgnoreCase(Pais pais, String termoBusca);
 
     Optional<Estado> findByNomeAndPais(String s, Pais pais);
+
+    List<Estado> findAllByNomeIgnoreCase(String nome);
+
+    Optional<Estado> findFirstByNomeIgnoreCaseAndPais(String nome, Pais pais);
 }
