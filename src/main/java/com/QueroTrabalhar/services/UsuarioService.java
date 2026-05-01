@@ -12,8 +12,6 @@ import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,20 +22,28 @@ import java.util.stream.Collectors;
 @Service
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PerfilCandidatoRepository perfilCandidatoRepository;
+    private final PerfilRecrutadorRepository perfilRecrutadorRepository;
+    private final OportunidadeDeEmpregoRepository oportunidadeRepository;
+    private final BCryptPasswordEncoder encoder;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
-    @Autowired
-    private PerfilCandidatoRepository perfilCandidatoRepository;
-
-    @Autowired
-    private PerfilRecrutadorRepository perfilRecrutadorRepository;
-
-    @Autowired
-    private OportunidadeDeEmpregoRepository oportunidadeRepository;
-
-    @Autowired
-    private BCryptPasswordEncoder encoder;
+    public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            PerfilCandidatoRepository perfilCandidatoRepository,
+            PerfilRecrutadorRepository perfilRecrutadorRepository,
+            OportunidadeDeEmpregoRepository oportunidadeRepository,
+            BCryptPasswordEncoder encoder,
+            UsuarioAutenticadoService usuarioAutenticadoService
+    ) {
+        this.usuarioRepository = usuarioRepository;
+        this.perfilCandidatoRepository = perfilCandidatoRepository;
+        this.perfilRecrutadorRepository = perfilRecrutadorRepository;
+        this.oportunidadeRepository = oportunidadeRepository;
+        this.encoder = encoder;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
+    }
 
     public List<UsuarioResponseDTO> listarTodosUsuarios() {
         return usuarioRepository.findAll().stream()
@@ -46,15 +52,17 @@ public class UsuarioService {
     }
 
     public UsuarioResponseDTO buscarUsuarioPorId(Long id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado. ID: " + id));
-        return UsuarioResponseDTO.daEntidade(usuario);
+        return UsuarioResponseDTO.daEntidade(encontrarUsuario(id));
     }
 
+    public UsuarioResponseDTO buscarUsuarioAutenticado() {
+        return UsuarioResponseDTO.daEntidade(obterUsuarioAutenticado());
+    }
 
     public UsuarioResponseDTO cadastrarUsuario(UsuarioRequestDTO usuarioRequest) {
-        if(usuarioRepository.existsByCpf(usuarioRequest.cpf()))
+        if (usuarioRepository.existsByCpf(usuarioRequest.cpf())) {
             throw new DataIntegrityViolationException("Já existe um usuário com o CPF: " + usuarioRequest.cpf());
+        }
 
         Usuario usuario = new Usuario(usuarioRequest);
         usuario.setSenha(encoder.encode(usuarioRequest.senha()));
@@ -65,10 +73,9 @@ public class UsuarioService {
         return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuario));
     }
 
-    public UsuarioResponseDTO atualizarUsuario(Long id,UsuarioRequestDTO usuarioRequest) {
+    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO usuarioRequest) {
         Usuario usuarioExistente = encontrarUsuario(id);
 
-        usuarioExistente.setSenha(usuarioRequest.senha());
         usuarioExistente.setNome(usuarioRequest.nome());
         usuarioExistente.setTelefone(usuarioRequest.telefone());
         usuarioExistente.setEmail(usuarioRequest.email());
@@ -77,56 +84,46 @@ public class UsuarioService {
         return UsuarioResponseDTO.daEntidade(usuarioRepository.save(usuarioExistente));
     }
 
-    public void removerMeuPerfilCandidato(){
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado).orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        processarRemocaoCandidato(usuario);
+    public void removerMeuPerfilCandidato() {
+        processarRemocaoCandidato(obterUsuarioAutenticado());
     }
 
-
-    //Usado por admins ou superAdmins
     public void removerPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
-
         processarRemocaoCandidato(usuario);
     }
 
     private void processarRemocaoCandidato(Usuario usuario) {
-        if(!perfilCandidatoRepository.existsById(usuario.getId())) {
+        if (!perfilCandidatoRepository.existsById(usuario.getId())) {
             throw new ObjectNotFoundException("Perfil candidato não encontrado para o usuário ID: " + usuario.getId());
         }
 
-        if(usuario.ehRecrutador()) {
+        if (usuario.ehRecrutador()) {
             usuario.removerPerfilCandidato();
             usuarioRepository.save(usuario);
-        } else {
-            throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo.");
+            return;
         }
+
+        throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo.");
     }
 
     @Transactional
     public void removerMeuPerfilRecrutador() {
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado).orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        processarRemocaoRecrutador(usuario);
+        processarRemocaoRecrutador(obterUsuarioAutenticado());
     }
 
     @Transactional
     public void removerPerfilRecrutadorPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
-
         processarRemocaoRecrutador(usuario);
     }
 
     private void processarRemocaoRecrutador(Usuario usuario) {
-        if(!perfilRecrutadorRepository.existsById(usuario.getId()))
-            throw new ObjectNotFoundException("Perfil recrutador não encontrado para o usuario ID: " + usuario.getId());
+        if (!perfilRecrutadorRepository.existsById(usuario.getId())) {
+            throw new ObjectNotFoundException("Perfil recrutador não encontrado para o usuário ID: " + usuario.getId());
+        }
 
-        if(usuario.ehCandidato()){
+        if (usuario.ehCandidato()) {
             PerfilRecrutador perfil = usuario.getPerfilRecrutador();
 
             if (!perfil.getOportunidadesPostadas().isEmpty()) {
@@ -137,28 +134,23 @@ public class UsuarioService {
 
             usuario.removerPerfilRecrutador();
             usuarioRepository.save(usuario);
-        } else {
-            throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo");
+            return;
         }
+
+        throw new DataIntegrityViolationException("O usuário precisa ter pelo menos um perfil ativo");
     }
 
-    public void adicionarMeuPerfilCandidato(){
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        processarAdicionarCandidato(usuario);
+    public void adicionarMeuPerfilCandidato() {
+        processarAdicionarCandidato(obterUsuarioAutenticado());
     }
 
     public void adicionarPerfilCandidatoPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
-
         processarAdicionarCandidato(usuario);
     }
 
     private void processarAdicionarCandidato(Usuario usuario) {
-        if(usuario.ehCandidato()){
+        if (usuario.ehCandidato()) {
             throw new DataIntegrityViolationException("O usuário já é um candidato");
         }
 
@@ -170,22 +162,16 @@ public class UsuarioService {
     }
 
     public void adicioncarMeuPerfilRecrutador(String nomeDaEmpresa) {
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        processarAdicionarRecrutador(usuario, nomeDaEmpresa);
+        processarAdicionarRecrutador(obterUsuarioAutenticado(), nomeDaEmpresa);
     }
 
     public void adicionarPerfilRecrutadorPorId(Long id, String nomeDaEmpresa) {
         Usuario usuario = encontrarUsuario(id);
-
         processarAdicionarRecrutador(usuario, nomeDaEmpresa);
     }
 
     private void processarAdicionarRecrutador(Usuario usuario, String nomeDaEmpresa) {
-        if(usuario.ehRecrutador()){
+        if (usuario.ehRecrutador()) {
             throw new DataIntegrityViolationException("O usuário já é um recrutador");
         }
 
@@ -196,18 +182,12 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public void meRemover(){
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        processarRemocaoUsuario(usuario);
+    public void meRemover() {
+        processarRemocaoUsuario(obterUsuarioAutenticado());
     }
 
     public void deletarUsuarioPorId(Long id) {
         Usuario usuario = encontrarUsuario(id);
-
         processarRemocaoUsuario(usuario);
     }
 
@@ -215,7 +195,11 @@ public class UsuarioService {
         usuarioRepository.delete(usuario);
     }
 
-    private Usuario encontrarUsuario(Long id){
+    private Usuario obterUsuarioAutenticado() {
+        return usuarioAutenticadoService.obterUsuarioAutenticado();
+    }
+
+    private Usuario encontrarUsuario(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado. ID: " + id));
     }
