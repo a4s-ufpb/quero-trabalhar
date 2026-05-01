@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -22,11 +23,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -42,6 +43,16 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**"
+    };
+
+    private static final String[] PUBLIC_POST_MATCHES = {
+            "/api/usuarios/cadastrar"
+    };
+
+    private static final String[] PUBLIC_GET_MATCHES = {
+            "/api/localidades/**",
+            "/api/empresas/**",
+            "/api/oportunidades/**"
     };
 
     private final Environment env;
@@ -130,6 +141,12 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_MATCHES).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_MATCHES).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/tipos-de-emprego/aprovados").permitAll()
+                        .requestMatchers(
+                                new RegexRequestMatcher("^/api/tipos-de-emprego/\\d+$", HttpMethod.GET.name())
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_MATCHES).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)

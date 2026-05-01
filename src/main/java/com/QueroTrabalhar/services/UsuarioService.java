@@ -74,6 +74,11 @@ public class UsuarioService {
             throw new DataIntegrityViolationException("Já existe um usuário com o CPF: " + usuarioRequest.cpf());
         }
 
+        usuarioRepository.findByEmail(usuarioRequest.email())
+                .ifPresent(usuarioExistente -> {
+                    throw new DuplicateResourceException("Já existe um usuário com o e-mail informado.");
+                });
+
         Usuario usuario = new Usuario(usuarioRequest);
         usuario.setSenha(passwordEncoder.encode(usuarioRequest.senha()));
 
