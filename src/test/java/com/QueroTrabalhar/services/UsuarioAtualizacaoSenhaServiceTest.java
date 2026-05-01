@@ -9,6 +9,7 @@ import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import com.QueroTrabalhar.services.exceptions.DuplicateResourceException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,6 +90,57 @@ class UsuarioAtualizacaoSenhaServiceTest {
     }
 
     @Test
+    void devePermitirAtualizarMeuUsuarioMantendoMesmoEmail() {
+        String emailAtual = "camila.souza@teste.com";
+        Usuario usuario = criarUsuario(21L, "Camila Souza", "senha-codificada");
+        usuario.setEmail(emailAtual);
+        UsuarioAtualizacaoRequestDTO dto = new UsuarioAtualizacaoRequestDTO(
+                "Camila Souza Lima",
+                "11988887766",
+                emailAtual
+        );
+
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuario);
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+
+        UsuarioResponseDTO resposta = usuarioService.atualizarMeuUsuario(dto);
+
+        assertAll(
+                () -> assertEquals("Camila Souza Lima", usuario.getNome()),
+                () -> assertEquals("11988887766", usuario.getTelefone()),
+                () -> assertEquals(emailAtual, usuario.getEmail()),
+                () -> assertEquals(emailAtual, resposta.email())
+        );
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(usuarioRepository, never()).findByEmail(anyString());
+        verify(usuarioRepository).save(usuario);
+        verifyNoInteractions(passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearAtualizacaoMeuUsuarioComEmailDeOutroUsuario() {
+        String emailEmUso = "email.em.uso@teste.com";
+        Usuario usuarioAutenticado = criarUsuario(22L, "João da Silva", "senha-codificada");
+        Usuario outroUsuario = criarUsuario(30L, "Marília Costa", "senha-codificada");
+        outroUsuario.setEmail(emailEmUso);
+        UsuarioAtualizacaoRequestDTO dto = new UsuarioAtualizacaoRequestDTO(
+                "João da Silva",
+                "21997776655",
+                emailEmUso
+        );
+
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+        when(usuarioRepository.findByEmail(emailEmUso)).thenReturn(Optional.of(outroUsuario));
+
+        assertThrows(DuplicateResourceException.class, () -> usuarioService.atualizarMeuUsuario(dto));
+
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(usuarioRepository).findByEmail(emailEmUso);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
     void deveAtualizarUsuarioComoAdminSemAlterarSenha() {
         Long idUsuario = 7L;
         String senhaOriginal = "hash-admin-preservado";
@@ -118,6 +170,59 @@ class UsuarioAtualizacaoSenhaServiceTest {
         );
         verify(usuarioRepository).findById(idUsuario);
         verify(usuarioRepository).save(usuario);
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void devePermitirAtualizacaoAdminMantendoMesmoEmail() {
+        Long idUsuario = 23L;
+        String emailAtual = "admin.mesmo.email@empresa.com";
+        Usuario usuario = criarUsuario(idUsuario, "Paulo Roberto", "senha-codificada");
+        usuario.setEmail(emailAtual);
+        UsuarioAtualizacaoRequestDTO dto = new UsuarioAtualizacaoRequestDTO(
+                "Paulo Roberto Júnior",
+                "31996665544",
+                emailAtual
+        );
+
+        when(usuarioRepository.findById(idUsuario)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+
+        UsuarioResponseDTO resposta = usuarioService.atualizarUsuarioComoAdmin(idUsuario, dto);
+
+        assertAll(
+                () -> assertEquals("Paulo Roberto Júnior", usuario.getNome()),
+                () -> assertEquals("31996665544", usuario.getTelefone()),
+                () -> assertEquals(emailAtual, usuario.getEmail()),
+                () -> assertEquals(emailAtual, resposta.email())
+        );
+        verify(usuarioRepository).findById(idUsuario);
+        verify(usuarioRepository, never()).findByEmail(anyString());
+        verify(usuarioRepository).save(usuario);
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearAtualizacaoAdminComEmailDeOutroUsuario() {
+        Long idUsuarioAtualizado = 24L;
+        String emailEmUso = "repetido@empresa.com";
+        Usuario usuarioAtualizado = criarUsuario(idUsuarioAtualizado, "Renata Alves", "senha-codificada");
+        Usuario usuarioComMesmoEmail = criarUsuario(31L, "Bruno Mendes", "senha-codificada");
+        usuarioComMesmoEmail.setEmail(emailEmUso);
+        UsuarioAtualizacaoRequestDTO dto = new UsuarioAtualizacaoRequestDTO(
+                "Renata Alves",
+                "41995554433",
+                emailEmUso
+        );
+
+        when(usuarioRepository.findById(idUsuarioAtualizado)).thenReturn(Optional.of(usuarioAtualizado));
+        when(usuarioRepository.findByEmail(emailEmUso)).thenReturn(Optional.of(usuarioComMesmoEmail));
+
+        assertThrows(DuplicateResourceException.class, () -> usuarioService.atualizarUsuarioComoAdmin(idUsuarioAtualizado, dto));
+
+        verify(usuarioRepository).findById(idUsuarioAtualizado);
+        verify(usuarioRepository).findByEmail(emailEmUso);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
         verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
     }
 
