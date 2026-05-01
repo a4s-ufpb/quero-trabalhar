@@ -12,8 +12,10 @@ import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
@@ -23,6 +25,8 @@ import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -64,6 +68,9 @@ class EmpresaFeatureServiceTest {
     @Mock
     private CidadeRepository cidadeRepository;
 
+    @Mock
+    private LocalidadeResolucaoService localidadeResolucaoService;
+
     @InjectMocks
     private EmpresaService empresaService;
 
@@ -80,7 +87,8 @@ class EmpresaFeatureServiceTest {
                 "  83999999999  ",
                 pais.getId(),
                 estado.getId(),
-                cidade.getId()
+                cidade.getId(),
+                null
         );
 
         when(paisRepository.findById(pais.getId())).thenReturn(Optional.of(pais));
@@ -122,6 +130,7 @@ class EmpresaFeatureServiceTest {
                 null,
                 99L,
                 null,
+                null,
                 null
         );
 
@@ -142,7 +151,8 @@ class EmpresaFeatureServiceTest {
                 null,
                 1L,
                 null,
-                100L
+                100L,
+                null
         );
 
         assertThrows(BusinessRuleException.class, () -> empresaService.criarEmpresa(dto));
@@ -164,6 +174,7 @@ class EmpresaFeatureServiceTest {
                 null,
                 brasil.getId(),
                 cordoba.getId(),
+                null,
                 null
         );
 
@@ -190,7 +201,8 @@ class EmpresaFeatureServiceTest {
                 null,
                 pais.getId(),
                 paraiba.getId(),
-                recife.getId()
+                recife.getId(),
+                null
         );
 
         when(paisRepository.findById(pais.getId())).thenReturn(Optional.of(pais));
@@ -199,6 +211,109 @@ class EmpresaFeatureServiceTest {
 
         assertThrows(BusinessRuleException.class, () -> empresaService.criarEmpresa(dto));
 
+        verify(empresaRepository, never()).save(any(Empresa.class));
+    }
+
+    @Test
+    void deveCriarEmpresaComLocalidadeResolvidaPorTextoLivre() {
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        Estado estado = criarEstado(10L, "Paraiba", "PB", pais);
+        Cidade cidade = criarCidade(100L, "Joao Pessoa", estado);
+        EmpresaRequestDTO dto = new EmpresaRequestDTO(
+                "Empresa ACME",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "  Joao Pessoa  "
+        );
+
+        when(localidadeResolucaoService.resolver("Joao Pessoa"))
+                .thenReturn(ResultadoResolucaoLocalidade.resolvida(new Localidade(pais, estado, cidade)));
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresaSalva = invocation.getArgument(0);
+            ReflectionTestUtils.setField(empresaSalva, "id", 60L);
+            return empresaSalva;
+        });
+
+        EmpresaResponseDTO resposta = empresaService.criarEmpresa(dto);
+
+        ArgumentCaptor<Empresa> empresaCaptor = ArgumentCaptor.forClass(Empresa.class);
+        verify(empresaRepository).save(empresaCaptor.capture());
+        Empresa empresaSalva = empresaCaptor.getValue();
+
+        assertEquals(60L, resposta.id());
+        assertEquals("VALIDADA", resposta.statusLocalidade());
+        assertEquals(1L, resposta.paisId());
+        assertEquals(10L, resposta.estadoId());
+        assertEquals(100L, resposta.cidadeId());
+        assertSame(pais, empresaSalva.getLocalidade().getPais());
+        assertSame(estado, empresaSalva.getLocalidade().getEstado());
+        assertSame(cidade, empresaSalva.getLocalidade().getCidade());
+        assertNull(empresaSalva.getLocalidadePendente());
+    }
+
+    @Test
+    void deveCriarEmpresaComLocalidadePendenteQuandoTextoLivreNaoForResolvido() {
+        EmpresaRequestDTO dto = new EmpresaRequestDTO(
+                "Empresa ACME",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "  Vale Imaginario  "
+        );
+        LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Vale Imaginario",
+                "Localidade não encontrada"
+        );
+
+        when(localidadeResolucaoService.resolver("Vale Imaginario"))
+                .thenReturn(ResultadoResolucaoLocalidade.pendente(localidadePendente));
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresaSalva = invocation.getArgument(0);
+            ReflectionTestUtils.setField(empresaSalva, "id", 61L);
+            return empresaSalva;
+        });
+
+        EmpresaResponseDTO resposta = empresaService.criarEmpresa(dto);
+
+        ArgumentCaptor<Empresa> empresaCaptor = ArgumentCaptor.forClass(Empresa.class);
+        verify(empresaRepository).save(empresaCaptor.capture());
+        Empresa empresaSalva = empresaCaptor.getValue();
+
+        assertEquals(61L, resposta.id());
+        assertEquals("PENDENTE", resposta.statusLocalidade());
+        assertEquals("Vale Imaginario", resposta.localidadeTextoOriginal());
+        assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, resposta.statusValidacaoLocalidade());
+        assertNull(resposta.paisId());
+        assertNull(empresaSalva.getLocalidade());
+        assertSame(localidadePendente, empresaSalva.getLocalidadePendente());
+    }
+
+    @Test
+    void deveLancarBusinessRuleExceptionQuandoLocalidadeNaoForInformada() {
+        EmpresaRequestDTO dto = new EmpresaRequestDTO(
+                "Empresa ACME",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "   "
+        );
+
+        assertThrows(BusinessRuleException.class, () -> empresaService.criarEmpresa(dto));
+
+        verify(localidadeResolucaoService, never()).resolver(any(String.class));
         verify(empresaRepository, never()).save(any(Empresa.class));
     }
 

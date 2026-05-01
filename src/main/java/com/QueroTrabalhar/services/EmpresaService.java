@@ -18,6 +18,8 @@ import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class EmpresaService {
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
+    private final LocalidadeResolucaoService localidadeResolucaoService;
 
     public EmpresaService(
             EmpresaRepository empresaRepository,
@@ -40,7 +43,8 @@ public class EmpresaService {
             OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository,
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
-            CidadeRepository cidadeRepository
+            CidadeRepository cidadeRepository,
+            LocalidadeResolucaoService localidadeResolucaoService
     ) {
         this.empresaRepository = empresaRepository;
         this.perfilRecrutadorRepository = perfilRecrutadorRepository;
@@ -48,20 +52,20 @@ public class EmpresaService {
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
+        this.localidadeResolucaoService = localidadeResolucaoService;
     }
 
     @Transactional
     public EmpresaResponseDTO criarEmpresa(EmpresaRequestDTO dto) {
-        Localidade localidade = montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId());
-
         Empresa empresa = new Empresa(
                 dto.nome().trim(),
                 normalizarCampoOpcional(dto.descricao()),
                 normalizarCampoOpcional(dto.site()),
                 normalizarCampoOpcional(dto.emailPublico()),
                 normalizarCampoOpcional(dto.telefonePublico()),
-                localidade
+                null
         );
+        definirLocalidadeDaEmpresa(empresa, dto);
 
         return EmpresaResponseDTO.daEntidade(empresaRepository.save(empresa));
     }
@@ -107,9 +111,38 @@ public class EmpresaService {
                 .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
     }
 
+    private void definirLocalidadeDaEmpresa(Empresa empresa, EmpresaRequestDTO dto) {
+        if (possuiLocalidadeEstruturadaPorIds(dto)) {
+            empresa.definirLocalidadeValidada(montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId()));
+            return;
+        }
+
+        String localidadeTexto = normalizarCampoOpcional(dto.localidadeTexto());
+        if (localidadeTexto != null) {
+            ResultadoResolucaoLocalidade resultadoResolucao = localidadeResolucaoService.resolver(localidadeTexto);
+            if (resultadoResolucao.resolvida()) {
+                empresa.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
+                return;
+            }
+
+            empresa.definirLocalidadePendente(resultadoResolucao.localidadePendente());
+            return;
+        }
+
+        throw new BusinessRuleException("A localidade da empresa é obrigatória.");
+    }
+
+    private boolean possuiLocalidadeEstruturadaPorIds(EmpresaRequestDTO dto) {
+        return dto.paisId() != null || dto.estadoId() != null || dto.cidadeId() != null;
+    }
+
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
             throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
+        }
+
+        if (paisId == null) {
+            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)

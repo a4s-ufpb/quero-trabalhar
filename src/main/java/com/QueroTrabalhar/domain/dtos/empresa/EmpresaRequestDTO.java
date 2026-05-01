@@ -2,7 +2,6 @@ package com.QueroTrabalhar.domain.dtos.empresa;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -24,7 +23,6 @@ public record EmpresaRequestDTO(
         @Size(max = 20, message = "O telefone público deve ter no máximo 20 caracteres.")
         String telefonePublico,
 
-        @NotNull(message = "O país é obrigatório.")
         @Positive(message = "O país informado é inválido.")
         Long paisId,
 
@@ -32,6 +30,9 @@ public record EmpresaRequestDTO(
         Long estadoId,
 
         @Positive(message = "A cidade informada é inválida.")
-        Long cidadeId
+        Long cidadeId,
+
+        @Size(max = 255, message = "O texto da localidade deve ter no máximo 255 caracteres.")
+        String localidadeTexto
 ) {
 }
