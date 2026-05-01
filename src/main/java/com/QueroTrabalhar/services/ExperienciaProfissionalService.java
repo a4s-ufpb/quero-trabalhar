@@ -5,141 +5,158 @@ import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfiss
 import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
-import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.ExperienciaProfissionalRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
-import com.QueroTrabalhar.repository.UsuarioRepository;
-import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
+import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ExperienciaProfissionalService {
 
-    @Autowired
-    private ExperienciaProfissionalRepository experienciaProfissionalRepository;
+    private final ExperienciaProfissionalRepository experienciaProfissionalRepository;
+    private final TipoDeEmpregoRepository tipoDeEmpregoRepository;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private TipoDeEmpregoRepository tipoDeEmpregoRepository;
-
-    private PerfilCandidato obterMeuPerfilCandidato(){
-        String emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new ObjectNotFoundException("Usuário não encontrado no contexto de segurança."));
-
-        if(!usuario.ehCandidato()){
-            throw new AccessDeniedException("Acesso negado. Você precisa ter um perfil de candidato ativo para gerenciar experiências.");
-        }
-
-        return usuario.getPerfilCandidato();
+    public ExperienciaProfissionalService(
+            ExperienciaProfissionalRepository experienciaProfissionalRepository,
+            TipoDeEmpregoRepository tipoDeEmpregoRepository,
+            UsuarioAutenticadoService usuarioAutenticadoService
+    ) {
+        this.experienciaProfissionalRepository = experienciaProfissionalRepository;
+        this.tipoDeEmpregoRepository = tipoDeEmpregoRepository;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
     @Transactional(readOnly = true)
     public List<ExperienciaProfissionalResponseDTO> listarTodasAsExperienciaProfissionais() {
-        PerfilCandidato candidato = obterMeuPerfilCandidato();
+        PerfilCandidato perfilCandidato = obterPerfilCandidatoAutenticado();
 
-        return candidato.getExperiencias().stream()
+        return perfilCandidato.getExperiencias().stream()
                 .map(ExperienciaProfissionalResponseDTO::daEntidade)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public ExperienciaProfissionalResponseDTO buscarMinhaExperienciaPorId(Long idExperiencia) {
-        PerfilCandidato perfil = obterMeuPerfilCandidato();
+        PerfilCandidato perfilCandidato = obterPerfilCandidatoAutenticado();
+        ExperienciaProfissional experienciaProfissional = buscarExperienciaPorId(idExperiencia);
 
-        ExperienciaProfissional exp = experienciaProfissionalRepository.findById(idExperiencia)
-                .orElseThrow(() -> new ObjectNotFoundException("Experiência não encontrada. ID: " + idExperiencia));
+        validarDonoDaExperiencia(
+                experienciaProfissional,
+                perfilCandidato,
+                "O candidato autenticado não pode acessar uma experiência que pertence a outro perfil."
+        );
 
-        if (!exp.getPerfilCandidato().getId().equals(perfil.getId())) {
-            throw new AccessDeniedException("Você não tem permissão para acessar esta experiência.");
-        }
-
-        return ExperienciaProfissionalResponseDTO.daEntidade(exp);
+        return ExperienciaProfissionalResponseDTO.daEntidade(experienciaProfissional);
     }
 
     @Transactional
-    public ExperienciaProfissionalResponseDTO adicionarMinhaExperienciaProfissional(ExperienciaProfissionalRequestDTO dto) {
-        PerfilCandidato perfil = obterMeuPerfilCandidato();
-
-        TipoDeEmprego tipo = tipoDeEmpregoRepository.findById(dto.tipoDeEmpregoId())
-                .orElseThrow(() -> new ObjectNotFoundException("Tipo de Emprego não encontrado, ID: "+dto.tipoDeEmpregoId()));
+    public ExperienciaProfissionalResponseDTO adicionarMinhaExperienciaProfissional(
+            ExperienciaProfissionalRequestDTO dto
+    ) {
+        PerfilCandidato perfilCandidato = obterPerfilCandidatoAutenticado();
+        TipoDeEmprego tipoDeEmprego = buscarTipoDeEmpregoPorId(dto.tipoDeEmpregoId());
 
         ExperienciaProfissional novaExperiencia = new ExperienciaProfissional(
-                perfil,
-                tipo,
+                perfilCandidato,
+                tipoDeEmprego,
                 dto.descricao(),
                 dto.dataInicio(),
                 dto.dataFim()
         );
 
-        perfil.adicionarExperiencia(novaExperiencia);
-        return ExperienciaProfissionalResponseDTO.daEntidade(experienciaProfissionalRepository.save(novaExperiencia));
+        perfilCandidato.adicionarExperiencia(novaExperiencia);
+
+        return ExperienciaProfissionalResponseDTO.daEntidade(
+                experienciaProfissionalRepository.save(novaExperiencia)
+        );
     }
 
     @Transactional
     public void deletarMinhaExperiencia(Long experienciaId) {
-        PerfilCandidato perfil = obterMeuPerfilCandidato();
+        PerfilCandidato perfilCandidato = obterPerfilCandidatoAutenticado();
+        ExperienciaProfissional experienciaProfissional = buscarExperienciaPorId(experienciaId);
 
-        ExperienciaProfissional exp = experienciaProfissionalRepository.findById(experienciaId)
-                .orElseThrow(() -> new ObjectNotFoundException("Experiência não encontrada. ID: " + experienciaId));
+        validarDonoDaExperiencia(
+                experienciaProfissional,
+                perfilCandidato,
+                "O candidato autenticado não pode remover uma experiência que pertence a outro perfil."
+        );
 
-        if(!exp.getPerfilCandidato().getId().equals(perfil.getId())){
-            throw new DataIntegrityViolationException("Operação negada: Esta experiência não pertence ao perfil informado");
-        }
-
-        perfil.removerExperiencia(exp);
-
-        experienciaProfissionalRepository.delete(exp);
+        perfilCandidato.removerExperiencia(experienciaProfissional);
+        experienciaProfissionalRepository.delete(experienciaProfissional);
     }
 
+    @Transactional(readOnly = true)
     public List<ExperienciaProfissionalResponseDTO> listarTodasExperienciasComoAdmin() {
         return experienciaProfissionalRepository.findAll().stream()
                 .map(ExperienciaProfissionalResponseDTO::daEntidade)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     public ExperienciaProfissionalResponseDTO buscarExperienciaPorIdComoAdmin(Long id) {
-        ExperienciaProfissional exp = experienciaProfissionalRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Experiência não encontrada. ID: " + id));
-        return ExperienciaProfissionalResponseDTO.daEntidade(exp);
+        return ExperienciaProfissionalResponseDTO.daEntidade(buscarExperienciaPorId(id));
     }
 
     @Transactional
-    public ExperienciaProfissionalResponseDTO atualizarExperienciaComoAdmin(Long id, ExperienciaProfissionalRequestDTO dto) {
-        ExperienciaProfissional exp = experienciaProfissionalRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Experiência não encontrada. ID: " + id));
+    public ExperienciaProfissionalResponseDTO atualizarExperienciaComoAdmin(
+            Long id,
+            ExperienciaProfissionalRequestDTO dto
+    ) {
+        ExperienciaProfissional experienciaProfissional = buscarExperienciaPorId(id);
 
-        TipoDeEmprego tipo = tipoDeEmpregoRepository.findById(dto.tipoDeEmpregoId())
-                .orElseThrow(() -> new ObjectNotFoundException("Tipo de emprego não encontrado. ID: "+dto.tipoDeEmpregoId()));
+        experienciaProfissional.setTipoDeEmprego(buscarTipoDeEmpregoPorId(dto.tipoDeEmpregoId()));
+        experienciaProfissional.setDescricao(dto.descricao());
+        experienciaProfissional.setDataInicio(dto.dataInicio());
+        experienciaProfissional.setDataFim(dto.dataFim());
 
-        exp.setTipoDeEmprego(tipo);
-        exp.setDescricao(dto.descricao());
-        exp.setDataInicio(dto.dataInicio());
-        exp.setDataFim(dto.dataFim());
-
-        return ExperienciaProfissionalResponseDTO.daEntidade(experienciaProfissionalRepository.save(exp));
+        return ExperienciaProfissionalResponseDTO.daEntidade(
+                experienciaProfissionalRepository.save(experienciaProfissional)
+        );
     }
 
     @Transactional
     public void deletarExperienciaComoAdmin(Long idExperiencia) {
-        ExperienciaProfissional exp = experienciaProfissionalRepository.findById(idExperiencia)
-                .orElseThrow(() -> new ObjectNotFoundException("Experiência não encontrada. ID: " + idExperiencia));
+        ExperienciaProfissional experienciaProfissional = buscarExperienciaPorId(idExperiencia);
 
-        if (exp.getPerfilCandidato() != null) {
-            exp.getPerfilCandidato().removerExperiencia(exp);
+        if (experienciaProfissional.getPerfilCandidato() != null) {
+            experienciaProfissional.getPerfilCandidato().removerExperiencia(experienciaProfissional);
         }
 
-        experienciaProfissionalRepository.delete(exp);
+        experienciaProfissionalRepository.delete(experienciaProfissional);
+    }
+
+    private PerfilCandidato obterPerfilCandidatoAutenticado() {
+        return usuarioAutenticadoService.obterPerfilCandidatoAutenticado();
+    }
+
+    private ExperienciaProfissional buscarExperienciaPorId(Long idExperiencia) {
+        return experienciaProfissionalRepository.findById(idExperiencia)
+                .orElseThrow(() -> new ObjectNotFoundException(
+                        "Experiência não encontrada. ID: " + idExperiencia
+                ));
+    }
+
+    private TipoDeEmprego buscarTipoDeEmpregoPorId(Long tipoDeEmpregoId) {
+        return tipoDeEmpregoRepository.findById(tipoDeEmpregoId)
+                .orElseThrow(() -> new ObjectNotFoundException(
+                        "Tipo de emprego não encontrado. ID: " + tipoDeEmpregoId
+                ));
+    }
+
+    private void validarDonoDaExperiencia(
+            ExperienciaProfissional experienciaProfissional,
+            PerfilCandidato perfilCandidatoAutenticado,
+            String mensagem
+    ) {
+        if (experienciaProfissional.getPerfilCandidato() == null
+                || !experienciaProfissional.getPerfilCandidato().getId().equals(perfilCandidatoAutenticado.getId())) {
+            throw new BusinessRuleException(mensagem);
+        }
     }
 }
