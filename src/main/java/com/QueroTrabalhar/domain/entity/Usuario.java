@@ -1,7 +1,6 @@
 package com.QueroTrabalhar.domain.entity;
 
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
-import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -132,6 +131,10 @@ public class Usuario {
         indicacao.setUsuarioIndicado(this);
     }
 
+    public void removerIndicacaoRecebida(Indicacao indicacao) {
+        this.indicacaoRecebidas.remove(indicacao);
+    }
+
     public List<Indicacao> getIndicacoesDadas() {
         return Collections.unmodifiableList(this.indicacaoDadas);
     }
@@ -139,6 +142,10 @@ public class Usuario {
     public void adicionarIndicacaoDada(Indicacao indicacao) {
         this.indicacaoDadas.add(indicacao);
         indicacao.setAutor(this);
+    }
+
+    public void removerIndicacaoDada(Indicacao indicacao) {
+        this.indicacaoDadas.remove(indicacao);
     }
 
     public Set<Role> getProfiles() {
