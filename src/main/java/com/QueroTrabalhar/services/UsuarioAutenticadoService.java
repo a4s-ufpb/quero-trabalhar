@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.UsuarioRepository;
@@ -45,5 +46,18 @@ public class UsuarioAutenticadoService {
         }
 
         return usuarioAutenticado.getPerfilRecrutador();
+    }
+
+    @Transactional(readOnly = true)
+    public PerfilCandidato obterPerfilCandidatoAutenticado() {
+        Usuario usuarioAutenticado = obterUsuarioAutenticado();
+
+        if (!usuarioAutenticado.ehCandidato() || usuarioAutenticado.getPerfilCandidato() == null) {
+            throw new BusinessRuleException(
+                    "O usuário autenticado precisa possuir um perfil de candidato ativo para acessar este recurso."
+            );
+        }
+
+        return usuarioAutenticado.getPerfilCandidato();
     }
 }

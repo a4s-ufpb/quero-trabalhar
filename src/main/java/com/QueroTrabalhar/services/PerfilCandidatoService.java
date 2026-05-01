@@ -1,56 +1,73 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class PerfilCandidatoService {
 
-    @Autowired
-    private PerfilCandidatoRepository candidatoRepository;
+    private final PerfilCandidatoRepository perfilCandidatoRepository;
+    private final OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
-    @Autowired
-    private OportunidadeDeEmpregoRepository oportunidadeRepository;
-
-    // --- GESTÃO DE INTERESSES EM VAGAS ---
-
-    @Transactional
-    public void demonstrarInteresseEmVaga(Long candidatoId, Long oportunidadeId) {
-        PerfilCandidato candidato = candidatoRepository.findById(candidatoId)
-                .orElseThrow(() -> new EntityNotFoundException("Candidato não encontrado. ID: " + candidatoId));
-
-        OportunidadeDeEmprego vaga = oportunidadeRepository.findById(oportunidadeId)
-                .orElseThrow(() -> new EntityNotFoundException("Vaga não encontrada. ID: " + oportunidadeId));
-
-        if (!candidato.getVagasDeInteresse().contains(vaga)) {
-            candidato.demonstrarInteresse(vaga);
-            candidatoRepository.save(candidato);
-        } else {
-            throw new IllegalArgumentException("Você já demonstrou interesse nesta vaga.");
-        }
+    public PerfilCandidatoService(
+            PerfilCandidatoRepository perfilCandidatoRepository,
+            OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository,
+            UsuarioAutenticadoService usuarioAutenticadoService
+    ) {
+        this.perfilCandidatoRepository = perfilCandidatoRepository;
+        this.oportunidadeDeEmpregoRepository = oportunidadeDeEmpregoRepository;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
     @Transactional
-    public void removerInteresseEmVaga(Long candidatoId, Long oportunidadeId) {
-        PerfilCandidato candidato = candidatoRepository.findById(candidatoId)
-                .orElseThrow(() -> new EntityNotFoundException("Candidato não encontrado. ID: " + candidatoId));
+    public void demonstrarInteresseEmVaga(Long vagaId) {
+        PerfilCandidato perfilCandidato = usuarioAutenticadoService.obterPerfilCandidatoAutenticado();
+        OportunidadeDeEmprego vaga = buscarVagaPorId(vagaId);
 
-        OportunidadeDeEmprego vaga = oportunidadeRepository.findById(oportunidadeId)
-                .orElseThrow(() -> new EntityNotFoundException("Vaga não encontrada. ID: " + oportunidadeId));
-
-        if (candidato.getVagasDeInteresse().contains(vaga)) {
-            candidato.removerInteresse(vaga);
-            candidatoRepository.save(candidato);
-        } else {
-            throw new IllegalArgumentException("Esta vaga não está na sua lista de interesses.");
+        if (perfilCandidato.getVagasDeInteresse().contains(vaga)) {
+            throw new BusinessRuleException("Você já demonstrou interesse nesta vaga.");
         }
+
+        perfilCandidato.demonstrarInteresse(vaga);
+        perfilCandidatoRepository.save(perfilCandidato);
     }
 
-    // Nota: Aqui futuramente você adicionará o método de adicionar/remover ExperienciaProfissional
+    @Transactional
+    public void removerInteresseEmVaga(Long vagaId) {
+        PerfilCandidato perfilCandidato = usuarioAutenticadoService.obterPerfilCandidatoAutenticado();
+        OportunidadeDeEmprego vaga = buscarVagaPorId(vagaId);
+
+        if (!perfilCandidato.getVagasDeInteresse().contains(vaga)) {
+            throw new BusinessRuleException("Você ainda não demonstrou interesse nesta vaga.");
+        }
+
+        perfilCandidato.removerInteresse(vaga);
+        perfilCandidatoRepository.save(perfilCandidato);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OportunidadeDeEmpregoResponseDTO> listarMinhasVagasDeInteresse() {
+        PerfilCandidato perfilCandidato = usuarioAutenticadoService.obterPerfilCandidatoAutenticado();
+
+        return perfilCandidato.getVagasDeInteresse().stream()
+                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
+                .toList();
+    }
+
+    private OportunidadeDeEmprego buscarVagaPorId(Long vagaId) {
+        return oportunidadeDeEmpregoRepository.findById(vagaId)
+                .orElseThrow(() -> new ObjectNotFoundException(
+                        "Oportunidade de emprego não encontrada. ID: " + vagaId
+                ));
+    }
 }
