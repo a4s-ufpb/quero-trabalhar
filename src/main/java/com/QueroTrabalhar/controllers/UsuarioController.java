@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorUsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.AlterarSenhaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
@@ -9,7 +10,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,9 +78,11 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/me/perfil-recrutador/{nomeDaEmpresa}")
-    public ResponseEntity<Void> adicionarMeuPerfilRecrutador(@PathVariable String nomeDaEmpresa) {
-        usuarioService.adicioncarMeuPerfilRecrutador(nomeDaEmpresa);
+    @PutMapping("/me/perfil-recrutador")
+    public ResponseEntity<Void> adicionarMeuPerfilRecrutador(
+            @Valid @RequestBody PerfilRecrutadorUsuarioRequestDTO perfilRecrutadorRequest
+    ) {
+        usuarioService.adicionarMeuPerfilRecrutador(perfilRecrutadorRequest);
         return ResponseEntity.noContent().build();
     }
 

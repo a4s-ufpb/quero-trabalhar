@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorUsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.services.UsuarioService;
@@ -45,30 +46,30 @@ public class UsuarioAdminController {
         return ResponseEntity.ok(usuarioService.atualizarUsuarioComoAdmin(id, usuarioRequest));
     }
 
-    @DeleteMapping("/{id}/perfil_candidato")
+    @DeleteMapping("/{id}/perfil-candidato")
     public ResponseEntity<Void> removerPerfilCandidatoPorId(@PathVariable Long id) {
         usuarioService.removerPerfilCandidatoPorId(id);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/perfil_recrutador")
+    @DeleteMapping("/{id}/perfil-recrutador")
     public ResponseEntity<Void> removerPerfilRecrutadorPorId(@PathVariable Long id) {
         usuarioService.removerPerfilRecrutadorPorId(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/perfil_candidato")
+    @PutMapping("/{id}/perfil-candidato")
     public ResponseEntity<Void> adicionarPerfilCandidato(@PathVariable Long id) {
         usuarioService.adicionarPerfilCandidatoPorId(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/perfil_recrutador/{nomeDaEmpresa}")
+    @PutMapping("/{id}/perfil-recrutador")
     public ResponseEntity<Void> adicionarPerfilRecrutador(
             @PathVariable Long id,
-            @PathVariable String nomeDaEmpresa
+            @Valid @RequestBody PerfilRecrutadorUsuarioRequestDTO perfilRecrutadorRequest
     ) {
-        usuarioService.adicionarPerfilRecrutadorPorId(id, nomeDaEmpresa);
+        usuarioService.adicionarPerfilRecrutadorPorId(id, perfilRecrutadorRequest);
         return ResponseEntity.noContent().build();
     }
 

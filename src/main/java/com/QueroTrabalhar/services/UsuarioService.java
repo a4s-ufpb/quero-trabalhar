@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorUsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.AlterarSenhaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
@@ -194,14 +195,14 @@ public class UsuarioService {
     }
 
     @Transactional
-    public void adicioncarMeuPerfilRecrutador(String nomeDaEmpresa) {
-        processarAdicionarRecrutador(obterUsuarioAutenticado(), nomeDaEmpresa);
+    public void adicionarMeuPerfilRecrutador(PerfilRecrutadorUsuarioRequestDTO dto) {
+        processarAdicionarRecrutador(obterUsuarioAutenticado(), dto.nomeDaEmpresa());
     }
 
     @Transactional
-    public void adicionarPerfilRecrutadorPorId(Long id, String nomeDaEmpresa) {
+    public void adicionarPerfilRecrutadorPorId(Long id, PerfilRecrutadorUsuarioRequestDTO dto) {
         Usuario usuario = encontrarUsuario(id);
-        processarAdicionarRecrutador(usuario, nomeDaEmpresa);
+        processarAdicionarRecrutador(usuario, dto.nomeDaEmpresa());
     }
 
     private void processarAdicionarRecrutador(Usuario usuario, String nomeDaEmpresa) {
