@@ -14,12 +14,14 @@ import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
+import com.QueroTrabalhar.services.exceptions.DuplicateResourceException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -230,9 +232,22 @@ public class UsuarioService {
     }
 
     private void atualizarDadosCadastrais(Usuario usuario, UsuarioAtualizacaoRequestDTO dto) {
+        validarEmailDisponivelParaAtualizacao(usuario, dto.email());
         usuario.setNome(dto.nome());
         usuario.setTelefone(dto.telefone());
         usuario.setEmail(dto.email());
+    }
+
+    private void validarEmailDisponivelParaAtualizacao(Usuario usuario, String novoEmail) {
+        if (Objects.equals(usuario.getEmail(), novoEmail)) {
+            return;
+        }
+
+        usuarioRepository.findByEmail(novoEmail)
+                .filter(usuarioComMesmoEmail -> !usuarioComMesmoEmail.getId().equals(usuario.getId()))
+                .ifPresent(usuarioComMesmoEmail -> {
+                    throw new DuplicateResourceException("O e-mail informado já está em uso por outro usuário.");
+                });
     }
 
     private Usuario obterUsuarioAutenticado() {
