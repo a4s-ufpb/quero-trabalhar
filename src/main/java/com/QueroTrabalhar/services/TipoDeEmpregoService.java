@@ -40,6 +40,17 @@ public class TipoDeEmpregoService {
         );
     }
 
+    public TipoDeEmpregoResponseDTO buscarAprovadoPorId(Long id) {
+        TipoDeEmprego tipoDeEmprego = tipoDeEmpregoRepository.findById(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Tipo de emprego aprovado não encontrado. ID: " + id));
+
+        if (!tipoDeEmprego.isAprovado()) {
+            throw new ObjectNotFoundException("Tipo de emprego aprovado não encontrado. ID: " + id);
+        }
+
+        return TipoDeEmpregoResponseDTO.daEntidade(tipoDeEmprego);
+    }
+
     public TipoDeEmpregoResponseDTO criarNoCatalogo(TipoDeEmpregoRequestDTO tipoDeEmprego) {
         if(tipoDeEmpregoRepository.existsByTitulo(tipoDeEmprego.titulo()))
             throw new DataIntegrityViolationException("Já existe um tipo de emprego com o título: "+ tipoDeEmprego.titulo());

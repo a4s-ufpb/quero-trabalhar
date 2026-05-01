@@ -33,7 +33,7 @@ public class TipoDeEmpregoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<TipoDeEmpregoResponseDTO> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(tipoDeEmpregoService.buscarPorId(id));
+        return ResponseEntity.ok(tipoDeEmpregoService.buscarAprovadoPorId(id));
     }
 
     @PostMapping("/sugerir")
