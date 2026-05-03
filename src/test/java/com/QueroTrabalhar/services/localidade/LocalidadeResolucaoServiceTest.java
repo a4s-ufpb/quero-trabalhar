@@ -15,6 +15,7 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -62,19 +64,22 @@ class LocalidadeResolucaoServiceTest {
     @InjectMocks
     private LocalidadeResolucaoService localidadeResolucaoService;
 
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(localidadeResolucaoService, "googleMapsRetryMaxAttempts", 2);
+        ReflectionTestUtils.setField(localidadeResolucaoService, "googleMapsRetryDelayMs", 0L);
+    }
+
     @Test
     void deveResolverLocalidadePorCidadeExistenteNaBaseInterna() {
-        // Arrange
-        String textoLivre = "João Pessoa";
+        String textoLivre = "Joao Pessoa";
         Pais pais = criarPais(1L, "Brasil", "BR");
-        Estado estado = criarEstado(10L, "Paraíba", "PB", pais);
-        Cidade cidade = criarCidade(100L, "João Pessoa", estado);
+        Estado estado = criarEstado(10L, "Paraiba", "PB", pais);
+        Cidade cidade = criarCidade(100L, "Joao Pessoa", estado);
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(cidade));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertTrue(resultado.resolvida()),
                 () -> assertFalse(resultado.pendente()),
@@ -89,17 +94,14 @@ class LocalidadeResolucaoServiceTest {
 
     @Test
     void deveResolverLocalidadePorEstadoExistenteNaBaseInterna() {
-        // Arrange
-        String textoLivre = "Paraíba";
+        String textoLivre = "Paraiba";
         Pais pais = criarPais(1L, "Brasil", "BR");
-        Estado estado = criarEstado(10L, "Paraíba", "PB", pais);
+        Estado estado = criarEstado(10L, "Paraiba", "PB", pais);
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(estado));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertTrue(resultado.resolvida()),
                 () -> assertFalse(resultado.pendente()),
@@ -114,17 +116,14 @@ class LocalidadeResolucaoServiceTest {
 
     @Test
     void deveResolverLocalidadePorPaisExistenteNaBaseInterna() {
-        // Arrange
         String textoLivre = "Brasil";
         Pais pais = criarPais(1L, "Brasil", "BR");
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.of(pais));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertTrue(resultado.resolvida()),
                 () -> assertFalse(resultado.pendente()),
@@ -139,31 +138,28 @@ class LocalidadeResolucaoServiceTest {
 
     @Test
     void deveNaoEscolherCidadeQuandoHouverMaisDeUmaComMesmoNome() {
-        // Arrange
-        String textoLivre = "Santo André";
+        String textoLivre = "Santo Andre";
         Pais brasil = criarPais(1L, "Brasil", "BR");
-        Estado saoPaulo = criarEstado(10L, "São Paulo", "SP", brasil);
+        Estado saoPaulo = criarEstado(10L, "Sao Paulo", "SP", brasil);
         Estado bahia = criarEstado(20L, "Bahia", "BA", brasil);
-        Cidade cidadeSp = criarCidade(100L, "Santo André", saoPaulo);
-        Cidade cidadeBa = criarCidade(200L, "Santo André", bahia);
+        Cidade cidadeSp = criarCidade(100L, "Santo Andre", saoPaulo);
+        Cidade cidadeBa = criarCidade(200L, "Santo Andre", bahia);
         mockSalvarLocalidadePendente();
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(cidadeSp, cidadeBa));
         when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.empty());
         when(googleMapsClient.buscarLugarComFiltro(textoLivre, null)).thenReturn(Optional.empty());
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertFalse(resultado.resolvida()),
                 () -> assertTrue(resultado.pendente()),
                 () -> assertNull(resultado.localidadeValidada()),
                 () -> assertNotNull(resultado.localidadePendente()),
-                () -> assertEquals("Santo André", resultado.localidadePendente().getTextoOriginal())
+                () -> assertEquals("Santo Andre", resultado.localidadePendente().getTextoOriginal())
         );
-        verify(googleMapsClient).buscarLugarComFiltro(textoLivre, null);
+        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoLivre, null);
         verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
         verify(paisRepository, never()).save(any(Pais.class));
         verify(estadoRepository, never()).save(any(Estado.class));
@@ -171,18 +167,48 @@ class LocalidadeResolucaoServiceTest {
     }
 
     @Test
-    void deveCriarLocalidadePendenteQuandoTextoForNaoEncontradoEGoogleRetornarVazio() {
-        // Arrange
-        String textoLivre = "  São Tomé das Letras  ";
-        String textoNormalizado = "São Tomé das Letras";
-        mockBaseInternaNaoResolvida(textoNormalizado);
-        mockSalvarLocalidadePendente();
-        when(googleMapsClient.buscarLugarComFiltro(textoNormalizado, null)).thenReturn(Optional.empty());
+    void deveTentarNovamenteQuandoGoogleRetornarOptionalEmptyNaPrimeiraTentativa() {
+        String textoLivre = "Recife";
+        Pais brasil = criarPais(1L, "Brasil", "BR");
+        mockBaseInternaNaoResolvida(textoLivre);
+        when(googleMapsClient.buscarLugarComFiltro(textoLivre, null))
+                .thenReturn(
+                        Optional.empty(),
+                        Optional.of(criarRespostaGoogleValida("Brasil", "BR", "Pernambuco", "PE", "Recife"))
+                );
+        when(paisRepository.findFirstBySiglaIgnoreCase("BR")).thenReturn(Optional.of(brasil));
+        when(estadoRepository.findFirstByNomeIgnoreCaseAndPais("Pernambuco", brasil)).thenReturn(Optional.empty());
+        when(estadoRepository.save(any(Estado.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cidadeRepository.findFirstByNomeIgnoreCaseAndEstado(eq("Recife"), any(Estado.class)))
+                .thenReturn(Optional.empty());
+        when(cidadeRepository.save(any(Cidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
+        assertAll(
+                () -> assertTrue(resultado.resolvida()),
+                () -> assertFalse(resultado.pendente()),
+                () -> assertSame(brasil, resultado.localidadeValidada().getPais()),
+                () -> assertEquals("Pernambuco", resultado.localidadeValidada().getEstado().getNome()),
+                () -> assertEquals("PE", resultado.localidadeValidada().getEstado().getSigla()),
+                () -> assertEquals("Recife", resultado.localidadeValidada().getCidade().getNome()),
+                () -> assertNull(resultado.localidadePendente())
+        );
+        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoLivre, null);
+        verify(localidadePendenteRepository, never()).save(any(LocalidadePendente.class));
+    }
+
+    @Test
+    void deveCriarLocalidadePendenteQuandoGoogleRetornarOptionalEmptyNasDuasTentativas() {
+        String textoLivre = "  Sao Tome das Letras  ";
+        String textoNormalizado = "Sao Tome das Letras";
+        mockBaseInternaNaoResolvida(textoNormalizado);
+        mockSalvarLocalidadePendente();
+        when(googleMapsClient.buscarLugarComFiltro(textoNormalizado, null))
+                .thenReturn(Optional.empty(), Optional.empty());
+
+        ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
+
         ArgumentCaptor<LocalidadePendente> localidadeCaptor = ArgumentCaptor.forClass(LocalidadePendente.class);
         verify(localidadePendenteRepository).save(localidadeCaptor.capture());
         LocalidadePendente localidadeSalva = localidadeCaptor.getValue();
@@ -197,31 +223,60 @@ class LocalidadeResolucaoServiceTest {
                 () -> assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, localidadeSalva.getStatusValidacao()),
                 () -> assertEquals(OrigemLocalidade.USUARIO, localidadeSalva.getOrigem())
         );
-        verify(googleMapsClient).buscarLugarComFiltro(textoNormalizado, null);
+        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoNormalizado, null);
         verify(paisRepository, never()).save(any(Pais.class));
         verify(estadoRepository, never()).save(any(Estado.class));
         verify(cidadeRepository, never()).save(any(Cidade.class));
     }
 
     @Test
-    void deveCriarLocalidadePendenteQuandoGoogleLancarExcecao() {
-        // Arrange
-        String textoLivre = "Nova Esperança";
+    void deveTentarNovamenteQuandoGoogleLancarRuntimeExceptionNaPrimeiraTentativa() {
+        String textoLivre = "Recife";
+        Pais brasil = criarPais(1L, "Brasil", "BR");
+        mockBaseInternaNaoResolvida(textoLivre);
+        when(googleMapsClient.buscarLugarComFiltro(textoLivre, null))
+                .thenThrow(new RuntimeException("Timeout na integracao externa"))
+                .thenReturn(Optional.of(criarRespostaGoogleValida("Brasil", "BR", "Pernambuco", "PE", "Recife")));
+        when(paisRepository.findFirstBySiglaIgnoreCase("BR")).thenReturn(Optional.of(brasil));
+        when(estadoRepository.findFirstByNomeIgnoreCaseAndPais("Pernambuco", brasil)).thenReturn(Optional.empty());
+        when(estadoRepository.save(any(Estado.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cidadeRepository.findFirstByNomeIgnoreCaseAndEstado(eq("Recife"), any(Estado.class)))
+                .thenReturn(Optional.empty());
+        when(cidadeRepository.save(any(Cidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
+
+        assertAll(
+                () -> assertTrue(resultado.resolvida()),
+                () -> assertFalse(resultado.pendente()),
+                () -> assertSame(brasil, resultado.localidadeValidada().getPais()),
+                () -> assertEquals("Pernambuco", resultado.localidadeValidada().getEstado().getNome()),
+                () -> assertEquals("PE", resultado.localidadeValidada().getEstado().getSigla()),
+                () -> assertEquals("Recife", resultado.localidadeValidada().getCidade().getNome()),
+                () -> assertNull(resultado.localidadePendente())
+        );
+        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoLivre, null);
+        verify(localidadePendenteRepository, never()).save(any(LocalidadePendente.class));
+    }
+
+    @Test
+    void deveCriarLocalidadePendenteQuandoGoogleLancarExcecaoNasDuasTentativas() {
+        String textoLivre = "Nova Esperanca";
         mockBaseInternaNaoResolvida(textoLivre);
         mockSalvarLocalidadePendente();
         when(googleMapsClient.buscarLugarComFiltro(textoLivre, null))
-                .thenThrow(new RuntimeException("Timeout na integração externa"));
+                .thenThrow(new RuntimeException("Timeout na integracao externa"))
+                .thenThrow(new RuntimeException("Timeout na integracao externa"));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertFalse(resultado.resolvida()),
                 () -> assertTrue(resultado.pendente()),
-                () -> assertEquals("Nova Esperança", resultado.localidadePendente().getTextoOriginal()),
+                () -> assertEquals("Nova Esperanca", resultado.localidadePendente().getTextoOriginal()),
                 () -> assertNotNull(resultado.localidadePendente().getMotivoPendencia())
         );
+        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoLivre, null);
         verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
         verify(paisRepository, never()).save(any(Pais.class));
         verify(estadoRepository, never()).save(any(Estado.class));
@@ -229,50 +284,45 @@ class LocalidadeResolucaoServiceTest {
     }
 
     @Test
-    void deveCriarLocalidadePendenteQuandoGoogleRetornarZeroResults() {
-        // Arrange
-        String textoLivre = "Vale Imaginário";
+    void deveNaoTentarNovamenteQuandoGoogleRetornarZeroResults() {
+        String textoLivre = "Vale Imaginario";
         mockBaseInternaNaoResolvida(textoLivre);
         mockSalvarLocalidadePendente();
         GoogleGeocodeResponse respostaGoogle = new GoogleGeocodeResponse(List.of(), "ZERO_RESULTS");
         when(googleMapsClient.buscarLugarComFiltro(textoLivre, null)).thenReturn(Optional.of(respostaGoogle));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertFalse(resultado.resolvida()),
                 () -> assertTrue(resultado.pendente()),
-                () -> assertEquals("Vale Imaginário", resultado.localidadePendente().getTextoOriginal())
+                () -> assertEquals("Vale Imaginario", resultado.localidadePendente().getTextoOriginal())
         );
+        verify(googleMapsClient, times(1)).buscarLugarComFiltro(textoLivre, null);
         verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
     }
 
     @Test
-    void deveCriarLocalidadePendenteQuandoGoogleRetornarResultsVazio() {
-        // Arrange
-        String textoLivre = "Distrito Invisível";
+    void deveNaoTentarNovamenteQuandoGoogleRetornarResultsVazio() {
+        String textoLivre = "Distrito Invisivel";
         mockBaseInternaNaoResolvida(textoLivre);
         mockSalvarLocalidadePendente();
         GoogleGeocodeResponse respostaGoogle = new GoogleGeocodeResponse(List.of(), "OK");
         when(googleMapsClient.buscarLugarComFiltro(textoLivre, null)).thenReturn(Optional.of(respostaGoogle));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertFalse(resultado.resolvida()),
                 () -> assertTrue(resultado.pendente()),
-                () -> assertEquals("Distrito Invisível", resultado.localidadePendente().getTextoOriginal())
+                () -> assertEquals("Distrito Invisivel", resultado.localidadePendente().getTextoOriginal())
         );
+        verify(googleMapsClient, times(1)).buscarLugarComFiltro(textoLivre, null);
         verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
     }
 
     @Test
     void deveResolverLocalidadeComGoogleQuandoRespostaForValida() {
-        // Arrange
         String textoLivre = "Recife";
         Pais brasil = criarPais(1L, "Brasil", "BR");
         mockBaseInternaNaoResolvida(textoLivre);
@@ -285,10 +335,8 @@ class LocalidadeResolucaoServiceTest {
                 .thenReturn(Optional.empty());
         when(cidadeRepository.save(any(Cidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
-        // Assert
         assertAll(
                 () -> assertTrue(resultado.resolvida()),
                 () -> assertFalse(resultado.pendente()),
@@ -307,14 +355,12 @@ class LocalidadeResolucaoServiceTest {
 
     @Test
     void deveBloquearTextoLivreNulo() {
-        // Arrange / Act / Assert
         assertThrows(BusinessRuleException.class, () -> localidadeResolucaoService.resolver(null));
         verifyNoInteractions(cidadeRepository, estadoRepository, paisRepository, localidadePendenteRepository, googleMapsClient);
     }
 
     @Test
     void deveBloquearTextoLivreVazio() {
-        // Arrange / Act / Assert
         assertThrows(BusinessRuleException.class, () -> localidadeResolucaoService.resolver("   "));
         verifyNoInteractions(cidadeRepository, estadoRepository, paisRepository, localidadePendenteRepository, googleMapsClient);
     }

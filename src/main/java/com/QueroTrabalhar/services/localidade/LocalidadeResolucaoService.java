@@ -14,6 +14,7 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,12 @@ public class LocalidadeResolucaoService {
     private final PaisRepository paisRepository;
     private final LocalidadePendenteRepository localidadePendenteRepository;
     private final GoogleMapsClient googleMapsClient;
+
+    @Value("${google.maps.retry.max-attempts:2}")
+    private int googleMapsRetryMaxAttempts = 2;
+
+    @Value("${google.maps.retry.delay-ms:200}")
+    private long googleMapsRetryDelayMs = 200L;
 
     public LocalidadeResolucaoService(CidadeRepository cidadeRepository,
                                       EstadoRepository estadoRepository,
@@ -87,34 +94,65 @@ public class LocalidadeResolucaoService {
     }
 
     private ResultadoTentativaExterna resolverNaIntegracaoExterna(String textoNormalizado) {
+        int maxAttempts = Math.max(1, googleMapsRetryMaxAttempts);
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            ResultadoConsultaGoogle resultadoConsulta = consultarGoogle(textoNormalizado);
+            if (!resultadoConsulta.deveTentarNovamente() || attempt == maxAttempts) {
+                return resultadoConsulta.resultado();
+            }
+
+            if (!aguardarRetry()) {
+                return ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
+            }
+        }
+
+        return ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
+    }
+
+    private ResultadoConsultaGoogle consultarGoogle(String textoNormalizado) {
         Optional<GoogleGeocodeResponse> responseOptional;
         try {
             responseOptional = googleMapsClient.buscarLugarComFiltro(textoNormalizado, null);
         } catch (RuntimeException exception) {
-            return ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
+            return ResultadoConsultaGoogle.retryFalhaExterna();
         }
 
         if (responseOptional.isEmpty()) {
-            return ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
+            return ResultadoConsultaGoogle.retryFalhaExterna();
         }
 
         GoogleGeocodeResponse response = responseOptional.get();
         if ("ZERO_RESULTS".equalsIgnoreCase(response.status())) {
-            return ResultadoTentativaExterna.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA);
+            return ResultadoConsultaGoogle.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA);
         }
 
         List<GoogleResult> resultados = response.results();
         if (resultados == null || resultados.isEmpty()) {
-            return ResultadoTentativaExterna.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA);
+            return ResultadoConsultaGoogle.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA);
         }
 
         if (!response.isSucesso()) {
-            return ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
+            return ResultadoConsultaGoogle.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA);
         }
 
         return converterResultadoGoogle(resultados.getFirst())
-                .map(ResultadoTentativaExterna::resolvida)
-                .orElseGet(() -> ResultadoTentativaExterna.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA));
+                .map(ResultadoConsultaGoogle::resolvida)
+                .orElseGet(() -> ResultadoConsultaGoogle.pendente(MOTIVO_LOCALIDADE_NAO_ENCONTRADA));
+    }
+
+    private boolean aguardarRetry() {
+        if (googleMapsRetryDelayMs <= 0) {
+            return true;
+        }
+
+        try {
+            Thread.sleep(googleMapsRetryDelayMs);
+            return true;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     private Optional<Localidade> converterResultadoGoogle(GoogleResult resultadoGoogle) {
@@ -226,6 +264,24 @@ public class LocalidadeResolucaoService {
 
         private static ResultadoTentativaExterna pendente(String motivoPendencia) {
             return new ResultadoTentativaExterna(Optional.empty(), motivoPendencia);
+        }
+    }
+
+    private record ResultadoConsultaGoogle(ResultadoTentativaExterna resultado, boolean deveTentarNovamente) {
+
+        private static ResultadoConsultaGoogle resolvida(Localidade localidade) {
+            return new ResultadoConsultaGoogle(ResultadoTentativaExterna.resolvida(localidade), false);
+        }
+
+        private static ResultadoConsultaGoogle pendente(String motivoPendencia) {
+            return new ResultadoConsultaGoogle(ResultadoTentativaExterna.pendente(motivoPendencia), false);
+        }
+
+        private static ResultadoConsultaGoogle retryFalhaExterna() {
+            return new ResultadoConsultaGoogle(
+                    ResultadoTentativaExterna.pendente(MOTIVO_FALHA_INTEGRACAO_EXTERNA),
+                    true
+            );
         }
     }
 }
