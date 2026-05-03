@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
@@ -7,6 +8,7 @@ import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
+import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +18,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -87,6 +91,39 @@ class PerfilRecrutadorMeServiceTest {
         perfilRecrutadorService.buscarMeuPerfil();
 
         verify(usuarioAutenticadoService, only()).obterPerfilRecrutadorAutenticado();
+    }
+
+    @Test
+    void deveBuscarMinhaEmpresaComSucesso() {
+        Empresa empresa = criarEmpresa(90L, "Empresa Horizonte");
+        empresa.setDescricao("Ecossistema de recrutamento");
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(23L, "Larissa Gomes", "Empresa Legada");
+        perfilRecrutador.setEmpresaVinculada(empresa);
+        perfilRecrutador.setStatusVinculoEmpresa(StatusVinculoEmpresa.APROVADO);
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+
+        PerfilRecrutadorEmpresaResponseDTO resposta = perfilRecrutadorService.buscarMinhaEmpresa();
+
+        assertNotSame(empresa, resposta.empresa());
+        assertAll(
+                () -> assertEquals(90L, resposta.empresa().id()),
+                () -> assertEquals("Empresa Horizonte", resposta.empresa().nome()),
+                () -> assertEquals("Ecossistema de recrutamento", resposta.empresa().descricao()),
+                () -> assertEquals(StatusVinculoEmpresa.APROVADO, resposta.statusVinculoEmpresa())
+        );
+        verifyNoInteractions(perfilRecrutadorRepository, empresaRepository);
+    }
+
+    @Test
+    void deveBloquearBuscarMinhaEmpresaQuandoNaoPossuirEmpresaVinculada() {
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(24L, "Renato Lima", "Empresa Legada");
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+
+        assertThrows(BusinessRuleException.class, () -> perfilRecrutadorService.buscarMinhaEmpresa());
+
+        verifyNoInteractions(perfilRecrutadorRepository, empresaRepository);
     }
 
     private PerfilRecrutador criarPerfilRecrutadorAutenticado(Long id, String nomeUsuario, String empresaLegada) {

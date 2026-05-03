@@ -14,6 +14,8 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +25,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -59,6 +64,120 @@ class OportunidadeRecrutadorMeServiceTest {
 
     @InjectMocks
     private OportunidadeDeEmpregoService oportunidadeDeEmpregoService;
+
+    @Test
+    void deveListarTodasOportunidades() {
+        PerfilRecrutador recrutador = criarPerfilRecrutadorAutenticado(21L, "Mariana Alves", "Empresa Legada");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(5L, "Desenvolvedor Backend");
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        Empresa empresa = criarEmpresa(80L, "Empresa Nuvem");
+        OportunidadeDeEmprego oportunidadePessoal = criarOportunidade(
+                501L,
+                "Java 21 e Spring Boot",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                null,
+                pais
+        );
+        OportunidadeDeEmprego oportunidadeEmEmpresa = criarOportunidade(
+                502L,
+                "Arquitetura de microsservicos",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                pais
+        );
+
+        when(oportunidadeDeEmpregoRepository.findAll()).thenReturn(List.of(oportunidadePessoal, oportunidadeEmEmpresa));
+
+        List<?> resposta = oportunidadeDeEmpregoService.listarTodasOportunidadesDeEmprego();
+
+        assertEquals(2, resposta.size());
+        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
+        assertNotSame(oportunidadePessoal, resposta.get(0));
+
+        OportunidadeDeEmpregoResponseDTO primeiraOportunidade = (OportunidadeDeEmpregoResponseDTO) resposta.get(0);
+        OportunidadeDeEmpregoResponseDTO segundaOportunidade = (OportunidadeDeEmpregoResponseDTO) resposta.get(1);
+
+        assertAll(
+                () -> assertEquals(501L, primeiraOportunidade.id()),
+                () -> assertEquals("Java 21 e Spring Boot", primeiraOportunidade.descricao()),
+                () -> assertEquals(21L, primeiraOportunidade.recrutadorId()),
+                () -> assertNull(primeiraOportunidade.empresaId()),
+                () -> assertEquals(502L, segundaOportunidade.id()),
+                () -> assertEquals("Arquitetura de microsservicos", segundaOportunidade.descricao()),
+                () -> assertEquals(80L, segundaOportunidade.empresaId()),
+                () -> assertEquals("Empresa Nuvem", segundaOportunidade.empresaNome())
+        );
+        verify(oportunidadeDeEmpregoRepository).findAll();
+        verifyNoInteractions(
+                usuarioAutenticadoService,
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
+    }
+
+    @Test
+    void deveBuscarOportunidadePorIdComSucesso() {
+        PerfilRecrutador recrutador = criarPerfilRecrutadorAutenticado(31L, "Paula Mendes", "Empresa Legada");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(6L, "Tech Lead");
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        Empresa empresa = criarEmpresa(81L, "Empresa Plataforma");
+        OportunidadeDeEmprego oportunidade = criarOportunidade(
+                601L,
+                "Lideranca tecnica com Java",
+                Modalidade.PRESENCIAL,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                pais
+        );
+
+        when(oportunidadeDeEmpregoRepository.findById(601L)).thenReturn(Optional.of(oportunidade));
+
+        OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.buscarPorId(601L);
+
+        assertNotSame(oportunidade, resposta);
+        assertAll(
+                () -> assertEquals(601L, resposta.id()),
+                () -> assertEquals("Lideranca tecnica com Java", resposta.descricao()),
+                () -> assertEquals(31L, resposta.recrutadorId()),
+                () -> assertEquals("Paula Mendes", resposta.recrutadorNome()),
+                () -> assertEquals(81L, resposta.empresaId()),
+                () -> assertEquals("Empresa Plataforma", resposta.empresaNome())
+        );
+        verify(oportunidadeDeEmpregoRepository).findById(601L);
+        verifyNoInteractions(
+                usuarioAutenticadoService,
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
+    }
+
+    @Test
+    void deveLancarObjectNotFoundExceptionQuandoOportunidadeNaoExistir() {
+        when(oportunidadeDeEmpregoRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ObjectNotFoundException.class, () -> oportunidadeDeEmpregoService.buscarPorId(999L));
+
+        verify(oportunidadeDeEmpregoRepository).findById(999L);
+        verifyNoInteractions(
+                usuarioAutenticadoService,
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
+    }
 
     @Test
     void deveListarOportunidadesDoRecrutadorAutenticado() {
@@ -194,6 +313,79 @@ class OportunidadeRecrutadorMeServiceTest {
 
         assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
         assertNotSame(oportunidade, resposta.get(0));
+    }
+
+    @Test
+    void deveRemoverOportunidadeDoRecrutadorAutenticadoComSucesso() {
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(41L, "Rafaela Nunes", "Empresa Legada");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(7L, "Desenvolvedor Java");
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        OportunidadeDeEmprego oportunidade = criarOportunidade(
+                701L,
+                "Backend distribuido",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                perfilRecrutador,
+                null,
+                pais
+        );
+
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+        when(oportunidadeDeEmpregoRepository.findById(701L)).thenReturn(Optional.of(oportunidade));
+
+        oportunidadeDeEmpregoService.removerOportunidadeDeEmprego(701L);
+
+        verify(usuarioAutenticadoService).obterPerfilRecrutadorAutenticado();
+        verify(oportunidadeDeEmpregoRepository).findById(701L);
+        verify(oportunidadeDeEmpregoRepository).removerTodosInteressesDaVaga(701L);
+        verify(oportunidadeDeEmpregoRepository).delete(oportunidade);
+        verifyNoInteractions(
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
+    }
+
+    @Test
+    void deveBloquearRemocaoDeOportunidadeDeOutroRecrutador() {
+        PerfilRecrutador perfilRecrutadorAutenticado =
+                criarPerfilRecrutadorAutenticado(41L, "Rafaela Nunes", "Empresa Legada");
+        PerfilRecrutador outroRecrutador =
+                criarPerfilRecrutadorAutenticado(42L, "Diego Ramos", "Outra Empresa");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(7L, "Desenvolvedor Java");
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        OportunidadeDeEmprego oportunidade = criarOportunidade(
+                702L,
+                "Plataforma de pagamentos",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                outroRecrutador,
+                null,
+                pais
+        );
+
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutadorAutenticado);
+        when(oportunidadeDeEmpregoRepository.findById(702L)).thenReturn(Optional.of(oportunidade));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> oportunidadeDeEmpregoService.removerOportunidadeDeEmprego(702L)
+        );
+
+        verify(usuarioAutenticadoService).obterPerfilRecrutadorAutenticado();
+        verify(oportunidadeDeEmpregoRepository).findById(702L);
+        verify(oportunidadeDeEmpregoRepository, never()).removerTodosInteressesDaVaga(702L);
+        verify(oportunidadeDeEmpregoRepository, never()).delete(oportunidade);
+        verifyNoInteractions(
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
     }
 
     private PerfilRecrutador criarPerfilRecrutadorAutenticado(Long id, String nomeUsuario, String empresaLegada) {

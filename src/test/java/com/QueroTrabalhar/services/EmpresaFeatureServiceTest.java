@@ -38,7 +38,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -315,6 +318,66 @@ class EmpresaFeatureServiceTest {
 
         verify(localidadeResolucaoService, never()).resolver(any(String.class));
         verify(empresaRepository, never()).save(any(Empresa.class));
+    }
+
+    @Test
+    void deveListarEmpresas() {
+        Empresa empresaAlpha = criarEmpresa(1L, "Empresa Alpha");
+        empresaAlpha.setDescricao("Plataforma de talentos");
+        empresaAlpha.setSite("https://alpha.com");
+        Empresa empresaBeta = criarEmpresa(2L, "Empresa Beta");
+        empresaBeta.setEmailPublico("contato@beta.com");
+
+        when(empresaRepository.findAllByOrderByNomeAsc()).thenReturn(List.of(empresaAlpha, empresaBeta));
+
+        List<?> resposta = empresaService.listarEmpresas();
+
+        assertEquals(2, resposta.size());
+        assertInstanceOf(EmpresaResponseDTO.class, resposta.get(0));
+        assertNotSame(empresaAlpha, resposta.get(0));
+
+        EmpresaResponseDTO primeiraEmpresa = (EmpresaResponseDTO) resposta.get(0);
+        EmpresaResponseDTO segundaEmpresa = (EmpresaResponseDTO) resposta.get(1);
+
+        assertAll(
+                () -> assertEquals(1L, primeiraEmpresa.id()),
+                () -> assertEquals("Empresa Alpha", primeiraEmpresa.nome()),
+                () -> assertEquals("Plataforma de talentos", primeiraEmpresa.descricao()),
+                () -> assertEquals("https://alpha.com", primeiraEmpresa.site()),
+                () -> assertEquals(2L, segundaEmpresa.id()),
+                () -> assertEquals("Empresa Beta", segundaEmpresa.nome()),
+                () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico())
+        );
+        verify(empresaRepository).findAllByOrderByNomeAsc();
+    }
+
+    @Test
+    void deveBuscarEmpresaPorIdComSucesso() {
+        Empresa empresa = criarEmpresa(7L, "Empresa Busca");
+        empresa.setDescricao("Consultoria especializada");
+        empresa.setTelefonePublico("83988887777");
+
+        when(empresaRepository.findById(7L)).thenReturn(Optional.of(empresa));
+
+        EmpresaResponseDTO resposta = empresaService.buscarEmpresaPorId(7L);
+
+        assertNotSame(empresa, resposta);
+        assertAll(
+                () -> assertEquals(7L, resposta.id()),
+                () -> assertEquals("Empresa Busca", resposta.nome()),
+                () -> assertEquals("Consultoria especializada", resposta.descricao()),
+                () -> assertEquals("83988887777", resposta.telefonePublico())
+        );
+        verify(empresaRepository).findById(7L);
+    }
+
+    @Test
+    void deveLancarObjectNotFoundExceptionQuandoEmpresaNaoExistir() {
+        when(empresaRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThrows(ObjectNotFoundException.class, () -> empresaService.buscarEmpresaPorId(404L));
+
+        verify(empresaRepository).findById(404L);
     }
 
     @Test

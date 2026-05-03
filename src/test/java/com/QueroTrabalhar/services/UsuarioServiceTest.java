@@ -22,12 +22,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,6 +65,41 @@ class UsuarioServiceTest {
 
     @InjectMocks
     private UsuarioService usuarioService;
+
+    @Test
+    void deveListarTodosUsuarios() {
+        Usuario primeiroUsuario = criarUsuario(1L, "Amanda Souza", "amanda.souza@teste.com");
+        Usuario segundoUsuario = criarUsuario(2L, "Bruno Lima", "bruno.lima@teste.com");
+
+        when(usuarioRepository.findAll()).thenReturn(List.of(primeiroUsuario, segundoUsuario));
+
+        List<?> resposta = usuarioService.listarTodosUsuarios();
+
+        assertEquals(2, resposta.size());
+        assertInstanceOf(UsuarioResponseDTO.class, resposta.get(0));
+        assertNotSame(primeiroUsuario, resposta.get(0));
+
+        UsuarioResponseDTO primeiroUsuarioResponse = (UsuarioResponseDTO) resposta.get(0);
+        UsuarioResponseDTO segundoUsuarioResponse = (UsuarioResponseDTO) resposta.get(1);
+
+        assertAll(
+                () -> assertEquals(1L, primeiroUsuarioResponse.id()),
+                () -> assertEquals("Amanda Souza", primeiroUsuarioResponse.nome()),
+                () -> assertEquals("83999990000", primeiroUsuarioResponse.telefone()),
+                () -> assertEquals("amanda.souza@teste.com", primeiroUsuarioResponse.email()),
+                () -> assertEquals(2L, segundoUsuarioResponse.id()),
+                () -> assertEquals("Bruno Lima", segundoUsuarioResponse.nome()),
+                () -> assertEquals("bruno.lima@teste.com", segundoUsuarioResponse.email())
+        );
+        verify(usuarioRepository).findAll();
+        verifyNoInteractions(
+                perfilCandidatoRepository,
+                perfilRecrutadorRepository,
+                oportunidadeRepository,
+                passwordEncoder,
+                usuarioAutenticadoService
+        );
+    }
 
     @Test
     void deveCadastrarUsuarioComSucesso() {
