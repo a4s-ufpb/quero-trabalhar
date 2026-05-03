@@ -1,8 +1,11 @@
 package com.QueroTrabalhar.domain.entity;
 
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.AssociationOverride;
+import jakarta.persistence.AssociationOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -19,6 +22,7 @@ import jakarta.persistence.Table;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -41,7 +45,16 @@ public class OportunidadeDeEmprego {
     private Modalidade modalidade;
 
     @Embedded
+    @AssociationOverrides({
+            @AssociationOverride(name = "pais", joinColumns = @JoinColumn(name = "pais_id", nullable = true)),
+            @AssociationOverride(name = "estado", joinColumns = @JoinColumn(name = "estado_id", nullable = true)),
+            @AssociationOverride(name = "cidade", joinColumns = @JoinColumn(name = "cidade_id", nullable = true))
+    })
     private Localidade localidade;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "localidade_pendente_id")
+    private LocalidadePendente localidadePendente;
 
     @ManyToMany(mappedBy = "vagasDeInteresse")
     @JsonIgnore
@@ -77,9 +90,12 @@ public class OportunidadeDeEmprego {
         this.descricao = descricao;
         this.tipoDeEmprego = tipoDeEmprego;
         this.modalidade = modalidade;
-        this.localidade = localidade;
         this.perfilRecrutador = perfilRecrutador;
         this.empresa = empresa;
+
+        if (localidade != null) {
+            definirLocalidadeValidada(localidade);
+        }
     }
 
     protected OportunidadeDeEmprego() {
@@ -118,7 +134,38 @@ public class OportunidadeDeEmprego {
     }
 
     public void setLocalizacao(Localidade localidade) {
-        this.localidade = localidade;
+        if (localidade != null) {
+            definirLocalidadeValidada(localidade);
+            return;
+        }
+
+        this.localidade = null;
+    }
+
+    public LocalidadePendente getLocalidadePendente() {
+        return localidadePendente;
+    }
+
+    public void setLocalidadePendente(LocalidadePendente localidadePendente) {
+        if (localidadePendente != null) {
+            definirLocalidadePendente(localidadePendente);
+            return;
+        }
+
+        this.localidadePendente = null;
+    }
+
+    public void definirLocalidadeValidada(Localidade localidade) {
+        this.localidade = Objects.requireNonNull(localidade, "A localidade validada é obrigatória.");
+        this.localidadePendente = null;
+    }
+
+    public void definirLocalidadePendente(LocalidadePendente localidadePendente) {
+        this.localidadePendente = Objects.requireNonNull(
+                localidadePendente,
+                "A localidade pendente é obrigatória."
+        );
+        this.localidade = null;
     }
 
     public Set<PerfilCandidato> getCandidatosInteressados() {

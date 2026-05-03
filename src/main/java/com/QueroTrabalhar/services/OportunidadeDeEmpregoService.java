@@ -18,6 +18,8 @@ import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class OportunidadeDeEmpregoService {
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
+    private final LocalidadeResolucaoService localidadeResolucaoService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public OportunidadeDeEmpregoService(
@@ -39,6 +42,7 @@ public class OportunidadeDeEmpregoService {
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository,
+            LocalidadeResolucaoService localidadeResolucaoService,
             UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.oportunidadeDeEmpregoRepository = oportunidadeDeEmpregoRepository;
@@ -46,6 +50,7 @@ public class OportunidadeDeEmpregoService {
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
+        this.localidadeResolucaoService = localidadeResolucaoService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
@@ -74,7 +79,6 @@ public class OportunidadeDeEmpregoService {
     public OportunidadeDeEmpregoResponseDTO criarOportunidadeDeEmprego(OportunidadeDeEmpregoRequestDTO dto) {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
         TipoDeEmprego tipoDeEmprego = buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId());
-        Localidade localidade = montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId());
         Empresa empresaDaOportunidade = resolverEmpresaDaOportunidade(
                 perfilRecrutador,
                 dto.publicarComoEmpresa()
@@ -84,10 +88,11 @@ public class OportunidadeDeEmpregoService {
                 dto.descricao(),
                 tipoDeEmprego,
                 dto.modalidade(),
-                localidade,
+                null,
                 perfilRecrutador,
                 empresaDaOportunidade
         );
+        definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
 
         perfilRecrutador.adicionarOportunidadePostada(oportunidadeDeEmprego);
 
@@ -110,7 +115,7 @@ public class OportunidadeDeEmpregoService {
         oportunidadeDeEmprego.setDescricao(dto.descricao());
         oportunidadeDeEmprego.setTipoDeEmprego(buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId()));
         oportunidadeDeEmprego.setModalidade(dto.modalidade());
-        oportunidadeDeEmprego.setLocalizacao(montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId()));
+        definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
 
         return OportunidadeDeEmpregoResponseDTO.daEntidade(
                 oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego)
@@ -152,9 +157,43 @@ public class OportunidadeDeEmpregoService {
         return tipoDeEmprego;
     }
 
+    private void definirLocalidadeDaOportunidade(
+            OportunidadeDeEmprego oportunidadeDeEmprego,
+            OportunidadeDeEmpregoRequestDTO dto
+    ) {
+        if (possuiLocalidadeEstruturadaPorIds(dto)) {
+            oportunidadeDeEmprego.definirLocalidadeValidada(
+                    montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId())
+            );
+            return;
+        }
+
+        String localidadeTexto = normalizarCampoOpcional(dto.localidadeTexto());
+        if (localidadeTexto != null) {
+            ResultadoResolucaoLocalidade resultadoResolucao = localidadeResolucaoService.resolver(localidadeTexto);
+            if (resultadoResolucao.resolvida()) {
+                oportunidadeDeEmprego.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
+                return;
+            }
+
+            oportunidadeDeEmprego.definirLocalidadePendente(resultadoResolucao.localidadePendente());
+            return;
+        }
+
+        throw new BusinessRuleException("A localidade da oportunidade é obrigatória.");
+    }
+
+    private boolean possuiLocalidadeEstruturadaPorIds(OportunidadeDeEmpregoRequestDTO dto) {
+        return dto.paisId() != null || dto.estadoId() != null || dto.cidadeId() != null;
+    }
+
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
             throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
+        }
+
+        if (paisId == null) {
+            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)
@@ -183,6 +222,15 @@ public class OportunidadeDeEmpregoService {
         }
 
         return new Localidade(pais, estado, cidade);
+    }
+
+    private String normalizarCampoOpcional(String valor) {
+        if (valor == null) {
+            return null;
+        }
+
+        String valorNormalizado = valor.trim();
+        return valorNormalizado.isEmpty() ? null : valorNormalizado;
     }
 
     private Empresa resolverEmpresaDaOportunidade(

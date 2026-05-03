@@ -16,6 +16,7 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
+import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -54,6 +55,9 @@ class OportunidadeEmpresaFeatureServiceTest {
     private CidadeRepository cidadeRepository;
 
     @Mock
+    private LocalidadeResolucaoService localidadeResolucaoService;
+
+    @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
 
     @InjectMocks
@@ -66,7 +70,7 @@ class OportunidadeEmpresaFeatureServiceTest {
         Pais pais = criarPais(1L);
         OportunidadeDeEmpregoRequestDTO dto = criarRequestDTO(null);
 
-        prepararMocksBasicos(perfilRecrutador, tipoDeEmprego, pais);
+        prepararMocksBasicosComLocalidade(perfilRecrutador, tipoDeEmprego, pais);
         prepararMockSaveOportunidade();
 
         OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.criarOportunidadeDeEmprego(dto);
@@ -88,7 +92,7 @@ class OportunidadeEmpresaFeatureServiceTest {
         Pais pais = criarPais(1L);
         OportunidadeDeEmpregoRequestDTO dto = criarRequestDTO(false);
 
-        prepararMocksBasicos(perfilRecrutador, tipoDeEmprego, pais);
+        prepararMocksBasicosComLocalidade(perfilRecrutador, tipoDeEmprego, pais);
         prepararMockSaveOportunidade();
 
         OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.criarOportunidadeDeEmprego(dto);
@@ -110,7 +114,7 @@ class OportunidadeEmpresaFeatureServiceTest {
         Pais pais = criarPais(1L);
         OportunidadeDeEmpregoRequestDTO dto = criarRequestDTO(true);
 
-        prepararMocksBasicos(perfilRecrutador, tipoDeEmprego, pais);
+        prepararMocksBasicosComLocalidade(perfilRecrutador, tipoDeEmprego, pais);
         prepararMockSaveOportunidade();
 
         OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.criarOportunidadeDeEmprego(dto);
@@ -129,10 +133,9 @@ class OportunidadeEmpresaFeatureServiceTest {
     void deveBloquearPublicacaoComoEmpresaQuandoRecrutadorNaoPossuirEmpresaVinculada() {
         PerfilRecrutador perfilRecrutador = criarPerfilRecrutador(10L, null, null);
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(1L);
-        Pais pais = criarPais(1L);
         OportunidadeDeEmpregoRequestDTO dto = criarRequestDTO(true);
 
-        prepararMocksBasicos(perfilRecrutador, tipoDeEmprego, pais);
+        prepararMocksBasicosSemLocalidade(perfilRecrutador, tipoDeEmprego);
 
         assertThrows(
                 BusinessRuleException.class,
@@ -181,6 +184,7 @@ class OportunidadeEmpresaFeatureServiceTest {
                 pais.getId(),
                 null,
                 null,
+                null,
                 false
         );
 
@@ -206,10 +210,9 @@ class OportunidadeEmpresaFeatureServiceTest {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutador(10L, empresa, statusVinculoEmpresa);
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(1L);
-        Pais pais = criarPais(1L);
         OportunidadeDeEmpregoRequestDTO dto = criarRequestDTO(true);
 
-        prepararMocksBasicos(perfilRecrutador, tipoDeEmprego, pais);
+        prepararMocksBasicosSemLocalidade(perfilRecrutador, tipoDeEmprego);
 
         assertThrows(
                 BusinessRuleException.class,
@@ -219,13 +222,20 @@ class OportunidadeEmpresaFeatureServiceTest {
         verify(oportunidadeDeEmpregoRepository, never()).save(any(OportunidadeDeEmprego.class));
     }
 
-    private void prepararMocksBasicos(
+    private void prepararMocksBasicosSemLocalidade(
+            PerfilRecrutador perfilRecrutador,
+            TipoDeEmprego tipoDeEmprego
+    ) {
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+        when(tipoDeEmpregoRepository.findById(tipoDeEmprego.getId())).thenReturn(Optional.of(tipoDeEmprego));
+    }
+
+    private void prepararMocksBasicosComLocalidade(
             PerfilRecrutador perfilRecrutador,
             TipoDeEmprego tipoDeEmprego,
             Pais pais
     ) {
-        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(tipoDeEmpregoRepository.findById(tipoDeEmprego.getId())).thenReturn(Optional.of(tipoDeEmprego));
+        prepararMocksBasicosSemLocalidade(perfilRecrutador, tipoDeEmprego);
         when(paisRepository.findById(pais.getId())).thenReturn(Optional.of(pais));
     }
 
@@ -243,6 +253,7 @@ class OportunidadeEmpresaFeatureServiceTest {
                 1L,
                 Modalidade.REMOTO,
                 1L,
+                null,
                 null,
                 null,
                 publicarComoEmpresa

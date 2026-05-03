@@ -18,7 +18,6 @@ public record OportunidadeDeEmpregoRequestDTO(
         @NotNull(message = "A modalidade é obrigatória.")
         Modalidade modalidade,
 
-        @NotNull(message = "O país é obrigatório.")
         @Positive(message = "O país informado é inválido.")
         Long paisId,
 
@@ -27,6 +26,9 @@ public record OportunidadeDeEmpregoRequestDTO(
 
         @Positive(message = "A cidade informada é inválida.")
         Long cidadeId,
+
+        @Size(max = 255, message = "O texto da localidade deve ter no máximo 255 caracteres.")
+        String localidadeTexto,
 
         Boolean publicarComoEmpresa
 ) {

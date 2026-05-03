@@ -14,6 +14,7 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -49,6 +50,9 @@ class OportunidadeRecrutadorMeServiceTest {
 
     @Mock
     private CidadeRepository cidadeRepository;
+
+    @Mock
+    private LocalidadeResolucaoService localidadeResolucaoService;
 
     @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
