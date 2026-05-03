@@ -139,6 +139,21 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>12.1.0</version>
+				<configuration>
+					<failBuildOnCVSS>11</failBuildOnCVSS>
+					<formats>
+						<format>HTML</format>
+						<format>JSON</format>
+					</formats>
+					<ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
+					<outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+					<prettyPrint>true</prettyPrint>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
