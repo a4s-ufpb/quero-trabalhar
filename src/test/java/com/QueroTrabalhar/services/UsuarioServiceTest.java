@@ -1,130 +1,212 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
+import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
+import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
+import com.QueroTrabalhar.services.exceptions.DuplicateResourceException;
+import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
-public class UsuarioServiceTest {
+class UsuarioServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private PerfilCandidatoRepository perfilCandidatoRepository;
+
+    @Mock
+    private PerfilRecrutadorRepository perfilRecrutadorRepository;
+
+    @Mock
+    private OportunidadeDeEmpregoRepository oportunidadeRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UsuarioAutenticadoService usuarioAutenticadoService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
-    // Atributos base
-    private Long defaultId;
-
-    // Objetos para teste
-    private Usuario user;
-    private Usuario user1;
-    private Usuario user2;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        defaultId = 1L;
-
-        // 1. Usando o novo construtor da entidade (Cpf, Nome, Telefone, Email, Senha)
-        user = new Usuario("12345678964", "Fernanda", "83912345678", "fernanda23@email.com", "senhaForte123");
-        injetarId(user, defaultId);
-
-        user1 = new Usuario("12345678909", "Fernanda", "83912345675", "fernanda@email.com", "senhaForte123");
-        injetarId(user1, 2L);
-
-        user2 = new Usuario("12345678911", "Vitória", "83912345674", "vitoria@email.com", "senhaForte123");
-        injetarId(user2, 3L);
-
-        // As listas de experiências e interesses agora são responsabilidade do PerfilCandidato, 
-        // então não precisamos mais mockar isso no teste básico de Usuario.
-    }
-
-    /**
-     * Helper para injetar um ID na entidade sem precisar criarNoCatalogo um método setId() público
-     * que violaria as regras de encapsulamento e segurança.
-     */
-    private void injetarId(Usuario usuario, Long id) throws Exception {
-        Field field = Usuario.class.getDeclaredField("id");
-        field.setAccessible(true);
-        field.set(usuario, id);
-    }
-
     @Test
-    public void deveBuscarPorIdComSucesso() {
-        // Arrange (Preparação)
-        Mockito.when(usuarioRepository.findById(defaultId)).thenReturn(Optional.of(user));
+    void deveCadastrarUsuarioComSucesso() {
+        // Arrange
+        UsuarioRequestDTO request = new UsuarioRequestDTO(
+                "12345678909",
+                "Fernanda Costa",
+                "83999998888",
+                "fernanda.costa@teste.com",
+                "Senha@123"
+        );
+        String senhaCodificada = "senha-codificada";
 
-        // Act (Ação)
-        UsuarioResponseDTO resultado = usuarioService.buscarUsuarioPorId(defaultId);
-
-        // Assert (Verificação)
-        Assertions.assertNotNull(resultado);
-        // Atenção: Use .getId(), ou .id() se o seu DTO for um Record Java
-        Assertions.assertEquals(defaultId, resultado.id());
-        Assertions.assertEquals("Fernanda", resultado.nome());
-
-        Mockito.verify(usuarioRepository, Mockito.times(1)).findById(defaultId);
-    }
-
-    @Test
-    public void deveLancarEntityNotFoundExceptionQuandoUsuarioNaoEncontrado() {
-        Mockito.when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
-
-        Assertions.assertThrows(EntityNotFoundException.class, () -> {
-            usuarioService.buscarUsuarioPorId(99L);
+        when(usuarioRepository.existsByCpf(request.cpf())).thenReturn(false);
+        when(usuarioRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(request.senha())).thenReturn(senhaCodificada);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> {
+            Usuario usuarioSalvo = invocation.getArgument(0);
+            ReflectionTestUtils.setField(usuarioSalvo, "id", 10L);
+            return usuarioSalvo;
         });
 
-        Mockito.verify(usuarioRepository).findById(99L);
+        // Act
+        UsuarioResponseDTO resposta = usuarioService.cadastrarUsuario(request);
+
+        // Assert
+        ArgumentCaptor<Usuario> usuarioCaptor = ArgumentCaptor.forClass(Usuario.class);
+
+        assertAll(
+                () -> assertNotNull(resposta),
+                () -> assertEquals(10L, resposta.id()),
+                () -> assertEquals(request.nome(), resposta.nome()),
+                () -> assertEquals(request.telefone(), resposta.telefone()),
+                () -> assertEquals(request.email(), resposta.email())
+        );
+
+        verify(passwordEncoder).encode(request.senha());
+        verify(usuarioRepository).save(usuarioCaptor.capture());
+
+        Usuario usuarioSalvo = usuarioCaptor.getValue();
+        assertAll(
+                () -> assertEquals(request.cpf(), usuarioSalvo.getCpf()),
+                () -> assertEquals(request.nome(), usuarioSalvo.getNome()),
+                () -> assertEquals(request.telefone(), usuarioSalvo.getTelefone()),
+                () -> assertEquals(request.email(), usuarioSalvo.getEmail()),
+                () -> assertEquals(senhaCodificada, usuarioSalvo.getSenha()),
+                () -> assertTrue(usuarioSalvo.ehCandidato()),
+                () -> assertNotNull(usuarioSalvo.getPerfilCandidato())
+        );
+        verifyNoInteractions(usuarioAutenticadoService, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
     }
 
     @Test
-    public void deveRetornarListaDeUsuariosComSucesso() {
-        List<Usuario> users = Arrays.asList(user1, user2);
-        Mockito.when(usuarioRepository.findAll()).thenReturn(users);
+    void deveBloquearCadastroQuandoCpfJaExistir() {
+        // Arrange
+        UsuarioRequestDTO request = new UsuarioRequestDTO(
+                "12345678909",
+                "Fernanda Costa",
+                "83999998888",
+                "fernanda.costa@teste.com",
+                "Senha@123"
+        );
+        when(usuarioRepository.existsByCpf(request.cpf())).thenReturn(true);
 
-        List<UsuarioResponseDTO> result = usuarioService.listarTodosUsuarios();
+        // Act
+        assertThrows(DataIntegrityViolationException.class, () -> usuarioService.cadastrarUsuario(request));
 
-        Assertions.assertNotNull(result);
-        Assertions.assertFalse(result.isEmpty());
-        Assertions.assertEquals(2, result.size());
+        // Assert
+        verify(usuarioRepository).existsByCpf(request.cpf());
+        verify(usuarioRepository, never()).findByEmail(anyString());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
     }
 
     @Test
-    public void deveDeletarUsuario() {
-        Mockito.when(usuarioRepository.existsById(defaultId)).thenReturn(true);
-        Mockito.doNothing().when(usuarioRepository).deleteById(defaultId);
+    void deveBloquearCadastroQuandoEmailJaExistir() {
+        // Arrange
+        UsuarioRequestDTO request = new UsuarioRequestDTO(
+                "12345678909",
+                "Fernanda Costa",
+                "83999998888",
+                "fernanda.costa@teste.com",
+                "Senha@123"
+        );
+        Usuario usuarioExistente = criarUsuario(20L, "Usuario Existente", request.email());
 
-        usuarioService.deletarUsuarioPorId(defaultId);
+        when(usuarioRepository.existsByCpf(request.cpf())).thenReturn(false);
+        when(usuarioRepository.findByEmail(request.email())).thenReturn(Optional.of(usuarioExistente));
 
-        Mockito.verify(usuarioRepository).deleteById(defaultId);
+        // Act
+        assertThrows(DuplicateResourceException.class, () -> usuarioService.cadastrarUsuario(request));
+
+        // Assert
+        verify(usuarioRepository).existsByCpf(request.cpf());
+        verify(usuarioRepository).findByEmail(request.email());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
     }
 
     @Test
-    public void deveLancarExcecaoQuandoDeletarUsuarioNaoEncontrado() {
-        Mockito.when(usuarioRepository.existsById(defaultId)).thenReturn(false);
+    void deveDeletarUsuarioPorIdComSucesso() {
+        // Arrange
+        Long usuarioId = 30L;
+        Usuario usuario = criarUsuario(usuarioId, "Marina Souza", "marina.souza@teste.com");
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
 
+        // Act
+        usuarioService.deletarUsuarioPorId(usuarioId);
 
-        // O Service novo foi atualizado para lançar EntityNotFoundException
-        Assertions.assertThrows(EntityNotFoundException.class, () -> {
-            usuarioService.deletarUsuarioPorId(defaultId);
-        });
+        // Assert
+        verify(usuarioRepository).findById(usuarioId);
+        verify(usuarioRepository).delete(same(usuario));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
 
-        Mockito.verify(usuarioRepository).existsById(defaultId);
-        Mockito.verifyNoMoreInteractions(usuarioRepository);
+    @Test
+    void deveLancarObjectNotFoundExceptionAoDeletarUsuarioPorIdInexistente() {
+        // Arrange
+        Long usuarioId = 99L;
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+
+        // Act
+        assertThrows(ObjectNotFoundException.class, () -> usuarioService.deletarUsuarioPorId(usuarioId));
+
+        // Assert
+        verify(usuarioRepository).findById(usuarioId);
+        verify(usuarioRepository, never()).delete(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveRemoverUsuarioAutenticadoComSucesso() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuario(40L, "Carlos Lima", "carlos.lima@teste.com");
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+
+        // Act
+        usuarioService.meRemover();
+
+        // Assert
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(usuarioRepository).delete(same(usuarioAutenticado));
+        verifyNoInteractions(passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    private Usuario criarUsuario(Long id, String nome, String email) {
+        Usuario usuario = new Usuario("12345678909", nome, "83999990000", email, "senha-codificada");
+        ReflectionTestUtils.setField(usuario, "id", id);
+        return usuario;
     }
 }
