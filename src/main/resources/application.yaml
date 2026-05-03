@@ -23,6 +23,8 @@ jwt:
 
 google:
   maps:
+    connect-timeout-ms: ${GOOGLE_MAPS_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${GOOGLE_MAPS_READ_TIMEOUT_MS:3000}
     api:
       url: ${GOOGLE_MAPS_API_URL}
       path: ${GOOGLE_MAPS_API_PATH}
