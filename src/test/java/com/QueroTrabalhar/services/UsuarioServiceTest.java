@@ -1,6 +1,9 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
+import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.entity.PerfilCandidato;
+import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
@@ -23,7 +26,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -204,9 +209,360 @@ class UsuarioServiceTest {
         verifyNoInteractions(passwordEncoder, perfilCandidatoRepository, perfilRecrutadorRepository, oportunidadeRepository);
     }
 
+    @Test
+    void deveAdicionarMeuPerfilCandidatoComSucesso() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuario(50L, "Ana Lima", "ana.lima@teste.com");
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+
+        // Act
+        usuarioService.adicionarMeuPerfilCandidato();
+
+        // Assert
+        ArgumentCaptor<PerfilCandidato> perfilCaptor = ArgumentCaptor.forClass(PerfilCandidato.class);
+
+        assertAll(
+                () -> assertTrue(usuarioAutenticado.ehCandidato()),
+                () -> assertNotNull(usuarioAutenticado.getPerfilCandidato())
+        );
+
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilCandidatoRepository).save(perfilCaptor.capture());
+        verify(usuarioRepository).save(same(usuarioAutenticado));
+
+        PerfilCandidato perfilSalvo = perfilCaptor.getValue();
+        assertAll(
+                () -> assertSame(usuarioAutenticado, perfilSalvo.getUsuario()),
+                () -> assertSame(perfilSalvo, usuarioAutenticado.getPerfilCandidato())
+        );
+        verifyNoInteractions(passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveAdicionarPerfilCandidatoPorIdComSucesso() {
+        // Arrange
+        Long usuarioId = 51L;
+        Usuario usuario = criarUsuario(usuarioId, "Bruno Rocha", "bruno.rocha@teste.com");
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+
+        // Act
+        usuarioService.adicionarPerfilCandidatoPorId(usuarioId);
+
+        // Assert
+        ArgumentCaptor<PerfilCandidato> perfilCaptor = ArgumentCaptor.forClass(PerfilCandidato.class);
+
+        assertAll(
+                () -> assertTrue(usuario.ehCandidato()),
+                () -> assertNotNull(usuario.getPerfilCandidato())
+        );
+
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilCandidatoRepository).save(perfilCaptor.capture());
+        verify(usuarioRepository).save(same(usuario));
+
+        PerfilCandidato perfilSalvo = perfilCaptor.getValue();
+        assertAll(
+                () -> assertSame(usuario, perfilSalvo.getUsuario()),
+                () -> assertSame(perfilSalvo, usuario.getPerfilCandidato())
+        );
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearAdicionarMeuPerfilCandidatoQuandoUsuarioJaForCandidato() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuarioComPerfilCandidato(52L, "Carla Souza", "carla.souza@teste.com");
+        PerfilCandidato perfilExistente = usuarioAutenticado.getPerfilCandidato();
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+
+        // Act
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> usuarioService.adicionarMeuPerfilCandidato()
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertSame(perfilExistente, usuarioAutenticado.getPerfilCandidato());
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilCandidatoRepository, never()).save(any(PerfilCandidato.class));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearAdicionarPerfilCandidatoPorIdQuandoUsuarioJaForCandidato() {
+        // Arrange
+        Long usuarioId = 53L;
+        Usuario usuario = criarUsuarioComPerfilCandidato(usuarioId, "Daniel Alves", "daniel.alves@teste.com");
+        PerfilCandidato perfilExistente = usuario.getPerfilCandidato();
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+
+        // Act
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> usuarioService.adicionarPerfilCandidatoPorId(usuarioId)
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertSame(perfilExistente, usuario.getPerfilCandidato());
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilCandidatoRepository, never()).save(any(PerfilCandidato.class));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveRemoverMeuPerfilCandidatoComSucesso() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuarioComPerfisCandidatoERecrutador(
+                54L,
+                "Eduarda Lima",
+                "eduarda.lima@teste.com",
+                "Empresa Sul"
+        );
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+        when(perfilCandidatoRepository.existsById(usuarioAutenticado.getId())).thenReturn(true);
+
+        // Act
+        usuarioService.removerMeuPerfilCandidato();
+
+        // Assert
+        assertAll(
+                () -> assertFalse(usuarioAutenticado.ehCandidato()),
+                () -> assertTrue(usuarioAutenticado.ehRecrutador()),
+                () -> assertNotNull(usuarioAutenticado.getPerfilRecrutador())
+        );
+
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilCandidatoRepository).existsById(usuarioAutenticado.getId());
+        verify(usuarioRepository).save(same(usuarioAutenticado));
+        verifyNoInteractions(passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveRemoverPerfilCandidatoPorIdComSucesso() {
+        // Arrange
+        Long usuarioId = 55L;
+        Usuario usuario = criarUsuarioComPerfisCandidatoERecrutador(
+                usuarioId,
+                "Fabio Melo",
+                "fabio.melo@teste.com",
+                "Empresa Norte"
+        );
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(perfilCandidatoRepository.existsById(usuarioId)).thenReturn(true);
+
+        // Act
+        usuarioService.removerPerfilCandidatoPorId(usuarioId);
+
+        // Assert
+        assertAll(
+                () -> assertFalse(usuario.ehCandidato()),
+                () -> assertTrue(usuario.ehRecrutador()),
+                () -> assertNotNull(usuario.getPerfilRecrutador())
+        );
+
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilCandidatoRepository).existsById(usuarioId);
+        verify(usuarioRepository).save(same(usuario));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearRemoverMeuPerfilCandidatoQuandoUsuarioNaoForCandidato() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuarioComPerfilRecrutador(
+                56L,
+                "Gabriela Costa",
+                "gabriela.costa@teste.com",
+                "Empresa Leste"
+        );
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+        when(perfilCandidatoRepository.existsById(usuarioAutenticado.getId())).thenReturn(false);
+
+        // Act
+        ObjectNotFoundException exception = assertThrows(
+                ObjectNotFoundException.class,
+                () -> usuarioService.removerMeuPerfilCandidato()
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertFalse(usuarioAutenticado.ehCandidato());
+        assertTrue(usuarioAutenticado.ehRecrutador());
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilCandidatoRepository).existsById(usuarioAutenticado.getId());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearRemoverPerfilCandidatoPorIdQuandoUsuarioNaoForCandidato() {
+        // Arrange
+        Long usuarioId = 57L;
+        Usuario usuario = criarUsuarioComPerfilRecrutador(
+                usuarioId,
+                "Henrique Alves",
+                "henrique.alves@teste.com",
+                "Empresa Oeste"
+        );
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(perfilCandidatoRepository.existsById(usuarioId)).thenReturn(false);
+
+        // Act
+        ObjectNotFoundException exception = assertThrows(
+                ObjectNotFoundException.class,
+                () -> usuarioService.removerPerfilCandidatoPorId(usuarioId)
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertFalse(usuario.ehCandidato());
+        assertTrue(usuario.ehRecrutador());
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilCandidatoRepository).existsById(usuarioId);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilRecrutadorRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveRemoverMeuPerfilRecrutadorComSucesso() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuarioComPerfisCandidatoERecrutador(
+                58L,
+                "Isabela Rocha",
+                "isabela.rocha@teste.com",
+                "Empresa Centro"
+        );
+        adicionarOportunidadeAoPerfil(usuarioAutenticado.getPerfilRecrutador(), 801L, "Vaga Backend");
+        adicionarOportunidadeAoPerfil(usuarioAutenticado.getPerfilRecrutador(), 802L, "Vaga QA");
+
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+        when(perfilRecrutadorRepository.existsById(usuarioAutenticado.getId())).thenReturn(true);
+
+        // Act
+        usuarioService.removerMeuPerfilRecrutador();
+
+        // Assert
+        assertAll(
+                () -> assertFalse(usuarioAutenticado.ehRecrutador()),
+                () -> assertTrue(usuarioAutenticado.ehCandidato()),
+                () -> assertNotNull(usuarioAutenticado.getPerfilCandidato())
+        );
+
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilRecrutadorRepository).existsById(usuarioAutenticado.getId());
+        verify(oportunidadeRepository).removerTodosInteressesDaVaga(801L);
+        verify(oportunidadeRepository).removerTodosInteressesDaVaga(802L);
+        verify(usuarioRepository).save(same(usuarioAutenticado));
+        verifyNoInteractions(passwordEncoder, perfilCandidatoRepository);
+    }
+
+    @Test
+    void deveRemoverPerfilRecrutadorPorIdComSucesso() {
+        // Arrange
+        Long usuarioId = 59L;
+        Usuario usuario = criarUsuarioComPerfisCandidatoERecrutador(
+                usuarioId,
+                "Joana Nunes",
+                "joana.nunes@teste.com",
+                "Empresa Vale"
+        );
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(perfilRecrutadorRepository.existsById(usuarioId)).thenReturn(true);
+
+        // Act
+        usuarioService.removerPerfilRecrutadorPorId(usuarioId);
+
+        // Assert
+        assertAll(
+                () -> assertFalse(usuario.ehRecrutador()),
+                () -> assertTrue(usuario.ehCandidato()),
+                () -> assertNotNull(usuario.getPerfilCandidato())
+        );
+
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilRecrutadorRepository).existsById(usuarioId);
+        verify(usuarioRepository).save(same(usuario));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearRemoverMeuPerfilRecrutadorQuandoUsuarioNaoForRecrutador() {
+        // Arrange
+        Usuario usuarioAutenticado = criarUsuarioComPerfilCandidato(60L, "Karen Prado", "karen.prado@teste.com");
+        when(usuarioAutenticadoService.obterUsuarioAutenticado()).thenReturn(usuarioAutenticado);
+        when(perfilRecrutadorRepository.existsById(usuarioAutenticado.getId())).thenReturn(false);
+
+        // Act
+        ObjectNotFoundException exception = assertThrows(
+                ObjectNotFoundException.class,
+                () -> usuarioService.removerMeuPerfilRecrutador()
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertTrue(usuarioAutenticado.ehCandidato());
+        assertFalse(usuarioAutenticado.ehRecrutador());
+        verify(usuarioAutenticadoService).obterUsuarioAutenticado();
+        verify(perfilRecrutadorRepository).existsById(usuarioAutenticado.getId());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(passwordEncoder, perfilCandidatoRepository, oportunidadeRepository);
+    }
+
+    @Test
+    void deveBloquearRemoverPerfilRecrutadorPorIdQuandoUsuarioNaoForRecrutador() {
+        // Arrange
+        Long usuarioId = 61L;
+        Usuario usuario = criarUsuarioComPerfilCandidato(usuarioId, "Lucas Matos", "lucas.matos@teste.com");
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(perfilRecrutadorRepository.existsById(usuarioId)).thenReturn(false);
+
+        // Act
+        ObjectNotFoundException exception = assertThrows(
+                ObjectNotFoundException.class,
+                () -> usuarioService.removerPerfilRecrutadorPorId(usuarioId)
+        );
+
+        // Assert
+        assertNotNull(exception);
+        assertTrue(usuario.ehCandidato());
+        assertFalse(usuario.ehRecrutador());
+        verify(usuarioRepository).findById(usuarioId);
+        verify(perfilRecrutadorRepository).existsById(usuarioId);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(usuarioAutenticadoService, passwordEncoder, perfilCandidatoRepository, oportunidadeRepository);
+    }
+
     private Usuario criarUsuario(Long id, String nome, String email) {
         Usuario usuario = new Usuario("12345678909", nome, "83999990000", email, "senha-codificada");
         ReflectionTestUtils.setField(usuario, "id", id);
         return usuario;
+    }
+
+    private Usuario criarUsuarioComPerfilCandidato(Long id, String nome, String email) {
+        Usuario usuario = criarUsuario(id, nome, email);
+        usuario.adicionarPerfilCandidato(new PerfilCandidato(usuario));
+        return usuario;
+    }
+
+    private Usuario criarUsuarioComPerfilRecrutador(Long id, String nome, String email, String empresa) {
+        Usuario usuario = criarUsuario(id, nome, email);
+        usuario.adicionarPerfilRecrutador(new PerfilRecrutador(usuario, empresa));
+        return usuario;
+    }
+
+    private Usuario criarUsuarioComPerfisCandidatoERecrutador(Long id, String nome, String email, String empresa) {
+        Usuario usuario = criarUsuarioComPerfilCandidato(id, nome, email);
+        usuario.adicionarPerfilRecrutador(new PerfilRecrutador(usuario, empresa));
+        return usuario;
+    }
+
+    private void adicionarOportunidadeAoPerfil(PerfilRecrutador perfilRecrutador, Long vagaId, String descricao) {
+        OportunidadeDeEmprego vaga = new OportunidadeDeEmprego(descricao, null, null, null, perfilRecrutador);
+        ReflectionTestUtils.setField(vaga, "id", vagaId);
+        perfilRecrutador.adicionarOportunidadePostada(vaga);
     }
 }
