@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -28,6 +28,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -37,12 +38,15 @@ public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    private static final String[] PUBLIC_MATCHES = {
+    private static final String[] DEV_ONLY_PUBLIC_MATCHES = {
             "/h2-console/**",
-            "/login",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**"
+    };
+
+    private static final String[] PUBLIC_MATCHES = {
+            "/login"
     };
 
     private static final String[] PUBLIC_POST_MATCHES = {
@@ -55,28 +59,30 @@ public class SecurityConfig {
             "/api/oportunidades/**"
     };
 
-    private final Environment env;
     private final JWTUtil jwtUtil;
     private final UserDetailsService userDetailsService;
     private final ObjectMapper objectMapper;
+    private final List<String> allowedOrigins;
 
     public SecurityConfig(
-            Environment env,
+            @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins,
             JWTUtil jwtUtil,
             UserDetailsService userDetailsService,
             ObjectMapper objectMapper
     ) {
-        this.env = env;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.objectMapper = objectMapper;
+        this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
     }
 
     @Bean
     @Profile("test")
     public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
 
         http
                 .csrf(csrf -> csrf.disable())
@@ -89,13 +95,31 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("demo")
-    public SecurityFilterChain demoSecurityFilterChain(
+    @Profile("local")
+    public SecurityFilterChain localSecurityFilterChain(
             HttpSecurity http,
             AuthenticationManager authenticationManager
     ) throws Exception {
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        return buildJwtSecurityFilterChain(http, authenticationManager, true);
+    }
 
+    @Bean
+    @Profile("prod")
+    public SecurityFilterChain prodSecurityFilterChain(
+            HttpSecurity http,
+            AuthenticationManager authenticationManager
+    ) throws Exception {
+        return buildJwtSecurityFilterChain(http, authenticationManager, false);
+    }
+
+    private SecurityFilterChain buildJwtSecurityFilterChain(
+            HttpSecurity http,
+            AuthenticationManager authenticationManager,
+            boolean allowDeveloperTooling
+    ) throws Exception {
+        if (allowDeveloperTooling) {
+            http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        }
 
         JWTAuthenticationFilter authenticationFilter =
                 new JWTAuthenticationFilter("/login", authenticationManager, jwtUtil);
@@ -116,8 +140,8 @@ public class SecurityConfig {
                             StandardError error = new StandardError(
                                     System.currentTimeMillis(),
                                     HttpServletResponse.SC_UNAUTHORIZED,
-                                    "Não autorizado",
-                                    "Token ausente, inválido ou expirado.",
+                                    "Nao autorizado",
+                                    "Token ausente, invalido ou expirado.",
                                     request.getRequestURI()
                             );
 
@@ -132,23 +156,27 @@ public class SecurityConfig {
                                     System.currentTimeMillis(),
                                     HttpServletResponse.SC_FORBIDDEN,
                                     "Acesso negado",
-                                    "Você não possui permissão para acessar este recurso.",
+                                    "Voce nao possui permissao para acessar este recurso.",
                                     request.getRequestURI()
                             );
 
                             objectMapper.writeValue(response.getWriter(), error);
                         })
                 )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(PUBLIC_MATCHES).permitAll()
-                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_MATCHES).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/tipos-de-emprego/aprovados").permitAll()
-                        .requestMatchers(
-                                new RegexRequestMatcher("^/api/tipos-de-emprego/\\d+$", HttpMethod.GET.name())
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_MATCHES).permitAll()
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    if (allowDeveloperTooling) {
+                        auth.requestMatchers(DEV_ONLY_PUBLIC_MATCHES).permitAll();
+                    }
+
+                    auth.requestMatchers(PUBLIC_MATCHES).permitAll()
+                            .requestMatchers(HttpMethod.POST, PUBLIC_POST_MATCHES).permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/tipos-de-emprego/aprovados").permitAll()
+                            .requestMatchers(
+                                    new RegexRequestMatcher("^/api/tipos-de-emprego/\\d+$", HttpMethod.GET.name())
+                            ).permitAll()
+                            .requestMatchers(HttpMethod.GET, PUBLIC_GET_MATCHES).permitAll()
+                            .anyRequest().authenticated();
+                })
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authorizationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -159,9 +187,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration().applyPermitDefaultValues();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173"
-        ));
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(List.of(
                 "POST",

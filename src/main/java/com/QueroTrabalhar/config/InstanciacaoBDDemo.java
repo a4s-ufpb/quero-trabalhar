@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("demo")
+@Profile("local")
 public class InstanciacaoBDDemo implements ApplicationRunner {
 
     private final SemeadorBd semeadorBd;
