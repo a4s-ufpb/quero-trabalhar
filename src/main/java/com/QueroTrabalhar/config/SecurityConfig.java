@@ -45,18 +45,20 @@ public class SecurityConfig {
             "/v3/api-docs/**"
     };
 
-    private static final String[] PUBLIC_MATCHES = {
-            "/login"
-    };
+    private static final String LOGIN_PATH = "/login";
+    private static final String ADMIN_MATCHER = "/api/admin/**";
 
     private static final String[] PUBLIC_POST_MATCHES = {
             "/api/usuarios/cadastrar"
     };
 
     private static final String[] PUBLIC_GET_MATCHES = {
-            "/api/localidades/**",
-            "/api/empresas/**",
-            "/api/oportunidades/**"
+            "/api/localidades/paises",
+            "/api/localidades/estados",
+            "/api/localidades/cidades",
+            "/api/empresas",
+            "/api/oportunidades",
+            "/api/tipos-de-emprego/aprovados"
     };
 
     private final JWTUtil jwtUtil;
@@ -122,7 +124,10 @@ public class SecurityConfig {
         }
 
         JWTAuthenticationFilter authenticationFilter =
-                new JWTAuthenticationFilter("/login", authenticationManager, jwtUtil);
+                new JWTAuthenticationFilter(LOGIN_PATH, authenticationManager, jwtUtil);
+        authenticationFilter.setRequiresAuthenticationRequestMatcher(
+                new RegexRequestMatcher("^/login$", HttpMethod.POST.name())
+        );
 
         JWTAuthorizationFilter authorizationFilter =
                 new JWTAuthorizationFilter(jwtUtil, userDetailsService);
@@ -168,13 +173,17 @@ public class SecurityConfig {
                         auth.requestMatchers(DEV_ONLY_PUBLIC_MATCHES).permitAll();
                     }
 
-                    auth.requestMatchers(PUBLIC_MATCHES).permitAll()
+                    auth.requestMatchers(HttpMethod.POST, LOGIN_PATH).permitAll()
                             .requestMatchers(HttpMethod.POST, PUBLIC_POST_MATCHES).permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/tipos-de-emprego/aprovados").permitAll()
+                            .requestMatchers(HttpMethod.GET, PUBLIC_GET_MATCHES).permitAll()
                             .requestMatchers(
+                                    new RegexRequestMatcher("^/api/empresas/\\d+$", HttpMethod.GET.name()),
+                                    new RegexRequestMatcher("^/api/empresas/\\d+/recrutadores$", HttpMethod.GET.name()),
+                                    new RegexRequestMatcher("^/api/empresas/\\d+/oportunidades$", HttpMethod.GET.name()),
+                                    new RegexRequestMatcher("^/api/oportunidades/\\d+$", HttpMethod.GET.name()),
                                     new RegexRequestMatcher("^/api/tipos-de-emprego/\\d+$", HttpMethod.GET.name())
                             ).permitAll()
-                            .requestMatchers(HttpMethod.GET, PUBLIC_GET_MATCHES).permitAll()
+                            .requestMatchers(ADMIN_MATCHER).hasRole("ADMIN")
                             .anyRequest().authenticated();
                 })
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
