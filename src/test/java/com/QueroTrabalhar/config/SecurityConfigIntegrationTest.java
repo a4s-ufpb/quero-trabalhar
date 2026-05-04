@@ -27,24 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.url=jdbc:h2:mem:security-config-integration;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.show-sql=false",
-        "spring.h2.console.enabled=false",
-        "jwt.secret=cXVlcm8tdHJhYmFsaGFyLWxvY2FsLWFuZC10ZXN0LWp3dC1zZWNyZXQtd2l0aC1hdC1sZWFzdC1zaXh0eS1mb3VyLWJ5dGVzLTIwMjY=",
-        "jwt.expiration=86400000",
-        "google.maps.api.url=https://maps.googleapis.com",
-        "google.maps.api.path=/maps/api/geocode/json",
-        "google.maps.api.key=test-google-maps-key",
-        "app.cors.allowed-origins=http://localhost:5173"
-})
+@SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("prod")
+@ActiveProfiles("test")
 class SecurityConfigIntegrationTest {
 
     private static final String PASSWORD = "123456";
@@ -174,6 +159,24 @@ class SecurityConfigIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.path").value("/login"));
+    }
+
+    @Test
+    void deveNaoExporSwaggerNoProfileTest() throws Exception {
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.path").value("/swagger-ui/index.html"));
+    }
+
+    @Test
+    void deveNaoExporH2ConsoleNoProfileTest() throws Exception {
+        mockMvc.perform(get("/h2-console"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.path").value("/h2-console"));
     }
 
     @Test

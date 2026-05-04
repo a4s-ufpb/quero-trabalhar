@@ -6,8 +6,6 @@ import com.QueroTrabalhar.security.JWTAuthorizationFilter;
 import com.QueroTrabalhar.security.JWTUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,8 +33,6 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-
-    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     private static final String[] DEV_ONLY_PUBLIC_MATCHES = {
             "/h2-console/**",
@@ -82,21 +78,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("test")
-    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-
-        logger.warn("Security is disabled for the test profile.");
-
-        return http.build();
-    }
-
-    @Bean
     @Profile("local")
     public SecurityFilterChain localSecurityFilterChain(
             HttpSecurity http,
@@ -106,8 +87,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("prod")
-    public SecurityFilterChain prodSecurityFilterChain(
+    @Profile({"test", "prod"})
+    public SecurityFilterChain testAndProdSecurityFilterChain(
             HttpSecurity http,
             AuthenticationManager authenticationManager
     ) throws Exception {
