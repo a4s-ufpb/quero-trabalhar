@@ -208,6 +208,13 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").value("Regiao Metropolitana"));
     }
 
+    @Test
+    void deveRetornarBadRequestQuandoStatusLocalidadeForInvalido() throws Exception {
+        mockMvc.perform(get("/api/oportunidades")
+                        .param("statusLocalidade", "ABC"))
+                .andExpect(status().isBadRequest());
+    }
+
     private int proximoIndice() {
         return SEQUENCIA.incrementAndGet();
     }

@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego;
 
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.StatusLocalidadeFiltro;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -26,8 +27,7 @@ public record OportunidadeDeEmpregoFilterDTO(
         @Positive(message = "A cidade informada e invalida.")
         Long cidadeId,
 
-        @Size(max = 20, message = "O status da localidade deve ter no maximo 20 caracteres.")
-        String statusLocalidade,
+        StatusLocalidadeFiltro statusLocalidade,
 
         Modalidade modalidade
 ) {

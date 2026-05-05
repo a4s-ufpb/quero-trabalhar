@@ -2,6 +2,7 @@ package com.QueroTrabalhar.repository.specification;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
+import com.QueroTrabalhar.domain.enums.StatusLocalidadeFiltro;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -10,9 +11,6 @@ import java.util.List;
 import java.util.Locale;
 
 public final class OportunidadeDeEmpregoSpecification {
-
-    private static final String STATUS_LOCALIDADE_VALIDADA = "VALIDADA";
-    private static final String STATUS_LOCALIDADE_PENDENTE = "PENDENTE";
 
     private OportunidadeDeEmpregoSpecification() {
     }
@@ -79,12 +77,12 @@ public final class OportunidadeDeEmpregoSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("modalidade"), filtro.modalidade()));
             }
 
-            String statusLocalidade = normalizarTexto(filtro.statusLocalidade());
+            StatusLocalidadeFiltro statusLocalidade = filtro.statusLocalidade();
             if (statusLocalidade != null) {
-                if (STATUS_LOCALIDADE_VALIDADA.equalsIgnoreCase(statusLocalidade)) {
-                    predicates.add(criteriaBuilder.isNotNull(root.get("localidade").get("pais")));
-                } else if (STATUS_LOCALIDADE_PENDENTE.equalsIgnoreCase(statusLocalidade)) {
-                    predicates.add(criteriaBuilder.isNotNull(root.get("localidadePendente").get("id")));
+                switch (statusLocalidade) {
+                    case VALIDADA -> predicates.add(criteriaBuilder.isNotNull(root.get("localidade").get("pais")));
+                    case PENDENTE ->
+                            predicates.add(criteriaBuilder.isNotNull(root.get("localidadePendente").get("id")));
                 }
             }
 
