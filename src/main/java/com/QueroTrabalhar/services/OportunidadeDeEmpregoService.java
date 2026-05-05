@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
@@ -16,10 +17,13 @@ import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import com.QueroTrabalhar.repository.specification.OportunidadeDeEmpregoSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
 import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,10 +59,14 @@ public class OportunidadeDeEmpregoService {
     }
 
     @Transactional(readOnly = true)
-    public List<OportunidadeDeEmpregoResponseDTO> listarTodasOportunidadesDeEmprego() {
-        return oportunidadeDeEmpregoRepository.findAll().stream()
-                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
-                .toList();
+    public Page<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDeEmprego(
+            OportunidadeDeEmpregoFilterDTO filtro,
+            Pageable pageable
+    ) {
+        return oportunidadeDeEmpregoRepository.findAll(
+                OportunidadeDeEmpregoSpecification.comFiltros(filtro),
+                pageable
+        ).map(OportunidadeDeEmpregoResponseDTO::daEntidade);
     }
 
     @Transactional(readOnly = true)

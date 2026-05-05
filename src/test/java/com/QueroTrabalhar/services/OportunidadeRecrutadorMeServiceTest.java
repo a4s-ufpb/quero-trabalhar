@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
@@ -22,6 +23,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -33,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -66,11 +75,23 @@ class OportunidadeRecrutadorMeServiceTest {
     private OportunidadeDeEmpregoService oportunidadeDeEmpregoService;
 
     @Test
-    void deveListarTodasOportunidades() {
+    void deveListarOportunidadesComPaginacaoEFiltros() {
         PerfilRecrutador recrutador = criarPerfilRecrutadorAutenticado(21L, "Mariana Alves", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(5L, "Desenvolvedor Backend");
         Pais pais = criarPais(1L, "Brasil", "BR");
         Empresa empresa = criarEmpresa(80L, "Empresa Nuvem");
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "id"));
+        OportunidadeDeEmpregoFilterDTO filtro = new OportunidadeDeEmpregoFilterDTO(
+                "Spring",
+                tipoDeEmprego.getId(),
+                empresa.getId(),
+                recrutador.getId(),
+                pais.getId(),
+                null,
+                null,
+                "VALIDADA",
+                Modalidade.REMOTO
+        );
         OportunidadeDeEmprego oportunidadePessoal = criarOportunidade(
                 501L,
                 "Java 21 e Spring Boot",
@@ -90,16 +111,21 @@ class OportunidadeRecrutadorMeServiceTest {
                 pais
         );
 
-        when(oportunidadeDeEmpregoRepository.findAll()).thenReturn(List.of(oportunidadePessoal, oportunidadeEmEmpresa));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidadePessoal, oportunidadeEmEmpresa), pageable, 2)
+        );
 
-        List<?> resposta = oportunidadeDeEmpregoService.listarTodasOportunidadesDeEmprego();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDeEmprego(filtro, pageable);
 
-        assertEquals(2, resposta.size());
-        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
-        assertNotSame(oportunidadePessoal, resposta.get(0));
+        assertEquals(2, resposta.getTotalElements());
+        assertEquals(1, resposta.getTotalPages());
+        assertEquals(2, resposta.getContent().size());
+        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.getContent().get(0));
+        assertNotSame(oportunidadePessoal, resposta.getContent().get(0));
 
-        OportunidadeDeEmpregoResponseDTO primeiraOportunidade = (OportunidadeDeEmpregoResponseDTO) resposta.get(0);
-        OportunidadeDeEmpregoResponseDTO segundaOportunidade = (OportunidadeDeEmpregoResponseDTO) resposta.get(1);
+        OportunidadeDeEmpregoResponseDTO primeiraOportunidade = resposta.getContent().get(0);
+        OportunidadeDeEmpregoResponseDTO segundaOportunidade = resposta.getContent().get(1);
 
         assertAll(
                 () -> assertEquals(501L, primeiraOportunidade.id()),
@@ -111,7 +137,7 @@ class OportunidadeRecrutadorMeServiceTest {
                 () -> assertEquals(80L, segundaOportunidade.empresaId()),
                 () -> assertEquals("Empresa Nuvem", segundaOportunidade.empresaNome())
         );
-        verify(oportunidadeDeEmpregoRepository).findAll();
+        verify(oportunidadeDeEmpregoRepository).findAll(any(Specification.class), eq(pageable));
         verifyNoInteractions(
                 usuarioAutenticadoService,
                 tipoDeEmpregoRepository,
