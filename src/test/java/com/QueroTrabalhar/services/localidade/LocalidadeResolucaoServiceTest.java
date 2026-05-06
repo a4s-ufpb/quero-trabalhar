@@ -77,6 +77,8 @@ class LocalidadeResolucaoServiceTest {
         Estado estado = criarEstado(10L, "Paraiba", "PB", pais);
         Cidade cidade = criarCidade(100L, "Joao Pessoa", estado);
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(cidade));
+        when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
+        when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.empty());
 
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
@@ -99,6 +101,7 @@ class LocalidadeResolucaoServiceTest {
         Estado estado = criarEstado(10L, "Paraiba", "PB", pais);
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(estado));
+        when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.empty());
 
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
@@ -137,7 +140,7 @@ class LocalidadeResolucaoServiceTest {
     }
 
     @Test
-    void deveNaoEscolherCidadeQuandoHouverMaisDeUmaComMesmoNome() {
+    void deveCriarLocalidadePendenteSemConsultarGoogleQuandoHouverMaisDeUmaCidadeComMesmoNome() {
         String textoLivre = "Santo Andre";
         Pais brasil = criarPais(1L, "Brasil", "BR");
         Estado saoPaulo = criarEstado(10L, "Sao Paulo", "SP", brasil);
@@ -148,7 +151,6 @@ class LocalidadeResolucaoServiceTest {
         when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(cidadeSp, cidadeBa));
         when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of());
         when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.empty());
-        when(googleMapsClient.buscarLugarComFiltro(textoLivre, null)).thenReturn(Optional.empty());
 
         ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
 
@@ -157,9 +159,43 @@ class LocalidadeResolucaoServiceTest {
                 () -> assertTrue(resultado.pendente()),
                 () -> assertNull(resultado.localidadeValidada()),
                 () -> assertNotNull(resultado.localidadePendente()),
-                () -> assertEquals("Santo Andre", resultado.localidadePendente().getTextoOriginal())
+                () -> assertEquals("Santo Andre", resultado.localidadePendente().getTextoOriginal()),
+                () -> assertEquals(
+                        "A localidade informada corresponde a m\u00FAltiplas op\u00E7\u00F5es na base interna e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        resultado.localidadePendente().getMotivoPendencia()
+                )
         );
-        verify(googleMapsClient, times(2)).buscarLugarComFiltro(textoLivre, null);
+        verifyNoInteractions(googleMapsClient);
+        verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
+        verify(paisRepository, never()).save(any(Pais.class));
+        verify(estadoRepository, never()).save(any(Estado.class));
+        verify(cidadeRepository, never()).save(any(Cidade.class));
+    }
+
+    @Test
+    void deveCriarLocalidadePendenteQuandoBaseInternaEncontrarCidadeEEstadoCompativeis() {
+        String textoLivre = "Sao Paulo";
+        Pais brasil = criarPais(1L, "Brasil", "BR");
+        Estado estado = criarEstado(10L, "Sao Paulo", "SP", brasil);
+        Cidade cidade = criarCidade(100L, "Sao Paulo", estado);
+        mockSalvarLocalidadePendente();
+        when(cidadeRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(cidade));
+        when(estadoRepository.findAllByNomeIgnoreCase(textoLivre)).thenReturn(List.of(estado));
+        when(paisRepository.findFirstByNomeIgnoreCase(textoLivre)).thenReturn(Optional.empty());
+
+        ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
+
+        assertAll(
+                () -> assertFalse(resultado.resolvida()),
+                () -> assertTrue(resultado.pendente()),
+                () -> assertNull(resultado.localidadeValidada()),
+                () -> assertEquals("Sao Paulo", resultado.localidadePendente().getTextoOriginal()),
+                () -> assertEquals(
+                        "A localidade informada corresponde a m\u00FAltiplas op\u00E7\u00F5es na base interna e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        resultado.localidadePendente().getMotivoPendencia()
+                )
+        );
+        verifyNoInteractions(googleMapsClient);
         verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
         verify(paisRepository, never()).save(any(Pais.class));
         verify(estadoRepository, never()).save(any(Estado.class));
@@ -354,6 +390,38 @@ class LocalidadeResolucaoServiceTest {
     }
 
     @Test
+    void deveCriarLocalidadePendenteQuandoGoogleRetornarMaisDeUmResultado() {
+        String textoLivre = "Springfield";
+        mockBaseInternaNaoResolvida(textoLivre);
+        mockSalvarLocalidadePendente();
+        GoogleGeocodeResponse respostaGoogle = new GoogleGeocodeResponse(
+                List.of(
+                        criarResultadoGoogleValido("Estados Unidos", "US", "Illinois", "IL", "Springfield"),
+                        criarResultadoGoogleValido("Estados Unidos", "US", "Missouri", "MO", "Springfield")
+                ),
+                "OK"
+        );
+        when(googleMapsClient.buscarLugarComFiltro(textoLivre, null)).thenReturn(Optional.of(respostaGoogle));
+
+        ResultadoResolucaoLocalidade resultado = localidadeResolucaoService.resolver(textoLivre);
+
+        assertAll(
+                () -> assertFalse(resultado.resolvida()),
+                () -> assertTrue(resultado.pendente()),
+                () -> assertEquals("Springfield", resultado.localidadePendente().getTextoOriginal()),
+                () -> assertEquals(
+                        "A localidade informada retornou m\u00FAltiplas op\u00E7\u00F5es no Google Maps e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        resultado.localidadePendente().getMotivoPendencia()
+                )
+        );
+        verify(googleMapsClient).buscarLugarComFiltro(textoLivre, null);
+        verify(localidadePendenteRepository).save(any(LocalidadePendente.class));
+        verify(paisRepository, never()).save(any(Pais.class));
+        verify(estadoRepository, never()).save(any(Estado.class));
+        verify(cidadeRepository, never()).save(any(Cidade.class));
+    }
+
+    @Test
     void deveBloquearTextoLivreNulo() {
         assertThrows(BusinessRuleException.class, () -> localidadeResolucaoService.resolver(null));
         verifyNoInteractions(cidadeRepository, estadoRepository, paisRepository, localidadePendenteRepository, googleMapsClient);
@@ -383,7 +451,20 @@ class LocalidadeResolucaoServiceTest {
             String siglaEstado,
             String nomeCidade
     ) {
-        GoogleResult resultado = new GoogleResult(
+        return new GoogleGeocodeResponse(
+                List.of(criarResultadoGoogleValido(nomePais, siglaPais, nomeEstado, siglaEstado, nomeCidade)),
+                "OK"
+        );
+    }
+
+    private GoogleResult criarResultadoGoogleValido(
+            String nomePais,
+            String siglaPais,
+            String nomeEstado,
+            String siglaEstado,
+            String nomeCidade
+    ) {
+        return new GoogleResult(
                 List.of(
                         criarComponente(nomeCidade, nomeCidade, "locality", "political"),
                         criarComponente(nomeEstado, siglaEstado, "administrative_area_level_1", "political"),
@@ -391,7 +472,6 @@ class LocalidadeResolucaoServiceTest {
                 ),
                 nomeCidade + ", " + siglaEstado + ", " + nomePais
         );
-        return new GoogleGeocodeResponse(List.of(resultado), "OK");
     }
 
     private AddressComponent criarComponente(String longName, String shortName, String... types) {

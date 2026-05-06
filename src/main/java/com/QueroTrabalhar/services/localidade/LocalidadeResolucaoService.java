@@ -32,6 +32,10 @@ public class LocalidadeResolucaoService {
             "Localidade n\u00E3o encontrada na base interna ou na integra\u00E7\u00E3o externa.";
     private static final String MOTIVO_FALHA_INTEGRACAO_EXTERNA =
             "N\u00E3o foi poss\u00EDvel validar a localidade na integra\u00E7\u00E3o externa.";
+    private static final String MOTIVO_LOCALIDADE_AMBIGUA_BASE_INTERNA =
+            "A localidade informada corresponde a m\u00FAltiplas op\u00E7\u00F5es na base interna e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.";
+    private static final String MOTIVO_LOCALIDADE_AMBIGUA_GOOGLE =
+            "A localidade informada retornou m\u00FAltiplas op\u00E7\u00F5es no Google Maps e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.";
 
     private final CidadeRepository cidadeRepository;
     private final EstadoRepository estadoRepository;
@@ -63,9 +67,9 @@ public class LocalidadeResolucaoService {
         String textoNormalizado = normalizarTextoObrigatorio(textoLivre);
         String textoHash = gerarTextoHash(textoNormalizado);
 
-        Optional<Localidade> localidadeInterna = resolverNaBaseInterna(textoNormalizado, textoHash);
-        if (localidadeInterna.isPresent()) {
-            Localidade localidade = localidadeInterna.get();
+        ResultadoConsultaInterna resultadoInterno = resolverNaBaseInterna(textoNormalizado, textoHash);
+        if (resultadoInterno.localidade().isPresent()) {
+            Localidade localidade = resultadoInterno.localidade().get();
             logger.info(
                     "event=localidade_resolvida origem=BASE_INTERNA textoHash={} nivel={} duracaoMs={}",
                     textoHash,
@@ -73,6 +77,15 @@ public class LocalidadeResolucaoService {
                     calcularDuracaoMs(inicioResolucao)
             );
             return ResultadoResolucaoLocalidade.resolvida(localidade);
+        }
+        if (resultadoInterno.motivoPendencia() != null) {
+            return criarResultadoPendente(
+                    textoNormalizado,
+                    textoHash,
+                    resultadoInterno.motivoPendencia(),
+                    inicioResolucao,
+                    0
+            );
         }
 
         int maxAttempts = Math.max(1, googleMapsRetryMaxAttempts);
@@ -99,17 +112,31 @@ public class LocalidadeResolucaoService {
             return ResultadoResolucaoLocalidade.resolvida(localidade);
         }
 
+        return criarResultadoPendente(
+                textoNormalizado,
+                textoHash,
+                tentativaExterna.motivoPendencia(),
+                inicioResolucao,
+                tentativaExterna.tentativasExecutadas()
+        );
+    }
+
+    private ResultadoResolucaoLocalidade criarResultadoPendente(String textoNormalizado,
+                                                                String textoHash,
+                                                                String motivoPendencia,
+                                                                long inicioResolucao,
+                                                                int tentativasExecutadas) {
         LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 textoNormalizado,
-                tentativaExterna.motivoPendencia()
+                motivoPendencia
         );
         LocalidadePendente localidadePendenteSalva = localidadePendenteRepository.save(localidadePendente);
 
         logger.warn(
                 "event=localidade_pendente_criada textoHash={} motivoCategoria={} tentativasExecutadas={} statusValidacao={} origem={} duracaoMs={}",
                 textoHash,
-                categorizarMotivoPendencia(tentativaExterna.motivoPendencia()),
-                tentativaExterna.tentativasExecutadas(),
+                categorizarMotivoPendencia(motivoPendencia),
+                tentativasExecutadas,
                 localidadePendenteSalva.getStatusValidacao(),
                 localidadePendenteSalva.getOrigem(),
                 calcularDuracaoMs(inicioResolucao)
@@ -118,42 +145,40 @@ public class LocalidadeResolucaoService {
         return ResultadoResolucaoLocalidade.pendente(localidadePendenteSalva);
     }
 
-    private Optional<Localidade> resolverNaBaseInterna(String textoNormalizado, String textoHash) {
+    private ResultadoConsultaInterna resolverNaBaseInterna(String textoNormalizado, String textoHash) {
         List<Cidade> cidades = cidadeRepository.findAllByNomeIgnoreCase(textoNormalizado);
+        List<Estado> estados = estadoRepository.findAllByNomeIgnoreCase(textoNormalizado);
+        Optional<Pais> paisOptional = paisRepository.findFirstByNomeIgnoreCase(textoNormalizado);
+
+        int quantidadePossibilidades = cidades.size() + estados.size() + (paisOptional.isPresent() ? 1 : 0);
+        if (quantidadePossibilidades > 1) {
+            logger.warn(
+                    "event=localidade_base_interna_ambigua textoHash={} quantidadeCidades={} quantidadeEstados={} quantidadePaises={} quantidadePossibilidades={} acao=PENDENCIA",
+                    textoHash,
+                    cidades.size(),
+                    estados.size(),
+                    paisOptional.isPresent() ? 1 : 0,
+                    quantidadePossibilidades
+            );
+            return ResultadoConsultaInterna.ambigua();
+        }
+
         if (cidades.size() == 1) {
             Cidade cidade = cidades.getFirst();
             Estado estado = cidade.getEstado();
-            return Optional.of(new Localidade(estado.getPais(), estado, cidade));
+            return ResultadoConsultaInterna.resolvida(new Localidade(estado.getPais(), estado, cidade));
         }
-        if (cidades.size() > 1) {
-            logger.warn(
-                    "event=localidade_base_interna_ambigua textoHash={} nivel=CIDADE quantidadeResultados={}",
-                    textoHash,
-                    cidades.size()
-            );
-        }
-
-        List<Estado> estados = estadoRepository.findAllByNomeIgnoreCase(textoNormalizado);
         if (estados.size() == 1) {
             Estado estado = estados.getFirst();
-            return Optional.of(new Localidade(estado.getPais(), estado));
+            return ResultadoConsultaInterna.resolvida(new Localidade(estado.getPais(), estado));
         }
-        if (estados.size() > 1) {
-            logger.warn(
-                    "event=localidade_base_interna_ambigua textoHash={} nivel=ESTADO quantidadeResultados={}",
-                    textoHash,
-                    estados.size()
-            );
+        if (paisOptional.isPresent()) {
+            return ResultadoConsultaInterna.resolvida(new Localidade(paisOptional.get()));
         }
 
-        Optional<Localidade> localidadePais = paisRepository.findFirstByNomeIgnoreCase(textoNormalizado)
-                .map(Localidade::new);
+        logger.info("event=localidade_base_interna_sem_match textoHash={}", textoHash);
 
-        if (localidadePais.isEmpty()) {
-            logger.info("event=localidade_base_interna_sem_match textoHash={}", textoHash);
-        }
-
-        return localidadePais;
+        return ResultadoConsultaInterna.semMatch();
     }
 
     private ResultadoTentativaExterna resolverNaIntegracaoExterna(String textoNormalizado,
@@ -257,12 +282,14 @@ public class LocalidadeResolucaoService {
 
         if (resultados.size() > 1) {
             logger.warn(
-                    "event=localidade_google_resultado_ambiguo textoHash={} tentativa={} quantidadeResultados={} estrategia=PRIMEIRO_RESULTADO duracaoMs={}",
+                    "event=localidade_google_resultado_ambiguo textoHash={} tentativa={} status={} quantidadeResultados={} estrategia=PENDENCIA duracaoMs={}",
                     textoHash,
                     attempt,
+                    statusGoogle,
                     resultados.size(),
                     duracaoMs
             );
+            return ResultadoConsultaGoogle.pendente(MOTIVO_LOCALIDADE_AMBIGUA_GOOGLE);
         }
 
         ResultadoConversaoGoogle resultadoConversao = converterResultadoGoogle(resultados.getFirst());
@@ -432,6 +459,12 @@ public class LocalidadeResolucaoService {
         if (MOTIVO_LOCALIDADE_NAO_ENCONTRADA.equals(motivoPendencia)) {
             return "LOCALIDADE_NAO_ENCONTRADA";
         }
+        if (MOTIVO_LOCALIDADE_AMBIGUA_BASE_INTERNA.equals(motivoPendencia)) {
+            return "AMBIGUIDADE_BASE_INTERNA";
+        }
+        if (MOTIVO_LOCALIDADE_AMBIGUA_GOOGLE.equals(motivoPendencia)) {
+            return "AMBIGUIDADE_GOOGLE_MAPS";
+        }
         return "DESCONHECIDO";
     }
 
@@ -463,6 +496,21 @@ public class LocalidadeResolucaoService {
 
         private static ResultadoTentativaExterna pendente(String motivoPendencia, int tentativasExecutadas) {
             return new ResultadoTentativaExterna(Optional.empty(), motivoPendencia, tentativasExecutadas);
+        }
+    }
+
+    private record ResultadoConsultaInterna(Optional<Localidade> localidade, String motivoPendencia) {
+
+        private static ResultadoConsultaInterna resolvida(Localidade localidade) {
+            return new ResultadoConsultaInterna(Optional.of(localidade), null);
+        }
+
+        private static ResultadoConsultaInterna ambigua() {
+            return new ResultadoConsultaInterna(Optional.empty(), MOTIVO_LOCALIDADE_AMBIGUA_BASE_INTERNA);
+        }
+
+        private static ResultadoConsultaInterna semMatch() {
+            return new ResultadoConsultaInterna(Optional.empty(), null);
         }
     }
 
