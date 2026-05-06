@@ -10,7 +10,6 @@ import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.Modalidade;
-import com.QueroTrabalhar.domain.enums.StatusLocalidadeFiltro;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
@@ -90,7 +89,6 @@ class OportunidadeRecrutadorMeServiceTest {
                 pais.getId(),
                 null,
                 null,
-                StatusLocalidadeFiltro.VALIDADA,
                 Modalidade.REMOTO
         );
         OportunidadeDeEmprego oportunidadePessoal = criarOportunidade(

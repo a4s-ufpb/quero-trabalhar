@@ -163,7 +163,6 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                         .param("paisId", localidade.pais().getId().toString())
                         .param("estadoId", localidade.estado().getId().toString())
                         .param("cidadeId", localidade.cidade().getId().toString())
-                        .param("statusLocalidade", "VALIDADA")
                         .param("modalidade", Modalidade.REMOTO.name()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -175,13 +174,13 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
     }
 
     @Test
-    void deveFiltrarOportunidadesPendentesPorStatusLocalidade() throws Exception {
+    void naoDeveListarOportunidadesComLocalidadePendenteNaListagemPublica() throws Exception {
         int indice = proximoIndice();
         TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Frontend", indice);
         PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima", "Empresa Legada A");
         LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
 
-        persistirOportunidadeValidada(
+        OportunidadeDeEmprego oportunidadeValidada = persistirOportunidadeValidada(
                 "Angular presencial",
                 Modalidade.PRESENCIAL,
                 tipoDeEmprego,
@@ -189,7 +188,7 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 null,
                 localidade
         );
-        OportunidadeDeEmprego oportunidadePendente = persistirOportunidadePendente(
+        persistirOportunidadePendente(
                 "React remoto",
                 Modalidade.REMOTO,
                 tipoDeEmprego,
@@ -198,21 +197,45 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 null
         );
 
+        mockMvc.perform(get("/api/oportunidades"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeValidada.getId()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").value("VALIDADA"));
+    }
+
+    @Test
+    void deveIgnorarParametroStatusLocalidadeLegadoSemExporOportunidadesPendentes() throws Exception {
+        int indice = proximoIndice();
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Dados", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Joana Lima", "Empresa Legada B");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeValidada = persistirOportunidadeValidada(
+                "Engenharia de dados",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                null,
+                localidade
+        );
+        persistirOportunidadePendente(
+                "Analise em campo",
+                Modalidade.PRESENCIAL,
+                tipoDeEmprego,
+                recrutador,
+                "Interior expandido",
+                null
+        );
+
         mockMvc.perform(get("/api/oportunidades")
                         .param("statusLocalidade", "PENDENTE"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].id").value(oportunidadePendente.getId()))
-                .andExpect(jsonPath("$.content[0].statusLocalidade").value("PENDENTE"))
-                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").value("Regiao Metropolitana"));
-    }
-
-    @Test
-    void deveRetornarBadRequestQuandoStatusLocalidadeForInvalido() throws Exception {
-        mockMvc.perform(get("/api/oportunidades")
-                        .param("statusLocalidade", "ABC"))
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeValidada.getId()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").value("VALIDADA"));
     }
 
     private int proximoIndice() {
