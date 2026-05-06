@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
@@ -114,17 +115,17 @@ class OportunidadeRecrutadorMeServiceTest {
                 new PageImpl<>(List.of(oportunidadePessoal, oportunidadeEmEmpresa), pageable, 2)
         );
 
-        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+        Page<OportunidadeDeEmpregoPublicaResponseDTO> resposta =
                 oportunidadeDeEmpregoService.listarOportunidadesDeEmprego(filtro, pageable);
 
         assertEquals(2, resposta.getTotalElements());
         assertEquals(1, resposta.getTotalPages());
         assertEquals(2, resposta.getContent().size());
-        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.getContent().get(0));
+        assertInstanceOf(OportunidadeDeEmpregoPublicaResponseDTO.class, resposta.getContent().get(0));
         assertNotSame(oportunidadePessoal, resposta.getContent().get(0));
 
-        OportunidadeDeEmpregoResponseDTO primeiraOportunidade = resposta.getContent().get(0);
-        OportunidadeDeEmpregoResponseDTO segundaOportunidade = resposta.getContent().get(1);
+        OportunidadeDeEmpregoPublicaResponseDTO primeiraOportunidade = resposta.getContent().get(0);
+        OportunidadeDeEmpregoPublicaResponseDTO segundaOportunidade = resposta.getContent().get(1);
 
         assertAll(
                 () -> assertEquals(501L, primeiraOportunidade.id()),
@@ -163,9 +164,10 @@ class OportunidadeRecrutadorMeServiceTest {
                 pais
         );
 
-        when(oportunidadeDeEmpregoRepository.findById(601L)).thenReturn(Optional.of(oportunidade));
+        when(oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(601L))
+                .thenReturn(Optional.of(oportunidade));
 
-        OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.buscarPorId(601L);
+        OportunidadeDeEmpregoPublicaResponseDTO resposta = oportunidadeDeEmpregoService.buscarPorId(601L);
 
         assertNotSame(oportunidade, resposta);
         assertAll(
@@ -176,7 +178,7 @@ class OportunidadeRecrutadorMeServiceTest {
                 () -> assertEquals(81L, resposta.empresaId()),
                 () -> assertEquals("Empresa Plataforma", resposta.empresaNome())
         );
-        verify(oportunidadeDeEmpregoRepository).findById(601L);
+        verify(oportunidadeDeEmpregoRepository).findByIdAndLocalidadePaisIsNotNull(601L);
         verifyNoInteractions(
                 usuarioAutenticadoService,
                 tipoDeEmpregoRepository,
@@ -189,11 +191,28 @@ class OportunidadeRecrutadorMeServiceTest {
 
     @Test
     void deveLancarObjectNotFoundExceptionQuandoOportunidadeNaoExistir() {
-        when(oportunidadeDeEmpregoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(999L)).thenReturn(Optional.empty());
 
         assertThrows(ObjectNotFoundException.class, () -> oportunidadeDeEmpregoService.buscarPorId(999L));
 
-        verify(oportunidadeDeEmpregoRepository).findById(999L);
+        verify(oportunidadeDeEmpregoRepository).findByIdAndLocalidadePaisIsNotNull(999L);
+        verifyNoInteractions(
+                usuarioAutenticadoService,
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadeResolucaoService
+        );
+    }
+
+    @Test
+    void deveLancarObjectNotFoundExceptionQuandoOportunidadePossuirLocalidadePendenteNaConsultaPublica() {
+        when(oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(998L)).thenReturn(Optional.empty());
+
+        assertThrows(ObjectNotFoundException.class, () -> oportunidadeDeEmpregoService.buscarPorId(998L));
+
+        verify(oportunidadeDeEmpregoRepository).findByIdAndLocalidadePaisIsNotNull(998L);
         verifyNoInteractions(
                 usuarioAutenticadoService,
                 tipoDeEmpregoRepository,

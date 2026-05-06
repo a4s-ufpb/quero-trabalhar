@@ -113,7 +113,11 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.content[0].id").value(segundaOportunidade.getId()))
-                .andExpect(jsonPath("$.content[1].id").value(primeiraOportunidade.getId()));
+                .andExpect(jsonPath("$.content[1].id").value(primeiraOportunidade.getId()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
     }
 
     @Test
@@ -170,7 +174,10 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
                 .andExpect(jsonPath("$.content[0].empresaId").value(empresaAlvo.getId()))
                 .andExpect(jsonPath("$.content[0].recrutadorId").value(recrutadorAlvo.getId()))
-                .andExpect(jsonPath("$.content[0].statusLocalidade").value("VALIDADA"));
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
     }
 
     @Test
@@ -202,7 +209,10 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(oportunidadeValidada.getId()))
-                .andExpect(jsonPath("$.content[0].statusLocalidade").value("VALIDADA"));
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
     }
 
     @Test
@@ -235,7 +245,54 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(oportunidadeValidada.getId()))
-                .andExpect(jsonPath("$.content[0].statusLocalidade").value("VALIDADA"));
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
+    }
+
+    @Test
+    void deveBuscarOportunidadePublicaSemCamposTecnicosDePendencia() throws Exception {
+        int indice = proximoIndice();
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend publico", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima", "Empresa Legada A");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+        OportunidadeDeEmprego oportunidade = persistirOportunidadeValidada(
+                "API publica com Spring Boot",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                null,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/oportunidades/{id}", oportunidade.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(oportunidade.getId()))
+                .andExpect(jsonPath("$.descricao").value(oportunidade.getDescricao()))
+                .andExpect(jsonPath("$.statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.motivoPendenciaLocalidade").doesNotExist());
+    }
+
+    @Test
+    void naoDeveRetornarOportunidadeComLocalidadePendenteNoDetalhePublico() throws Exception {
+        int indice = proximoIndice();
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend oculto", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Joana Lima", "Empresa Legada B");
+        OportunidadeDeEmprego oportunidadePendente = persistirOportunidadePendente(
+                "Plataforma em regiao nao mapeada",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                "Regiao nao mapeada " + indice,
+                null
+        );
+
+        mockMvc.perform(get("/api/oportunidades/{id}", oportunidadePendente.getId()))
+                .andExpect(status().isNotFound());
     }
 
     private int proximoIndice() {

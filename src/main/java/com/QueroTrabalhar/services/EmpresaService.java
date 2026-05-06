@@ -1,7 +1,9 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
@@ -71,20 +73,20 @@ public class EmpresaService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmpresaResponseDTO> listarEmpresas() {
+    public List<EmpresaPublicaResponseDTO> listarEmpresas() {
         return empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc().stream()
-                .map(EmpresaResponseDTO::daEntidade)
+                .map(EmpresaPublicaResponseDTO::daEntidade)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public EmpresaResponseDTO buscarEmpresaPorId(Long id) {
-        return EmpresaResponseDTO.daEntidade(buscarEntidadePorId(id));
+    public EmpresaPublicaResponseDTO buscarEmpresaPorId(Long id) {
+        return EmpresaPublicaResponseDTO.daEntidade(buscarEntidadePublicaDisponivelPorId(id));
     }
 
     @Transactional(readOnly = true)
     public List<RecrutadorDaEmpresaResponseDTO> listarRecrutadoresAprovadosDaEmpresa(Long empresaId) {
-        buscarEntidadePorId(empresaId);
+        buscarEntidadePublicaDisponivelPorId(empresaId);
 
         return perfilRecrutadorRepository
                 .findByEmpresaVinculadaIdAndStatusVinculoEmpresa(empresaId, StatusVinculoEmpresa.APROVADO)
@@ -98,17 +100,27 @@ public class EmpresaService {
     }
 
     @Transactional(readOnly = true)
-    public List<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDaEmpresa(Long empresaId) {
-        buscarEntidadePorId(empresaId);
+    public List<OportunidadeDeEmpregoPublicaResponseDTO> listarOportunidadesDaEmpresa(Long empresaId) {
+        buscarEntidadePublicaDisponivelPorId(empresaId);
 
-        return oportunidadeDeEmpregoRepository.findByEmpresaId(empresaId).stream()
-                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
+        return oportunidadeDeEmpregoRepository.findByEmpresaIdAndLocalidadePaisIsNotNull(empresaId).stream()
+                .map(OportunidadeDeEmpregoPublicaResponseDTO::daEntidade)
                 .toList();
     }
 
     private Empresa buscarEntidadePorId(Long id) {
         return empresaRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
+    }
+
+    private Empresa buscarEntidadePublicaPorId(Long id) {
+        return empresaRepository.findByIdAndLocalidadePaisIsNotNull(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa nÃ£o encontrada. ID: " + id));
+    }
+
+    private Empresa buscarEntidadePublicaDisponivelPorId(Long id) {
+        return empresaRepository.findByIdAndLocalidadePaisIsNotNull(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
     }
 
     private void definirLocalidadeDaEmpresa(Empresa empresa, EmpresaRequestDTO dto) {

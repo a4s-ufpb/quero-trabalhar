@@ -1,7 +1,9 @@
 package com.QueroTrabalhar.controllers;
 
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.services.EmpresaService;
@@ -42,12 +44,12 @@ public class EmpresaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EmpresaResponseDTO>> listarEmpresas() {
+    public ResponseEntity<List<EmpresaPublicaResponseDTO>> listarEmpresas() {
         return ResponseEntity.ok(empresaService.listarEmpresas());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EmpresaResponseDTO> buscarEmpresaPorId(@PathVariable Long id) {
+    public ResponseEntity<EmpresaPublicaResponseDTO> buscarEmpresaPorId(@PathVariable Long id) {
         return ResponseEntity.ok(empresaService.buscarEmpresaPorId(id));
     }
 
@@ -57,7 +59,9 @@ public class EmpresaController {
     }
 
     @GetMapping("/{id}/oportunidades")
-    public ResponseEntity<List<OportunidadeDeEmpregoResponseDTO>> listarOportunidadesDaEmpresa(@PathVariable Long id) {
+    public ResponseEntity<List<OportunidadeDeEmpregoPublicaResponseDTO>> listarOportunidadesDaEmpresa(
+            @PathVariable Long id
+    ) {
         return ResponseEntity.ok(empresaService.listarOportunidadesDaEmpresa(id));
     }
 }

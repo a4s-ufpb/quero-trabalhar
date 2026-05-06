@@ -1,7 +1,9 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
@@ -332,25 +334,23 @@ class EmpresaFeatureServiceTest {
         when(empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc())
                 .thenReturn(List.of(empresaAlpha, empresaBeta));
 
-        List<?> resposta = empresaService.listarEmpresas();
+        List<EmpresaPublicaResponseDTO> resposta = empresaService.listarEmpresas();
 
         assertEquals(2, resposta.size());
-        assertInstanceOf(EmpresaResponseDTO.class, resposta.get(0));
         assertNotSame(empresaAlpha, resposta.get(0));
+        assertInstanceOf(EmpresaPublicaResponseDTO.class, resposta.get(0));
 
-        EmpresaResponseDTO primeiraEmpresa = (EmpresaResponseDTO) resposta.get(0);
-        EmpresaResponseDTO segundaEmpresa = (EmpresaResponseDTO) resposta.get(1);
+        EmpresaPublicaResponseDTO primeiraEmpresa = resposta.get(0);
+        EmpresaPublicaResponseDTO segundaEmpresa = resposta.get(1);
 
         assertAll(
                 () -> assertEquals(1L, primeiraEmpresa.id()),
                 () -> assertEquals("Empresa Alpha", primeiraEmpresa.nome()),
                 () -> assertEquals("Plataforma de talentos", primeiraEmpresa.descricao()),
                 () -> assertEquals("https://alpha.com", primeiraEmpresa.site()),
-                () -> assertEquals("VALIDADA", primeiraEmpresa.statusLocalidade()),
                 () -> assertEquals(2L, segundaEmpresa.id()),
                 () -> assertEquals("Empresa Beta", segundaEmpresa.nome()),
-                () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico()),
-                () -> assertEquals("VALIDADA", segundaEmpresa.statusLocalidade())
+                () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico())
         );
         verify(empresaRepository).findByLocalidadePaisIsNotNullOrderByNomeAsc();
     }
@@ -361,9 +361,9 @@ class EmpresaFeatureServiceTest {
         empresa.setDescricao("Consultoria especializada");
         empresa.setTelefonePublico("83988887777");
 
-        when(empresaRepository.findById(7L)).thenReturn(Optional.of(empresa));
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(7L)).thenReturn(Optional.of(empresa));
 
-        EmpresaResponseDTO resposta = empresaService.buscarEmpresaPorId(7L);
+        EmpresaPublicaResponseDTO resposta = empresaService.buscarEmpresaPorId(7L);
 
         assertNotSame(empresa, resposta);
         assertAll(
@@ -372,16 +372,25 @@ class EmpresaFeatureServiceTest {
                 () -> assertEquals("Consultoria especializada", resposta.descricao()),
                 () -> assertEquals("83988887777", resposta.telefonePublico())
         );
-        verify(empresaRepository).findById(7L);
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(7L);
     }
 
     @Test
     void deveLancarObjectNotFoundExceptionQuandoEmpresaNaoExistir() {
-        when(empresaRepository.findById(404L)).thenReturn(Optional.empty());
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(404L)).thenReturn(Optional.empty());
 
         assertThrows(ObjectNotFoundException.class, () -> empresaService.buscarEmpresaPorId(404L));
 
-        verify(empresaRepository).findById(404L);
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(404L);
+    }
+
+    @Test
+    void deveLancarObjectNotFoundExceptionQuandoEmpresaPossuirLocalidadePendenteNaConsultaPublica() {
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(405L)).thenReturn(Optional.empty());
+
+        assertThrows(ObjectNotFoundException.class, () -> empresaService.buscarEmpresaPorId(405L));
+
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(405L);
     }
 
     @Test
@@ -390,7 +399,7 @@ class EmpresaFeatureServiceTest {
         PerfilRecrutador recrutadorComNomeZeca = criarPerfilRecrutador(10L, "Zeca", empresa, StatusVinculoEmpresa.APROVADO);
         PerfilRecrutador recrutadorComNomeAna = criarPerfilRecrutador(11L, "Ana", empresa, StatusVinculoEmpresa.APROVADO);
 
-        when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(empresa.getId())).thenReturn(Optional.of(empresa));
         when(perfilRecrutadorRepository.findByEmpresaVinculadaIdAndStatusVinculoEmpresa(
                 empresa.getId(),
                 StatusVinculoEmpresa.APROVADO
@@ -403,6 +412,7 @@ class EmpresaFeatureServiceTest {
         assertEquals("Ana", resposta.get(0).nome());
         assertEquals("Zeca", resposta.get(1).nome());
         assertEquals(empresa.getId(), resposta.get(0).empresaId());
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(empresa.getId());
         verify(perfilRecrutadorRepository)
                 .findByEmpresaVinculadaIdAndStatusVinculoEmpresa(empresa.getId(), StatusVinculoEmpresa.APROVADO);
     }
@@ -423,10 +433,11 @@ class EmpresaFeatureServiceTest {
         );
         ReflectionTestUtils.setField(oportunidade, "id", 100L);
 
-        when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
-        when(oportunidadeDeEmpregoRepository.findByEmpresaId(empresa.getId())).thenReturn(List.of(oportunidade));
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(empresa.getId())).thenReturn(Optional.of(empresa));
+        when(oportunidadeDeEmpregoRepository.findByEmpresaIdAndLocalidadePaisIsNotNull(empresa.getId()))
+                .thenReturn(List.of(oportunidade));
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta =
+        List<OportunidadeDeEmpregoPublicaResponseDTO> resposta =
                 empresaService.listarOportunidadesDaEmpresa(empresa.getId());
 
         assertEquals(1, resposta.size());
@@ -434,6 +445,8 @@ class EmpresaFeatureServiceTest {
         assertEquals("Vaga Java", resposta.get(0).descricao());
         assertEquals(empresa.getId(), resposta.get(0).empresaId());
         assertEquals("Empresa ACME", resposta.get(0).empresaNome());
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(empresa.getId());
+        verify(oportunidadeDeEmpregoRepository).findByEmpresaIdAndLocalidadePaisIsNotNull(empresa.getId());
     }
 
     private Pais criarPais(Long id, String nome, String sigla) {

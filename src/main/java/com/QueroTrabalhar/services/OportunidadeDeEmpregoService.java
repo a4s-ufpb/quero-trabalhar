@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
@@ -59,19 +60,19 @@ public class OportunidadeDeEmpregoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDeEmprego(
+    public Page<OportunidadeDeEmpregoPublicaResponseDTO> listarOportunidadesDeEmprego(
             OportunidadeDeEmpregoFilterDTO filtro,
             Pageable pageable
     ) {
         return oportunidadeDeEmpregoRepository.findAll(
                 OportunidadeDeEmpregoSpecification.comFiltros(filtro),
                 pageable
-        ).map(OportunidadeDeEmpregoResponseDTO::daEntidade);
+        ).map(OportunidadeDeEmpregoPublicaResponseDTO::daEntidade);
     }
 
     @Transactional(readOnly = true)
-    public OportunidadeDeEmpregoResponseDTO buscarPorId(Long id) {
-        return OportunidadeDeEmpregoResponseDTO.daEntidade(buscarEntidadePorId(id));
+    public OportunidadeDeEmpregoPublicaResponseDTO buscarPorId(Long id) {
+        return OportunidadeDeEmpregoPublicaResponseDTO.daEntidade(buscarEntidadePublicaDisponivelPorId(id));
     }
 
     @Transactional(readOnly = true)
@@ -144,6 +145,16 @@ public class OportunidadeDeEmpregoService {
     private OportunidadeDeEmprego buscarEntidadePorId(Long id) {
         return oportunidadeDeEmpregoRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego não encontrada. ID: " + id));
+    }
+
+    private OportunidadeDeEmprego buscarEntidadePublicaPorId(Long id) {
+        return oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nÃ£o encontrada. ID: " + id));
+    }
+
+    private OportunidadeDeEmprego buscarEntidadePublicaDisponivelPorId(Long id) {
+        return oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
     }
 
     PerfilRecrutador obterPerfilRecrutadorAutenticado() {

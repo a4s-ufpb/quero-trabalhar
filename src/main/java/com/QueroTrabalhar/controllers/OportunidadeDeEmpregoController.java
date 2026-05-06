@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.controllers;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.OportunidadeDeEmpregoService;
@@ -34,7 +35,7 @@ public class OportunidadeDeEmpregoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<OportunidadeDeEmpregoResponseDTO>> listar(
+    public ResponseEntity<Page<OportunidadeDeEmpregoPublicaResponseDTO>> listar(
             @Valid @ParameterObject OportunidadeDeEmpregoFilterDTO filtro,
             @ParameterObject
             @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable
@@ -43,7 +44,9 @@ public class OportunidadeDeEmpregoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OportunidadeDeEmpregoResponseDTO> buscarOportunidadeDeEmpregoPorId(@PathVariable Long id) {
+    public ResponseEntity<OportunidadeDeEmpregoPublicaResponseDTO> buscarOportunidadeDeEmpregoPorId(
+            @PathVariable Long id
+    ) {
         return ResponseEntity.ok(oportunidadeDeEmpregoService.buscarPorId(id));
     }
 
