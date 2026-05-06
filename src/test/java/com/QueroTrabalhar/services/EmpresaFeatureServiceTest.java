@@ -321,14 +321,16 @@ class EmpresaFeatureServiceTest {
     }
 
     @Test
-    void deveListarEmpresas() {
-        Empresa empresaAlpha = criarEmpresa(1L, "Empresa Alpha");
+    void deveListarEmpresasPublicasComLocalidadeValidada() {
+        Pais pais = criarPais(1L, "Brasil", "BR");
+        Empresa empresaAlpha = criarEmpresaValidada(1L, "Empresa Alpha", new Localidade(pais));
         empresaAlpha.setDescricao("Plataforma de talentos");
         empresaAlpha.setSite("https://alpha.com");
-        Empresa empresaBeta = criarEmpresa(2L, "Empresa Beta");
+        Empresa empresaBeta = criarEmpresaValidada(2L, "Empresa Beta", new Localidade(pais));
         empresaBeta.setEmailPublico("contato@beta.com");
 
-        when(empresaRepository.findAllByOrderByNomeAsc()).thenReturn(List.of(empresaAlpha, empresaBeta));
+        when(empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc())
+                .thenReturn(List.of(empresaAlpha, empresaBeta));
 
         List<?> resposta = empresaService.listarEmpresas();
 
@@ -344,11 +346,13 @@ class EmpresaFeatureServiceTest {
                 () -> assertEquals("Empresa Alpha", primeiraEmpresa.nome()),
                 () -> assertEquals("Plataforma de talentos", primeiraEmpresa.descricao()),
                 () -> assertEquals("https://alpha.com", primeiraEmpresa.site()),
+                () -> assertEquals("VALIDADA", primeiraEmpresa.statusLocalidade()),
                 () -> assertEquals(2L, segundaEmpresa.id()),
                 () -> assertEquals("Empresa Beta", segundaEmpresa.nome()),
-                () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico())
+                () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico()),
+                () -> assertEquals("VALIDADA", segundaEmpresa.statusLocalidade())
         );
-        verify(empresaRepository).findAllByOrderByNomeAsc();
+        verify(empresaRepository).findByLocalidadePaisIsNotNullOrderByNomeAsc();
     }
 
     @Test
@@ -452,6 +456,12 @@ class EmpresaFeatureServiceTest {
 
     private Empresa criarEmpresa(Long id, String nome) {
         Empresa empresa = new Empresa(nome, null, null, null, null, null);
+        ReflectionTestUtils.setField(empresa, "id", id);
+        return empresa;
+    }
+
+    private Empresa criarEmpresaValidada(Long id, String nome, Localidade localidade) {
+        Empresa empresa = new Empresa(nome, null, null, null, null, localidade);
         ReflectionTestUtils.setField(empresa, "id", id);
         return empresa;
     }

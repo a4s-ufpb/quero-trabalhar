@@ -72,7 +72,7 @@ public class EmpresaService {
 
     @Transactional(readOnly = true)
     public List<EmpresaResponseDTO> listarEmpresas() {
-        return empresaRepository.findAllByOrderByNomeAsc().stream()
+        return empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc().stream()
                 .map(EmpresaResponseDTO::daEntidade)
                 .toList();
     }
