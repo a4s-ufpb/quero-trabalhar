@@ -19,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -61,13 +60,27 @@ class LocalidadeResolucaoServiceTest {
     @Mock
     private GoogleMapsClient googleMapsClient;
 
-    @InjectMocks
     private LocalidadeResolucaoService localidadeResolucaoService;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(localidadeResolucaoService, "googleMapsRetryMaxAttempts", 2);
-        ReflectionTestUtils.setField(localidadeResolucaoService, "googleMapsRetryDelayMs", 0L);
+        ResolvedorLocalidadeBaseInterna resolvedorLocalidadeBaseInterna =
+                new ResolvedorLocalidadeBaseInterna(cidadeRepository, estadoRepository, paisRepository);
+        ConversorGoogleResultParaLocalidade conversorGoogleResultParaLocalidade =
+                new ConversorGoogleResultParaLocalidade(paisRepository, estadoRepository, cidadeRepository);
+        ResolvedorLocalidadeGoogleMaps resolvedorLocalidadeGoogleMaps =
+                new ResolvedorLocalidadeGoogleMaps(googleMapsClient, conversorGoogleResultParaLocalidade);
+        RegistroLocalidadePendenteService registroLocalidadePendenteService =
+                new RegistroLocalidadePendenteService(localidadePendenteRepository);
+
+        ReflectionTestUtils.setField(resolvedorLocalidadeGoogleMaps, "googleMapsRetryMaxAttempts", 2);
+        ReflectionTestUtils.setField(resolvedorLocalidadeGoogleMaps, "googleMapsRetryDelayMs", 0L);
+
+        localidadeResolucaoService = new LocalidadeResolucaoService(
+                resolvedorLocalidadeBaseInterna,
+                resolvedorLocalidadeGoogleMaps,
+                registroLocalidadePendenteService
+        );
     }
 
     @Test
