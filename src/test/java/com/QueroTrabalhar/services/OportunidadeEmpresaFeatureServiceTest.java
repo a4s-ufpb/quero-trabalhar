@@ -12,6 +12,7 @@ import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
@@ -54,6 +55,9 @@ class OportunidadeEmpresaFeatureServiceTest {
 
     @Mock
     private CidadeRepository cidadeRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;

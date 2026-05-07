@@ -5,6 +5,7 @@ import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.repository.EmpresaRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class PerfilRecrutadorEmpresaFeatureServiceTest {
     private EmpresaRepository empresaRepository;
 
     @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
+
+    @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
 
     @InjectMocks
@@ -47,6 +51,11 @@ class PerfilRecrutadorEmpresaFeatureServiceTest {
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
         when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
         when(perfilRecrutadorRepository.save(perfilRecrutador)).thenReturn(perfilRecrutador);
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                com.QueroTrabalhar.domain.enums.CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.empty());
 
         PerfilRecrutadorEmpresaResponseDTO resposta =
                 perfilRecrutadorService.solicitarVinculoEmpresa(empresa.getId());
@@ -104,6 +113,11 @@ class PerfilRecrutadorEmpresaFeatureServiceTest {
         when(perfilRecrutadorRepository.findById(perfilRecrutador.getId()))
                 .thenReturn(Optional.of(perfilRecrutador));
         when(perfilRecrutadorRepository.save(perfilRecrutador)).thenReturn(perfilRecrutador);
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                com.QueroTrabalhar.domain.enums.CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.empty());
 
         PerfilRecrutadorEmpresaResponseDTO resposta =
                 perfilRecrutadorService.aprovarVinculoEmpresaComoAdmin(perfilRecrutador.getId());
@@ -123,6 +137,11 @@ class PerfilRecrutadorEmpresaFeatureServiceTest {
         when(perfilRecrutadorRepository.findById(perfilRecrutador.getId()))
                 .thenReturn(Optional.of(perfilRecrutador));
         when(perfilRecrutadorRepository.save(perfilRecrutador)).thenReturn(perfilRecrutador);
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                com.QueroTrabalhar.domain.enums.CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.empty());
 
         PerfilRecrutadorEmpresaResponseDTO resposta =
                 perfilRecrutadorService.recusarVinculoEmpresaComoAdmin(perfilRecrutador.getId());

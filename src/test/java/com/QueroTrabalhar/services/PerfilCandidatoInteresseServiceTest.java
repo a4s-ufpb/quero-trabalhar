@@ -8,8 +8,12 @@ import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
@@ -23,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +50,9 @@ class PerfilCandidatoInteresseServiceTest {
 
     @Mock
     private OportunidadeDeEmpregoRepository oportunidadeDeEmpregoRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
@@ -234,6 +242,79 @@ class PerfilCandidatoInteresseServiceTest {
         );
         verify(usuarioAutenticadoService).obterPerfilCandidatoAutenticado();
         verifyNoInteractions(oportunidadeDeEmpregoRepository, perfilCandidatoRepository);
+    }
+
+    @Test
+    void deveBuscarPendenciasEmLoteAoListarMinhasVagasDeInteresse() {
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(8L, "Carla Mendes");
+        PerfilRecrutador recrutador = criarPerfilRecrutador(31L, "Renata Alves");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(10L, "Backend");
+
+        OportunidadeDeEmprego vagaPendente = new OportunidadeDeEmprego(
+                "Fila tecnica 1",
+                tipoDeEmprego,
+                Modalidade.REMOTO,
+                null,
+                recrutador,
+                null
+        );
+        ReflectionTestUtils.setField(vagaPendente, "id", 401L);
+
+        OportunidadeDeEmprego vagaPendente2 = new OportunidadeDeEmprego(
+                "Fila tecnica 2",
+                tipoDeEmprego,
+                Modalidade.HIBRIDO,
+                null,
+                recrutador,
+                null
+        );
+        ReflectionTestUtils.setField(vagaPendente2, "id", 402L);
+
+        perfilCandidato.demonstrarInteresse(vagaPendente);
+        perfilCandidato.demonstrarInteresse(vagaPendente2);
+
+        LocalidadePendente primeiraPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Vale Imaginario",
+                "Localidade nao encontrada"
+        );
+        primeiraPendencia.definirDonoGenerico(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                401L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        LocalidadePendente segundaPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Serra do Sol Tech",
+                "Localidade ambigua"
+        );
+        segundaPendencia.definirDonoGenerico(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                402L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
+        when(localidadePendenteRepository.findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
+                org.mockito.ArgumentMatchers.eq(TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO),
+                org.mockito.ArgumentMatchers.eq(CampoLocalidadePendente.LOCALIDADE),
+                org.mockito.ArgumentMatchers.argThat(ids -> ids.size() == 2 && ids.containsAll(List.of(401L, 402L)))
+        )).thenReturn(List.of(primeiraPendencia, segundaPendencia));
+
+        List<OportunidadeDeEmpregoResponseDTO> resposta = perfilCandidatoService.listarMinhasVagasDeInteresse();
+
+        assertAll(
+                () -> assertEquals(2, resposta.size()),
+                () -> assertTrue(resposta.stream().allMatch(dto -> "PENDENTE".equals(dto.statusLocalidade()))),
+                () -> assertEquals(
+                        Set.of("Vale Imaginario", "Serra do Sol Tech"),
+                        resposta.stream().map(OportunidadeDeEmpregoResponseDTO::localidadeTextoOriginal).collect(java.util.stream.Collectors.toSet())
+                )
+        );
+        verify(localidadePendenteRepository).findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
+                org.mockito.ArgumentMatchers.eq(TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO),
+                org.mockito.ArgumentMatchers.eq(CampoLocalidadePendente.LOCALIDADE),
+                org.mockito.ArgumentMatchers.argThat(ids -> ids.size() == 2 && ids.containsAll(List.of(401L, 402L)))
+        );
     }
 
     private PerfilCandidato criarPerfilCandidatoAutenticado(Long id, String nomeUsuario) {

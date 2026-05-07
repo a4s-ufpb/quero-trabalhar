@@ -19,6 +19,7 @@ import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
@@ -63,6 +64,9 @@ class OportunidadeLocalidadePendenteServiceTest {
 
     @Mock
     private CidadeRepository cidadeRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;
@@ -142,6 +146,11 @@ class OportunidadeLocalidadePendenteServiceTest {
                 .thenReturn(ResultadoResolucaoLocalidade.pendente(localidadePendente));
         prepararMockSaveOportunidade();
         mockAssociarDonoGenerico();
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                999L,
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.of(localidadePendente));
 
         OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.criarOportunidadeDeEmprego(dto);
 
@@ -333,6 +342,11 @@ class OportunidadeLocalidadePendenteServiceTest {
                 .thenReturn(ResultadoResolucaoLocalidade.pendente(localidadePendente));
         when(oportunidadeDeEmpregoRepository.save(oportunidadeExistente)).thenReturn(oportunidadeExistente);
         mockAssociarDonoGenerico();
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                800L,
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.of(localidadePendente));
 
         OportunidadeDeEmpregoResponseDTO resposta =
                 oportunidadeDeEmpregoService.atualizarOportunidadeDeEmprego(800L, dto);
@@ -379,6 +393,11 @@ class OportunidadeLocalidadePendenteServiceTest {
                 .thenReturn(ResultadoResolucaoLocalidade.pendente(localidadePendente));
         prepararMockSaveOportunidade();
         mockAssociarDonoGenerico();
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                999L,
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.of(localidadePendente));
 
         OportunidadeDeEmpregoResponseDTO resposta = oportunidadeDeEmpregoService.criarOportunidadeDeEmprego(dto);
 

@@ -24,6 +24,7 @@ import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
@@ -75,6 +76,9 @@ class EmpresaFeatureServiceTest {
 
     @Mock
     private CidadeRepository cidadeRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;
@@ -306,6 +310,11 @@ class EmpresaFeatureServiceTest {
             );
             return pendencia;
         });
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.EMPRESA,
+                61L,
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(Optional.of(localidadePendente));
 
         EmpresaResponseDTO resposta = empresaService.criarEmpresa(dto);
 

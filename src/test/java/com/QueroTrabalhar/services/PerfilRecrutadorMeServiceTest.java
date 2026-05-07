@@ -5,8 +5,11 @@ import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorResponseD
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.EmpresaRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,9 @@ class PerfilRecrutadorMeServiceTest {
 
     @Mock
     private EmpresaRepository empresaRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
@@ -102,6 +108,11 @@ class PerfilRecrutadorMeServiceTest {
         perfilRecrutador.setEmpresaVinculada(empresa);
         perfilRecrutador.setStatusVinculoEmpresa(StatusVinculoEmpresa.APROVADO);
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+        when(localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenReturn(java.util.Optional.empty());
 
         PerfilRecrutadorEmpresaResponseDTO resposta = perfilRecrutadorService.buscarMinhaEmpresa();
 

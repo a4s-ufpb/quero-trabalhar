@@ -19,6 +19,7 @@ import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
 import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
@@ -33,7 +34,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OportunidadeDeEmpregoService {
@@ -43,6 +46,7 @@ public class OportunidadeDeEmpregoService {
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
+    private final LocalidadePendenteRepository localidadePendenteRepository;
     private final LocalidadeResolucaoService localidadeResolucaoService;
     private final RegistroLocalidadePendenteService registroLocalidadePendenteService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
@@ -53,6 +57,7 @@ public class OportunidadeDeEmpregoService {
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository,
+            LocalidadePendenteRepository localidadePendenteRepository,
             LocalidadeResolucaoService localidadeResolucaoService,
             RegistroLocalidadePendenteService registroLocalidadePendenteService,
             UsuarioAutenticadoService usuarioAutenticadoService
@@ -62,6 +67,7 @@ public class OportunidadeDeEmpregoService {
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
+        this.localidadePendenteRepository = localidadePendenteRepository;
         this.localidadeResolucaoService = localidadeResolucaoService;
         this.registroLocalidadePendenteService = registroLocalidadePendenteService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
@@ -86,9 +92,16 @@ public class OportunidadeDeEmpregoService {
     @Transactional(readOnly = true)
     public List<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDoRecrutadorAutenticado() {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
+        List<OportunidadeDeEmprego> oportunidades =
+                oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(perfilRecrutador.getId());
+        Map<Long, LocalidadePendente> pendenciasPorOportunidade =
+                mapearPendenciasPorOportunidade(oportunidades);
 
-        return oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(perfilRecrutador.getId()).stream()
-                .map(OportunidadeDeEmpregoResponseDTO::daEntidade)
+        return oportunidades.stream()
+                .map(oportunidade -> OportunidadeDeEmpregoResponseDTO.daEntidade(
+                        oportunidade,
+                        pendenciasPorOportunidade.get(oportunidade.getId())
+                ))
                 .toList();
     }
 
@@ -116,7 +129,10 @@ public class OportunidadeDeEmpregoService {
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
         associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
 
-        return OportunidadeDeEmpregoResponseDTO.daEntidade(oportunidadeSalva);
+        return OportunidadeDeEmpregoResponseDTO.daEntidade(
+                oportunidadeSalva,
+                buscarPendenciaLocalidadeDaOportunidade(oportunidadeSalva)
+        );
     }
 
     @Transactional
@@ -138,7 +154,10 @@ public class OportunidadeDeEmpregoService {
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
         associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
 
-        return OportunidadeDeEmpregoResponseDTO.daEntidade(oportunidadeSalva);
+        return OportunidadeDeEmpregoResponseDTO.daEntidade(
+                oportunidadeSalva,
+                buscarPendenciaLocalidadeDaOportunidade(oportunidadeSalva)
+        );
     }
 
     @Transactional
@@ -227,6 +246,43 @@ public class OportunidadeDeEmpregoService {
                 CampoLocalidadePendente.LOCALIDADE
         );
         oportunidadeDeEmprego.definirLocalidadePendente(pendenciaComDono);
+    }
+
+    private LocalidadePendente buscarPendenciaLocalidadeDaOportunidade(OportunidadeDeEmprego oportunidadeDeEmprego) {
+        if (oportunidadeDeEmprego.getLocalizacao() != null || oportunidadeDeEmprego.getId() == null) {
+            return null;
+        }
+
+        return localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                oportunidadeDeEmprego.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        ).orElse(null);
+    }
+
+    private Map<Long, LocalidadePendente> mapearPendenciasPorOportunidade(List<OportunidadeDeEmprego> oportunidades) {
+        List<Long> oportunidadeIds = oportunidades.stream()
+                .filter(oportunidade -> oportunidade.getLocalizacao() == null)
+                .map(OportunidadeDeEmprego::getId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+
+        if (oportunidadeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, LocalidadePendente> pendenciasPorOportunidade = new HashMap<>();
+        localidadePendenteRepository.findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                CampoLocalidadePendente.LOCALIDADE,
+                oportunidadeIds
+        ).forEach(pendencia -> pendenciasPorOportunidade.putIfAbsent(
+                pendencia.getRecursoId(),
+                pendencia
+        ));
+
+        return pendenciasPorOportunidade;
     }
 
     private boolean possuiLocalidadeEstruturadaPorIds(OportunidadeDeEmpregoRequestDTO dto) {

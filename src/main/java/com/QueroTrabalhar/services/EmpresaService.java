@@ -18,6 +18,7 @@ import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
@@ -41,6 +42,7 @@ public class EmpresaService {
     private final PaisRepository paisRepository;
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
+    private final LocalidadePendenteRepository localidadePendenteRepository;
     private final LocalidadeResolucaoService localidadeResolucaoService;
     private final RegistroLocalidadePendenteService registroLocalidadePendenteService;
 
@@ -51,6 +53,7 @@ public class EmpresaService {
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository,
+            LocalidadePendenteRepository localidadePendenteRepository,
             LocalidadeResolucaoService localidadeResolucaoService,
             RegistroLocalidadePendenteService registroLocalidadePendenteService
     ) {
@@ -60,6 +63,7 @@ public class EmpresaService {
         this.paisRepository = paisRepository;
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
+        this.localidadePendenteRepository = localidadePendenteRepository;
         this.localidadeResolucaoService = localidadeResolucaoService;
         this.registroLocalidadePendenteService = registroLocalidadePendenteService;
     }
@@ -79,7 +83,7 @@ public class EmpresaService {
         Empresa empresaSalva = empresaRepository.save(empresa);
         associarDonoGenericoDaPendenciaSeNecessario(empresaSalva);
 
-        return EmpresaResponseDTO.daEntidade(empresaSalva);
+        return EmpresaResponseDTO.daEntidade(empresaSalva, buscarPendenciaLocalidadeDaEmpresa(empresaSalva));
     }
 
     @Transactional(readOnly = true)
@@ -169,6 +173,18 @@ public class EmpresaService {
                 CampoLocalidadePendente.LOCALIDADE
         );
         empresa.definirLocalidadePendente(pendenciaComDono);
+    }
+
+    private LocalidadePendente buscarPendenciaLocalidadeDaEmpresa(Empresa empresa) {
+        if (empresa.getLocalidade() != null || empresa.getId() == null) {
+            return null;
+        }
+
+        return localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        ).orElse(null);
     }
 
     private boolean possuiLocalidadeEstruturadaPorIds(EmpresaRequestDTO dto) {

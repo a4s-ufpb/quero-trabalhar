@@ -9,10 +9,14 @@ import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.domain.entity.Usuario;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
@@ -66,6 +70,9 @@ class OportunidadeRecrutadorMeServiceTest {
 
     @Mock
     private CidadeRepository cidadeRepository;
+
+    @Mock
+    private LocalidadePendenteRepository localidadePendenteRepository;
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;
@@ -361,6 +368,77 @@ class OportunidadeRecrutadorMeServiceTest {
 
         assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
         assertNotSame(oportunidade, resposta.get(0));
+    }
+
+    @Test
+    void deveBuscarPendenciasEmLoteAoListarOportunidadesDoRecrutadorAutenticado() {
+        PerfilRecrutador perfilRecrutador =
+                criarPerfilRecrutadorAutenticado(51L, "Camila Souza", "Empresa Legada");
+        TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(8L, "Backend");
+
+        OportunidadeDeEmprego oportunidadePendente = new OportunidadeDeEmprego(
+                "Localidade em fila tecnica",
+                tipoDeEmprego,
+                Modalidade.REMOTO,
+                null,
+                perfilRecrutador,
+                null
+        );
+        ReflectionTestUtils.setField(oportunidadePendente, "id", 901L);
+
+        OportunidadeDeEmprego oportunidadePendente2 = new OportunidadeDeEmprego(
+                "Outra localidade em fila tecnica",
+                tipoDeEmprego,
+                Modalidade.HIBRIDO,
+                null,
+                perfilRecrutador,
+                null
+        );
+        ReflectionTestUtils.setField(oportunidadePendente2, "id", 902L);
+
+        LocalidadePendente primeiraPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Vale Imaginario",
+                "Localidade nao encontrada"
+        );
+        primeiraPendencia.definirDonoGenerico(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                901L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        LocalidadePendente segundaPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Serra do Sol Tech",
+                "Localidade ambigua"
+        );
+        segundaPendencia.definirDonoGenerico(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                902L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
+        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(51L))
+                .thenReturn(List.of(oportunidadePendente, oportunidadePendente2));
+        when(localidadePendenteRepository.findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                CampoLocalidadePendente.LOCALIDADE,
+                List.of(901L, 902L)
+        )).thenReturn(List.of(primeiraPendencia, segundaPendencia));
+
+        List<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+
+        assertAll(
+                () -> assertEquals("PENDENTE", resposta.get(0).statusLocalidade()),
+                () -> assertEquals("Vale Imaginario", resposta.get(0).localidadeTextoOriginal()),
+                () -> assertEquals("PENDENTE", resposta.get(1).statusLocalidade()),
+                () -> assertEquals("Serra do Sol Tech", resposta.get(1).localidadeTextoOriginal())
+        );
+        verify(localidadePendenteRepository).findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                CampoLocalidadePendente.LOCALIDADE,
+                List.of(901L, 902L)
+        );
     }
 
     @Test

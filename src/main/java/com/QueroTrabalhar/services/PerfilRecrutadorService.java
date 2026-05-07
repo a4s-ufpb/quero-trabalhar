@@ -4,8 +4,12 @@ import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorEmpresaRe
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.EmpresaRepository;
+import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
@@ -17,15 +21,18 @@ public class PerfilRecrutadorService {
 
     private final PerfilRecrutadorRepository perfilRecrutadorRepository;
     private final EmpresaRepository empresaRepository;
+    private final LocalidadePendenteRepository localidadePendenteRepository;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public PerfilRecrutadorService(
             PerfilRecrutadorRepository perfilRecrutadorRepository,
             EmpresaRepository empresaRepository,
+            LocalidadePendenteRepository localidadePendenteRepository,
             UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.perfilRecrutadorRepository = perfilRecrutadorRepository;
         this.empresaRepository = empresaRepository;
+        this.localidadePendenteRepository = localidadePendenteRepository;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
@@ -33,14 +40,16 @@ public class PerfilRecrutadorService {
     public PerfilRecrutadorEmpresaResponseDTO solicitarVinculoEmpresa(Long empresaId) {
         PerfilRecrutador perfilRecrutador = usuarioAutenticadoService.obterPerfilRecrutadorAutenticado();
         Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + empresaId));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + empresaId));
 
         validarSolicitacaoDeVinculo(perfilRecrutador);
 
         perfilRecrutador.solicitarVinculoEmpresa(empresa);
 
+        PerfilRecrutador perfilRecrutadorSalvo = perfilRecrutadorRepository.save(perfilRecrutador);
         return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
-                perfilRecrutadorRepository.save(perfilRecrutador)
+                perfilRecrutadorSalvo,
+                buscarPendenciaLocalidadeDaEmpresa(perfilRecrutadorSalvo.getEmpresaVinculada())
         );
     }
 
@@ -49,10 +58,13 @@ public class PerfilRecrutadorService {
         PerfilRecrutador perfilRecrutador = usuarioAutenticadoService.obterPerfilRecrutadorAutenticado();
 
         if (perfilRecrutador.getEmpresaVinculada() == null || perfilRecrutador.getStatusVinculoEmpresa() == null) {
-            throw new BusinessRuleException("O recrutador autenticado não possui empresa vinculada no momento.");
+            throw new BusinessRuleException("O recrutador autenticado nao possui empresa vinculada no momento.");
         }
 
-        return PerfilRecrutadorEmpresaResponseDTO.daEntidade(perfilRecrutador);
+        return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
+                perfilRecrutador,
+                buscarPendenciaLocalidadeDaEmpresa(perfilRecrutador.getEmpresaVinculada())
+        );
     }
 
     @Transactional(readOnly = true)
@@ -68,8 +80,10 @@ public class PerfilRecrutadorService {
         validarVinculoPendenteParaAnalise(perfilRecrutador);
         perfilRecrutador.aprovarVinculoEmpresa();
 
+        PerfilRecrutador perfilRecrutadorSalvo = perfilRecrutadorRepository.save(perfilRecrutador);
         return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
-                perfilRecrutadorRepository.save(perfilRecrutador)
+                perfilRecrutadorSalvo,
+                buscarPendenciaLocalidadeDaEmpresa(perfilRecrutadorSalvo.getEmpresaVinculada())
         );
     }
 
@@ -80,8 +94,10 @@ public class PerfilRecrutadorService {
         validarVinculoPendenteParaAnalise(perfilRecrutador);
         perfilRecrutador.recusarVinculoEmpresa();
 
+        PerfilRecrutador perfilRecrutadorSalvo = perfilRecrutadorRepository.save(perfilRecrutador);
         return PerfilRecrutadorEmpresaResponseDTO.daEntidade(
-                perfilRecrutadorRepository.save(perfilRecrutador)
+                perfilRecrutadorSalvo,
+                buscarPendenciaLocalidadeDaEmpresa(perfilRecrutadorSalvo.getEmpresaVinculada())
         );
     }
 
@@ -91,25 +107,37 @@ public class PerfilRecrutadorService {
         if (statusVinculoEmpresa == StatusVinculoEmpresa.PENDENTE
                 || statusVinculoEmpresa == StatusVinculoEmpresa.APROVADO) {
             throw new BusinessRuleException(
-                    "O recrutador autenticado já possui um vínculo pendente ou aprovado com uma empresa."
+                    "O recrutador autenticado ja possui um vinculo pendente ou aprovado com uma empresa."
             );
         }
     }
 
     private PerfilRecrutador buscarPerfilRecrutadorPorId(Long recrutadorId) {
         return perfilRecrutadorRepository.findById(recrutadorId)
-                .orElseThrow(() -> new ObjectNotFoundException("Perfil de recrutador não encontrado. ID: " + recrutadorId));
+                .orElseThrow(() -> new ObjectNotFoundException("Perfil de recrutador nao encontrado. ID: " + recrutadorId));
     }
 
     private void validarVinculoPendenteParaAnalise(PerfilRecrutador perfilRecrutador) {
         if (perfilRecrutador.getEmpresaVinculada() == null) {
-            throw new BusinessRuleException("O recrutador informado não possui empresa vinculada.");
+            throw new BusinessRuleException("O recrutador informado nao possui empresa vinculada.");
         }
 
         if (perfilRecrutador.getStatusVinculoEmpresa() != StatusVinculoEmpresa.PENDENTE) {
             throw new BusinessRuleException(
-                    "O vínculo de empresa do recrutador informado precisa estar pendente para esta operação."
+                    "O vinculo de empresa do recrutador informado precisa estar pendente para esta operacao."
             );
         }
+    }
+
+    private LocalidadePendente buscarPendenciaLocalidadeDaEmpresa(Empresa empresa) {
+        if (empresa == null || empresa.getLocalidade() != null || empresa.getId() == null) {
+            return null;
+        }
+
+        return localidadePendenteRepository.findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
+                TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        ).orElse(null);
     }
 }

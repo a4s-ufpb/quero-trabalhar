@@ -40,9 +40,16 @@ public record OportunidadeDeEmpregoResponseDTO(
     private static final String STATUS_LOCALIDADE_PENDENTE = "PENDENTE";
 
     public static OportunidadeDeEmpregoResponseDTO daEntidade(OportunidadeDeEmprego entidade) {
+        return daEntidade(entidade, null);
+    }
+
+    public static OportunidadeDeEmpregoResponseDTO daEntidade(
+            OportunidadeDeEmprego entidade,
+            LocalidadePendente localidadePendente
+    ) {
         TipoDeEmprego tipoDeEmprego = entidade.getTipoDeEmprego();
         Localidade localidade = entidade.getLocalizacao();
-        LocalidadePendente localidadePendente = entidade.getLocalidadePendente();
+        LocalidadePendente pendenciaEfetiva = localidade != null ? null : localidadePendente;
         Pais pais = localidade != null ? localidade.getPais() : null;
         Estado estado = localidade != null ? localidade.getEstado() : null;
         Cidade cidade = localidade != null ? localidade.getCidade() : null;
@@ -53,7 +60,7 @@ public record OportunidadeDeEmpregoResponseDTO(
 
         if (localidade != null) {
             statusLocalidade = STATUS_LOCALIDADE_VALIDADA;
-        } else if (localidadePendente != null) {
+        } else if (pendenciaEfetiva != null) {
             statusLocalidade = STATUS_LOCALIDADE_PENDENTE;
         }
 
@@ -72,9 +79,9 @@ public record OportunidadeDeEmpregoResponseDTO(
                 cidade != null ? cidade.getId() : null,
                 cidade != null ? cidade.getNome() : null,
                 statusLocalidade,
-                localidadePendente != null ? localidadePendente.getTextoOriginal() : null,
-                localidadePendente != null ? localidadePendente.getStatusValidacao() : null,
-                localidadePendente != null ? localidadePendente.getMotivoPendencia() : null,
+                pendenciaEfetiva != null ? pendenciaEfetiva.getTextoOriginal() : null,
+                pendenciaEfetiva != null ? pendenciaEfetiva.getStatusValidacao() : null,
+                pendenciaEfetiva != null ? pendenciaEfetiva.getMotivoPendencia() : null,
                 recrutador != null ? recrutador.getId() : null,
                 usuario != null ? usuario.getNome() : null,
                 empresa != null ? empresa.getId() : null,
