@@ -78,10 +78,10 @@ public class EmpresaService {
                 normalizarCampoOpcional(dto.telefonePublico()),
                 null
         );
-        definirLocalidadeDaEmpresa(empresa, dto);
+        LocalidadePendente localidadePendente = definirLocalidadeDaEmpresa(empresa, dto);
 
         Empresa empresaSalva = empresaRepository.save(empresa);
-        associarDonoGenericoDaPendenciaSeNecessario(empresaSalva);
+        associarDonoGenericoDaPendenciaSeNecessario(localidadePendente, empresaSalva.getId());
 
         return EmpresaResponseDTO.daEntidade(empresaSalva, buscarPendenciaLocalidadeDaEmpresa(empresaSalva));
     }
@@ -137,42 +137,49 @@ public class EmpresaService {
                 .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
     }
 
-    private void definirLocalidadeDaEmpresa(Empresa empresa, EmpresaRequestDTO dto) {
+    private LocalidadePendente definirLocalidadeDaEmpresa(Empresa empresa, EmpresaRequestDTO dto) {
         if (possuiLocalidadeEstruturadaPorIds(dto)) {
             empresa.definirLocalidadeValidada(montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId()));
-            return;
+            return null;
         }
 
         String localidadeTexto = normalizarCampoOpcional(dto.localidadeTexto());
         if (localidadeTexto != null) {
-            ResultadoResolucaoLocalidade resultadoResolucao = localidadeResolucaoService.resolver(localidadeTexto);
-            if (resultadoResolucao.resolvida()) {
-                empresa.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
-                return;
-            }
-
-            empresa.definirLocalidadePendente(resultadoResolucao.localidadePendente());
-            return;
+            return aplicarResultadoResolucaoLocalidade(empresa, localidadeResolucaoService.resolver(localidadeTexto));
         }
 
         throw new BusinessRuleException("A localidade da empresa e obrigatoria.");
     }
 
-    private void associarDonoGenericoDaPendenciaSeNecessario(Empresa empresa) {
-        LocalidadePendente localidadePendente = empresa.getLocalidadePendente();
+    private LocalidadePendente aplicarResultadoResolucaoLocalidade(
+            Empresa empresa,
+            ResultadoResolucaoLocalidade resultadoResolucao
+    ) {
+        if (resultadoResolucao.resolvida()) {
+            empresa.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
+            return null;
+        }
+
+        limparEstadoLegadoDaLocalidadePendente(empresa);
+        return resultadoResolucao.localidadePendente();
+    }
+
+    private void limparEstadoLegadoDaLocalidadePendente(Empresa empresa) {
+        empresa.setLocalidade(null);
+        empresa.setLocalidadePendente(null);
+    }
+
+    private void associarDonoGenericoDaPendenciaSeNecessario(LocalidadePendente localidadePendente, Long empresaId) {
         if (localidadePendente == null) {
             return;
         }
 
-        // O FK legado continua temporariamente para a migracao incremental, mas a pendencia
-        // passa a carregar tambem o recurso dono e o campo afetado para preparar a fila tecnica.
-        LocalidadePendente pendenciaComDono = registroLocalidadePendenteService.associarDonoGenerico(
+        registroLocalidadePendenteService.associarDonoGenerico(
                 localidadePendente,
                 TipoRecursoLocalidadePendente.EMPRESA,
-                empresa.getId(),
+                empresaId,
                 CampoLocalidadePendente.LOCALIDADE
         );
-        empresa.definirLocalidadePendente(pendenciaComDono);
     }
 
     private LocalidadePendente buscarPendenciaLocalidadeDaEmpresa(Empresa empresa) {

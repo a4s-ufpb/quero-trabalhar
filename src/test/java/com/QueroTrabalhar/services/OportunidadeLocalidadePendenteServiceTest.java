@@ -156,17 +156,17 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         OportunidadeDeEmprego oportunidadeSalva = capturarOportunidadeSalva();
         assertNull(oportunidadeSalva.getLocalizacao());
-        assertSame(localidadePendente, oportunidadeSalva.getLocalidadePendente());
+        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertEquals("PENDENTE", resposta.statusLocalidade());
         assertEquals("Sao Tome das Letras", resposta.localidadeTextoOriginal());
         assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, resposta.statusValidacaoLocalidade());
         assertEquals("Google Maps indisponivel no momento.", resposta.motivoPendenciaLocalidade());
         assertEquals(
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
-                oportunidadeSalva.getLocalidadePendente().getTipoRecurso()
+                localidadePendente.getTipoRecurso()
         );
-        assertEquals(999L, oportunidadeSalva.getLocalidadePendente().getRecursoId());
-        assertEquals(CampoLocalidadePendente.LOCALIDADE, oportunidadeSalva.getLocalidadePendente().getCampoAlvo());
+        assertEquals(999L, localidadePendente.getRecursoId());
+        assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo());
         verify(localidadeResolucaoService).resolver("Sao Tome das Letras");
         verify(registroLocalidadePendenteService).associarDonoGenerico(
                 localidadePendente,
@@ -352,16 +352,16 @@ class OportunidadeLocalidadePendenteServiceTest {
                 oportunidadeDeEmpregoService.atualizarOportunidadeDeEmprego(800L, dto);
 
         assertNull(oportunidadeExistente.getLocalizacao());
-        assertSame(localidadePendente, oportunidadeExistente.getLocalidadePendente());
+        assertNull(oportunidadeExistente.getLocalidadePendente());
         assertSame(empresaOriginal, oportunidadeExistente.getEmpresa());
         assertEquals("PENDENTE", resposta.statusLocalidade());
         assertEquals("Vale do Silicio Paraibano", resposta.localidadeTextoOriginal());
         assertEquals(
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
-                oportunidadeExistente.getLocalidadePendente().getTipoRecurso()
+                localidadePendente.getTipoRecurso()
         );
-        assertEquals(800L, oportunidadeExistente.getLocalidadePendente().getRecursoId());
-        assertEquals(CampoLocalidadePendente.LOCALIDADE, oportunidadeExistente.getLocalidadePendente().getCampoAlvo());
+        assertEquals(800L, localidadePendente.getRecursoId());
+        assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo());
         verify(localidadeResolucaoService).resolver("Vale do Silicio Paraibano");
         verify(registroLocalidadePendenteService).associarDonoGenerico(
                 localidadePendente,
@@ -403,11 +403,11 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         OportunidadeDeEmprego oportunidadeSalva = capturarOportunidadeSalva();
         assertSame(empresa, oportunidadeSalva.getEmpresa());
-        assertSame(localidadePendente, oportunidadeSalva.getLocalidadePendente());
+        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertNull(oportunidadeSalva.getLocalizacao());
         assertEquals(empresa.getId(), resposta.empresaId());
         assertEquals("PENDENTE", resposta.statusLocalidade());
-        assertEquals(999L, oportunidadeSalva.getLocalidadePendente().getRecursoId());
+        assertEquals(999L, localidadePendente.getRecursoId());
     }
 
     private void prepararMocksBasicos(PerfilRecrutador perfilRecrutador, TipoDeEmprego tipoDeEmprego) {

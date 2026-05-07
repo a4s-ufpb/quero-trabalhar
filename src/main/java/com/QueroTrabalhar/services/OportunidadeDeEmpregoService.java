@@ -122,12 +122,12 @@ public class OportunidadeDeEmpregoService {
                 perfilRecrutador,
                 empresaDaOportunidade
         );
-        definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
+        LocalidadePendente localidadePendente = definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
 
         perfilRecrutador.adicionarOportunidadePostada(oportunidadeDeEmprego);
 
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
-        associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
+        associarDonoGenericoDaPendenciaSeNecessario(localidadePendente, oportunidadeSalva.getId());
 
         return OportunidadeDeEmpregoResponseDTO.daEntidade(
                 oportunidadeSalva,
@@ -149,10 +149,10 @@ public class OportunidadeDeEmpregoService {
         oportunidadeDeEmprego.setDescricao(dto.descricao());
         oportunidadeDeEmprego.setTipoDeEmprego(buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId()));
         oportunidadeDeEmprego.setModalidade(dto.modalidade());
-        definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
+        LocalidadePendente localidadePendente = definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
 
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
-        associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
+        associarDonoGenericoDaPendenciaSeNecessario(localidadePendente, oportunidadeSalva.getId());
 
         return OportunidadeDeEmpregoResponseDTO.daEntidade(
                 oportunidadeSalva,
@@ -205,7 +205,7 @@ public class OportunidadeDeEmpregoService {
         return tipoDeEmprego;
     }
 
-    private void definirLocalidadeDaOportunidade(
+    private LocalidadePendente definirLocalidadeDaOportunidade(
             OportunidadeDeEmprego oportunidadeDeEmprego,
             OportunidadeDeEmpregoRequestDTO dto
     ) {
@@ -213,39 +213,52 @@ public class OportunidadeDeEmpregoService {
             oportunidadeDeEmprego.definirLocalidadeValidada(
                     montarLocalidade(dto.paisId(), dto.estadoId(), dto.cidadeId())
             );
-            return;
+            return null;
         }
 
         String localidadeTexto = normalizarCampoOpcional(dto.localidadeTexto());
         if (localidadeTexto != null) {
-            ResultadoResolucaoLocalidade resultadoResolucao = localidadeResolucaoService.resolver(localidadeTexto);
-            if (resultadoResolucao.resolvida()) {
-                oportunidadeDeEmprego.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
-                return;
-            }
-
-            oportunidadeDeEmprego.definirLocalidadePendente(resultadoResolucao.localidadePendente());
-            return;
+            return aplicarResultadoResolucaoLocalidade(
+                    oportunidadeDeEmprego,
+                    localidadeResolucaoService.resolver(localidadeTexto)
+            );
         }
 
         throw new BusinessRuleException("A localidade da oportunidade e obrigatoria.");
     }
 
-    private void associarDonoGenericoDaPendenciaSeNecessario(OportunidadeDeEmprego oportunidadeDeEmprego) {
-        LocalidadePendente localidadePendente = oportunidadeDeEmprego.getLocalidadePendente();
+    private LocalidadePendente aplicarResultadoResolucaoLocalidade(
+            OportunidadeDeEmprego oportunidadeDeEmprego,
+            ResultadoResolucaoLocalidade resultadoResolucao
+    ) {
+        if (resultadoResolucao.resolvida()) {
+            oportunidadeDeEmprego.definirLocalidadeValidada(resultadoResolucao.localidadeValidada());
+            return null;
+        }
+
+        limparEstadoLegadoDaLocalidadePendente(oportunidadeDeEmprego);
+        return resultadoResolucao.localidadePendente();
+    }
+
+    private void limparEstadoLegadoDaLocalidadePendente(OportunidadeDeEmprego oportunidadeDeEmprego) {
+        oportunidadeDeEmprego.setLocalizacao(null);
+        oportunidadeDeEmprego.setLocalidadePendente(null);
+    }
+
+    private void associarDonoGenericoDaPendenciaSeNecessario(
+            LocalidadePendente localidadePendente,
+            Long oportunidadeId
+    ) {
         if (localidadePendente == null) {
             return;
         }
 
-        // O FK legado continua sendo usado nesta fase, mas a pendencia passa a apontar para a
-        // oportunidade dona para permitir reprocessamento tecnico sem acoplamento ao agregado.
-        LocalidadePendente pendenciaComDono = registroLocalidadePendenteService.associarDonoGenerico(
+        registroLocalidadePendenteService.associarDonoGenerico(
                 localidadePendente,
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
-                oportunidadeDeEmprego.getId(),
+                oportunidadeId,
                 CampoLocalidadePendente.LOCALIDADE
         );
-        oportunidadeDeEmprego.definirLocalidadePendente(pendenciaComDono);
     }
 
     private LocalidadePendente buscarPendenciaLocalidadeDaOportunidade(OportunidadeDeEmprego oportunidadeDeEmprego) {

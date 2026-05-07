@@ -328,10 +328,10 @@ class EmpresaFeatureServiceTest {
         assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, resposta.statusValidacaoLocalidade());
         assertNull(resposta.paisId());
         assertNull(empresaSalva.getLocalidade());
-        assertSame(localidadePendente, empresaSalva.getLocalidadePendente());
-        assertEquals(TipoRecursoLocalidadePendente.EMPRESA, empresaSalva.getLocalidadePendente().getTipoRecurso());
-        assertEquals(61L, empresaSalva.getLocalidadePendente().getRecursoId());
-        assertEquals(CampoLocalidadePendente.LOCALIDADE, empresaSalva.getLocalidadePendente().getCampoAlvo());
+        assertNull(empresaSalva.getLocalidadePendente());
+        assertEquals(TipoRecursoLocalidadePendente.EMPRESA, localidadePendente.getTipoRecurso());
+        assertEquals(61L, localidadePendente.getRecursoId());
+        assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo());
         verify(registroLocalidadePendenteService).associarDonoGenerico(
                 localidadePendente,
                 TipoRecursoLocalidadePendente.EMPRESA,
