@@ -4,6 +4,7 @@ import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpreg
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeRecrutadorMeFilterDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
@@ -24,6 +25,7 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
 import com.QueroTrabalhar.repository.specification.OportunidadeDeEmpregoSpecification;
+import com.QueroTrabalhar.repository.specification.OportunidadeRecrutadorMeSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
@@ -90,19 +92,22 @@ public class OportunidadeDeEmpregoService {
     }
 
     @Transactional(readOnly = true)
-    public List<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDoRecrutadorAutenticado() {
+    public Page<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDoRecrutadorAutenticado(
+            OportunidadeRecrutadorMeFilterDTO filtro,
+            Pageable pageable
+    ) {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
-        List<OportunidadeDeEmprego> oportunidades =
-                oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(perfilRecrutador.getId());
+        Page<OportunidadeDeEmprego> oportunidades = oportunidadeDeEmpregoRepository.findAll(
+                OportunidadeRecrutadorMeSpecification.comFiltros(perfilRecrutador.getId(), filtro),
+                pageable
+        );
         Map<Long, LocalidadePendente> pendenciasPorOportunidade =
-                mapearPendenciasPorOportunidade(oportunidades);
+                mapearPendenciasPorOportunidade(oportunidades.getContent());
 
-        return oportunidades.stream()
-                .map(oportunidade -> OportunidadeDeEmpregoResponseDTO.daEntidade(
+        return oportunidades.map(oportunidade -> OportunidadeDeEmpregoResponseDTO.daEntidade(
                         oportunidade,
                         pendenciasPorOportunidade.get(oportunidade.getId())
-                ))
-                .toList();
+                ));
     }
 
     @Transactional

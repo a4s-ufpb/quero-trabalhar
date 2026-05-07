@@ -3,6 +3,7 @@ package com.QueroTrabalhar.services;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeRecrutadorMeFilterDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
@@ -235,11 +236,12 @@ class OportunidadeRecrutadorMeServiceTest {
     }
 
     @Test
-    void deveListarOportunidadesDoRecrutadorAutenticado() {
+    void deveListarOportunidadesDoRecrutadorAutenticadoEmPagina() {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutadorAutenticado(15L, "Camila Souza", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(3L, "Desenvolvedor Java");
         Pais pais = criarPais(1L, "Brasil", "BR");
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "id"));
         OportunidadeDeEmprego oportunidadePessoal = criarOportunidade(
                 101L,
                 "Backend Java 21",
@@ -249,10 +251,10 @@ class OportunidadeRecrutadorMeServiceTest {
                 null,
                 pais
         );
-        Empresa empresa = criarEmpresa(50L, "Empresa Ágil");
+        Empresa empresa = criarEmpresa(50L, "Empresa Agil");
         OportunidadeDeEmprego oportunidadeEmEmpresa = criarOportunidade(
                 102L,
-                "Microsserviços com Spring Boot",
+                "Microsservicos com Spring Boot",
                 Modalidade.HIBRIDO,
                 tipoDeEmprego,
                 perfilRecrutador,
@@ -261,34 +263,45 @@ class OportunidadeRecrutadorMeServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(15L))
-                .thenReturn(List.of(oportunidadePessoal, oportunidadeEmEmpresa));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidadePessoal, oportunidadeEmEmpresa), pageable, 2)
+        );
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta =
-                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado(
+                        criarFiltroRecrutadorMeVazio(),
+                        pageable
+                );
 
-        assertEquals(2, resposta.size());
+        assertEquals(2, resposta.getTotalElements());
         assertAll(
-                () -> assertEquals(101L, resposta.get(0).id()),
-                () -> assertEquals("Backend Java 21", resposta.get(0).descricao()),
-                () -> assertEquals(15L, resposta.get(0).recrutadorId()),
-                () -> assertEquals("Camila Souza", resposta.get(0).recrutadorNome()),
-                () -> assertEquals(102L, resposta.get(1).id()),
-                () -> assertEquals("Microsserviços com Spring Boot", resposta.get(1).descricao()),
-                () -> assertEquals(15L, resposta.get(1).recrutadorId()),
-                () -> assertEquals("Camila Souza", resposta.get(1).recrutadorNome())
+                () -> assertEquals(101L, resposta.getContent().get(0).id()),
+                () -> assertEquals("Backend Java 21", resposta.getContent().get(0).descricao()),
+                () -> assertEquals(15L, resposta.getContent().get(0).recrutadorId()),
+                () -> assertEquals("Camila Souza", resposta.getContent().get(0).recrutadorNome()),
+                () -> assertEquals(102L, resposta.getContent().get(1).id()),
+                () -> assertEquals("Microsservicos com Spring Boot", resposta.getContent().get(1).descricao()),
+                () -> assertEquals(15L, resposta.getContent().get(1).recrutadorId()),
+                () -> assertEquals("Camila Souza", resposta.getContent().get(1).recrutadorNome())
         );
         verify(usuarioAutenticadoService).obterPerfilRecrutadorAutenticado();
-        verify(oportunidadeDeEmpregoRepository).findByPerfilRecrutadorId(15L);
-        verifyNoInteractions(tipoDeEmpregoRepository, paisRepository, estadoRepository, cidadeRepository);
+        verify(oportunidadeDeEmpregoRepository).findAll(any(Specification.class), eq(pageable));
+        verifyNoInteractions(
+                tipoDeEmpregoRepository,
+                paisRepository,
+                estadoRepository,
+                cidadeRepository,
+                localidadePendenteRepository
+        );
     }
 
     @Test
-    void deveIncluirOportunidadesPessoaisComEmpresaNull() {
+    void deveIncluirOportunidadesPessoaisComEmpresaNullNaPaginaDoRecrutador() {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutadorAutenticado(15L, "Ana Beatriz", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(3L, "Desenvolvedor Java");
         Pais pais = criarPais(1L, "Brasil", "BR");
+        Pageable pageable = PageRequest.of(0, 10);
         OportunidadeDeEmprego oportunidadePessoal = criarOportunidade(
                 201L,
                 "APIs REST com Spring",
@@ -300,29 +313,34 @@ class OportunidadeRecrutadorMeServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(15L))
-                .thenReturn(List.of(oportunidadePessoal));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidadePessoal), pageable, 1)
+        );
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta =
-                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado(
+                        criarFiltroRecrutadorMeVazio(),
+                        pageable
+                );
 
         assertAll(
-                () -> assertEquals(201L, resposta.get(0).id()),
-                () -> assertNull(resposta.get(0).empresaId()),
-                () -> assertNull(resposta.get(0).empresaNome())
+                () -> assertEquals(201L, resposta.getContent().get(0).id()),
+                () -> assertNull(resposta.getContent().get(0).empresaId()),
+                () -> assertNull(resposta.getContent().get(0).empresaNome())
         );
     }
 
     @Test
-    void deveIncluirOportunidadesPublicadasEmNomeDeEmpresa() {
+    void deveIncluirOportunidadesPublicadasEmNomeDeEmpresaNaPaginaDoRecrutador() {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutadorAutenticado(15L, "Pedro Nogueira", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(3L, "Desenvolvedor Java");
         Pais pais = criarPais(1L, "Brasil", "BR");
-        Empresa empresa = criarEmpresa(70L, "Inovação Paraíba");
+        Pageable pageable = PageRequest.of(0, 10);
+        Empresa empresa = criarEmpresa(70L, "Inovacao Paraiba");
         OportunidadeDeEmprego oportunidadeEmEmpresa = criarOportunidade(
                 301L,
-                "Liderança técnica em plataforma",
+                "Lideranca tecnica em plataforma",
                 Modalidade.PRESENCIAL,
                 tipoDeEmprego,
                 perfilRecrutador,
@@ -331,25 +349,30 @@ class OportunidadeRecrutadorMeServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(15L))
-                .thenReturn(List.of(oportunidadeEmEmpresa));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidadeEmEmpresa), pageable, 1)
+        );
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta =
-                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado(
+                        criarFiltroRecrutadorMeVazio(),
+                        pageable
+                );
 
         assertAll(
-                () -> assertEquals(301L, resposta.get(0).id()),
-                () -> assertEquals(70L, resposta.get(0).empresaId()),
-                () -> assertEquals("Inovação Paraíba", resposta.get(0).empresaNome())
+                () -> assertEquals(301L, resposta.getContent().get(0).id()),
+                () -> assertEquals(70L, resposta.getContent().get(0).empresaId()),
+                () -> assertEquals("Inovacao Paraiba", resposta.getContent().get(0).empresaNome())
         );
     }
 
     @Test
-    void deveRetornarOportunidadeDeEmpregoResponseDTOSemExporEntidade() {
+    void deveRetornarPaginaDeResponseDTOSemExporEntidadeNoEndpointMe() {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutadorAutenticado(15L, "Lucas Martins", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(3L, "Desenvolvedor Java");
         Pais pais = criarPais(1L, "Brasil", "BR");
+        Pageable pageable = PageRequest.of(0, 10);
         OportunidadeDeEmprego oportunidade = criarOportunidade(
                 401L,
                 "Kotlin e mensageria",
@@ -361,20 +384,25 @@ class OportunidadeRecrutadorMeServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(15L))
-                .thenReturn(List.of(oportunidade));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidade), pageable, 1)
+        );
 
-        List<?> resposta = oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+        Page<?> resposta = oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado(
+                criarFiltroRecrutadorMeVazio(),
+                pageable
+        );
 
-        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
-        assertNotSame(oportunidade, resposta.get(0));
+        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.getContent().get(0));
+        assertNotSame(oportunidade, resposta.getContent().get(0));
     }
 
     @Test
-    void deveBuscarPendenciasEmLoteAoListarOportunidadesDoRecrutadorAutenticado() {
+    void deveBuscarPendenciasEmLoteAoListarPaginaDoRecrutadorAutenticado() {
         PerfilRecrutador perfilRecrutador =
                 criarPerfilRecrutadorAutenticado(51L, "Camila Souza", "Empresa Legada");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(8L, "Backend");
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "id"));
 
         OportunidadeDeEmprego oportunidadePendente = new OportunidadeDeEmprego(
                 "Localidade em fila tecnica",
@@ -417,22 +445,26 @@ class OportunidadeRecrutadorMeServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilRecrutadorAutenticado()).thenReturn(perfilRecrutador);
-        when(oportunidadeDeEmpregoRepository.findByPerfilRecrutadorId(51L))
-                .thenReturn(List.of(oportunidadePendente, oportunidadePendente2));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(oportunidadePendente, oportunidadePendente2), pageable, 2)
+        );
         when(localidadePendenteRepository.findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
                 CampoLocalidadePendente.LOCALIDADE,
                 List.of(901L, 902L)
         )).thenReturn(List.of(primeiraPendencia, segundaPendencia));
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta =
-                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta =
+                oportunidadeDeEmpregoService.listarOportunidadesDoRecrutadorAutenticado(
+                        criarFiltroRecrutadorMeVazio(),
+                        pageable
+                );
 
         assertAll(
-                () -> assertEquals("PENDENTE", resposta.get(0).statusLocalidade()),
-                () -> assertEquals("Vale Imaginario", resposta.get(0).localidadeTextoOriginal()),
-                () -> assertEquals("PENDENTE", resposta.get(1).statusLocalidade()),
-                () -> assertEquals("Serra do Sol Tech", resposta.get(1).localidadeTextoOriginal())
+                () -> assertEquals("PENDENTE", resposta.getContent().get(0).statusLocalidade()),
+                () -> assertEquals("Vale Imaginario", resposta.getContent().get(0).localidadeTextoOriginal()),
+                () -> assertEquals("PENDENTE", resposta.getContent().get(1).statusLocalidade()),
+                () -> assertEquals("Serra do Sol Tech", resposta.getContent().get(1).localidadeTextoOriginal())
         );
         verify(localidadePendenteRepository).findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
@@ -514,6 +546,19 @@ class OportunidadeRecrutadorMeServiceTest {
         );
     }
 
+    private OportunidadeRecrutadorMeFilterDTO criarFiltroRecrutadorMeVazio() {
+        return new OportunidadeRecrutadorMeFilterDTO(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
     private PerfilRecrutador criarPerfilRecrutadorAutenticado(Long id, String nomeUsuario, String empresaLegada) {
         Usuario usuario = new Usuario(
                 "12345678909",
@@ -553,7 +598,7 @@ class OportunidadeRecrutadorMeServiceTest {
     }
 
     private TipoDeEmprego criarTipoDeEmpregoAprovado(Long id, String titulo) {
-        TipoDeEmprego tipoDeEmprego = TipoDeEmprego.criarTipoDeEmpregoAdmin(titulo, "Descrição");
+        TipoDeEmprego tipoDeEmprego = TipoDeEmprego.criarTipoDeEmpregoAdmin(titulo, "Descricao");
         ReflectionTestUtils.setField(tipoDeEmprego, "id", id);
         return tipoDeEmprego;
     }
