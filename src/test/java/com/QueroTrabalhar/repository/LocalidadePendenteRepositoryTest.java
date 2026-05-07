@@ -2,6 +2,7 @@ package com.QueroTrabalhar.repository;
 
 import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
+import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
 import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,6 +195,54 @@ class LocalidadePendenteRepositoryTest {
                         empresaPrimeiraPendencia.getId(),
                         outraEmpresa.getId()
                 ),
+                resultado.stream().map(LocalidadePendente::getId).toList()
+        );
+    }
+
+    @Test
+    void deveBuscarPendenciasAbertasOrdenadasPorAtualizacaoECriacao() {
+        LocalidadePendente pendenciaMaisRecente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Regiao recente",
+                "Aguardando validacao",
+                TipoRecursoLocalidadePendente.EMPRESA,
+                20L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+        definirAuditoria(
+                pendenciaMaisRecente,
+                LocalDateTime.of(2026, 5, 3, 10, 0, 0),
+                LocalDateTime.of(2026, 5, 3, 10, 30, 0)
+        );
+        pendenciaMaisRecente = localidadePendenteRepository.saveAndFlush(pendenciaMaisRecente);
+
+        LocalidadePendente pendenciaMaisAntiga = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Regiao antiga",
+                "Aguardando validacao",
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                30L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+        definirAuditoria(
+                pendenciaMaisAntiga,
+                LocalDateTime.of(2026, 5, 1, 10, 0, 0),
+                LocalDateTime.of(2026, 5, 1, 10, 15, 0)
+        );
+        pendenciaMaisAntiga = localidadePendenteRepository.saveAndFlush(pendenciaMaisAntiga);
+
+        LocalidadePendente pendenciaFechada = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Regiao fechada",
+                "Nao deve entrar no lote",
+                TipoRecursoLocalidadePendente.EMPRESA,
+                40L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+        pendenciaFechada.setStatusValidacao(StatusValidacaoLocalidade.CONFIRMADA_PELO_USUARIO);
+        localidadePendenteRepository.saveAndFlush(pendenciaFechada);
+
+        List<LocalidadePendente> resultado = localidadePendenteRepository.findPendenciasAbertas();
+
+        assertIterableEquals(
+                List.of(pendenciaMaisAntiga.getId(), pendenciaMaisRecente.getId()),
                 resultado.stream().map(LocalidadePendente::getId).toList()
         );
     }

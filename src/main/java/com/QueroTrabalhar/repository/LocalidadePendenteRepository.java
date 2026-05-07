@@ -15,6 +15,10 @@ public interface LocalidadePendenteRepository extends JpaRepository<LocalidadePe
 
     List<LocalidadePendente> findByStatusValidacao(StatusValidacaoLocalidade statusValidacao);
 
+    List<LocalidadePendente> findByStatusValidacaoOrderByAtualizadaEmAscCriadaEmAsc(
+            StatusValidacaoLocalidade statusValidacao
+    );
+
     Optional<LocalidadePendente> findFirstByTipoRecursoAndRecursoIdAndCampoAlvoOrderByAtualizadaEmDescCriadaEmDesc(
             TipoRecursoLocalidadePendente tipoRecurso,
             Long recursoId,
@@ -48,6 +52,12 @@ public interface LocalidadePendenteRepository extends JpaRepository<LocalidadePe
                 tipoRecurso,
                 campoAlvo,
                 recursoIds
+        );
+    }
+
+    default List<LocalidadePendente> findPendenciasAbertas() {
+        return findByStatusValidacaoOrderByAtualizadaEmAscCriadaEmAsc(
+                StatusValidacaoLocalidade.PENDENTE_VALIDACAO
         );
     }
 }

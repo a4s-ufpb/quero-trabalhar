@@ -72,13 +72,17 @@ class LocalidadeResolucaoServiceTest {
                 new ResolvedorLocalidadeGoogleMaps(googleMapsClient, conversorGoogleResultParaLocalidade);
         RegistroLocalidadePendenteService registroLocalidadePendenteService =
                 new RegistroLocalidadePendenteService(localidadePendenteRepository);
+        FluxoResolucaoLocalidadeService fluxoResolucaoLocalidadeService =
+                new FluxoResolucaoLocalidadeService(
+                        resolvedorLocalidadeBaseInterna,
+                        resolvedorLocalidadeGoogleMaps
+                );
 
         ReflectionTestUtils.setField(resolvedorLocalidadeGoogleMaps, "googleMapsRetryMaxAttempts", 2);
         ReflectionTestUtils.setField(resolvedorLocalidadeGoogleMaps, "googleMapsRetryDelayMs", 0L);
 
         localidadeResolucaoService = new LocalidadeResolucaoService(
-                resolvedorLocalidadeBaseInterna,
-                resolvedorLocalidadeGoogleMaps,
+                fluxoResolucaoLocalidadeService,
                 registroLocalidadePendenteService
         );
     }
