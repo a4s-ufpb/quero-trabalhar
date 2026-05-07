@@ -5,6 +5,7 @@ import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadesDaEmpresaFilterDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
@@ -23,6 +24,7 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.specification.EmpresaSpecification;
+import com.QueroTrabalhar.repository.specification.OportunidadeDeEmpregoSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
@@ -116,12 +118,17 @@ public class EmpresaService {
     }
 
     @Transactional(readOnly = true)
-    public List<OportunidadeDeEmpregoPublicaResponseDTO> listarOportunidadesDaEmpresa(Long empresaId) {
+    public Page<OportunidadeDeEmpregoPublicaResponseDTO> listarOportunidadesDaEmpresa(
+            Long empresaId,
+            OportunidadesDaEmpresaFilterDTO filtro,
+            Pageable pageable
+    ) {
         buscarEntidadePublicaDisponivelPorId(empresaId);
 
-        return oportunidadeDeEmpregoRepository.findByEmpresaIdAndLocalidadePaisIsNotNull(empresaId).stream()
-                .map(OportunidadeDeEmpregoPublicaResponseDTO::daEntidade)
-                .toList();
+        return oportunidadeDeEmpregoRepository.findAll(
+                OportunidadeDeEmpregoSpecification.comFiltrosDaEmpresa(empresaId, filtro),
+                pageable
+        ).map(OportunidadeDeEmpregoPublicaResponseDTO::daEntidade);
     }
 
     private Empresa buscarEntidadePorId(Long id) {

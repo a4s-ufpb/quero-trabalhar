@@ -4,6 +4,7 @@ import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadesDaEmpresaFilterDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
@@ -461,11 +462,21 @@ class EmpresaFeatureServiceTest {
     }
 
     @Test
-    void deveListarOportunidadesPublicadasEmNomeDaEmpresa() {
+    void deveListarOportunidadesPublicadasEmNomeDaEmpresaComPaginacaoEFiltros() {
         Empresa empresa = criarEmpresa(1L, "Empresa ACME");
         Pais pais = criarPais(1L, "Brasil", "BR");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(20L, "Desenvolvedor Backend");
         PerfilRecrutador recrutador = criarPerfilRecrutador(10L, "Ana", empresa, StatusVinculoEmpresa.APROVADO);
+        OportunidadesDaEmpresaFilterDTO filtro = new OportunidadesDaEmpresaFilterDTO(
+                "  Java  ",
+                tipoDeEmprego.getId(),
+                recrutador.getId(),
+                pais.getId(),
+                null,
+                null,
+                Modalidade.REMOTO
+        );
+        Pageable pageable = PageRequest.of(0, 10);
         OportunidadeDeEmprego oportunidade = new OportunidadeDeEmprego(
                 "Vaga Java",
                 tipoDeEmprego,
@@ -477,19 +488,35 @@ class EmpresaFeatureServiceTest {
         ReflectionTestUtils.setField(oportunidade, "id", 100L);
 
         when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(empresa.getId())).thenReturn(Optional.of(empresa));
-        when(oportunidadeDeEmpregoRepository.findByEmpresaIdAndLocalidadePaisIsNotNull(empresa.getId()))
-                .thenReturn(List.of(oportunidade));
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(oportunidade), pageable, 1));
 
-        List<OportunidadeDeEmpregoPublicaResponseDTO> resposta =
-                empresaService.listarOportunidadesDaEmpresa(empresa.getId());
+        Page<OportunidadeDeEmpregoPublicaResponseDTO> resposta =
+                empresaService.listarOportunidadesDaEmpresa(empresa.getId(), filtro, pageable);
 
-        assertEquals(1, resposta.size());
-        assertEquals(100L, resposta.get(0).id());
-        assertEquals("Vaga Java", resposta.get(0).descricao());
-        assertEquals(empresa.getId(), resposta.get(0).empresaId());
-        assertEquals("Empresa ACME", resposta.get(0).empresaNome());
+        assertEquals(1, resposta.getTotalElements());
+        assertEquals(1, resposta.getContent().size());
+        assertEquals(100L, resposta.getContent().get(0).id());
+        assertEquals("Vaga Java", resposta.getContent().get(0).descricao());
+        assertEquals(empresa.getId(), resposta.getContent().get(0).empresaId());
+        assertEquals("Empresa ACME", resposta.getContent().get(0).empresaNome());
         verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(empresa.getId());
-        verify(oportunidadeDeEmpregoRepository).findByEmpresaIdAndLocalidadePaisIsNotNull(empresa.getId());
+        verify(oportunidadeDeEmpregoRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void devePreservarNotFoundQuandoEmpresaNaoExistirAoListarOportunidades() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(empresaRepository.findByIdAndLocalidadePaisIsNotNull(404L)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ObjectNotFoundException.class,
+                () -> empresaService.listarOportunidadesDaEmpresa(404L, null, pageable)
+        );
+
+        verify(empresaRepository).findByIdAndLocalidadePaisIsNotNull(404L);
+        verify(oportunidadeDeEmpregoRepository, never()).findAll(any(Specification.class), eq(pageable));
     }
 
     private Pais criarPais(Long id, String nome, String sigla) {

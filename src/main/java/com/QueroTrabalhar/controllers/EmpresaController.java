@@ -5,6 +5,7 @@ import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadesDaEmpresaFilterDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.services.EmpresaService;
 import jakarta.validation.Valid;
@@ -68,9 +69,12 @@ public class EmpresaController {
     }
 
     @GetMapping("/{id}/oportunidades")
-    public ResponseEntity<List<OportunidadeDeEmpregoPublicaResponseDTO>> listarOportunidadesDaEmpresa(
-            @PathVariable Long id
+    public ResponseEntity<Page<OportunidadeDeEmpregoPublicaResponseDTO>> listarOportunidadesDaEmpresa(
+            @PathVariable Long id,
+            @Valid @ParameterObject OportunidadesDaEmpresaFilterDTO filtro,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(empresaService.listarOportunidadesDaEmpresa(id));
+        return ResponseEntity.ok(empresaService.listarOportunidadesDaEmpresa(id, filtro, pageable));
     }
 }

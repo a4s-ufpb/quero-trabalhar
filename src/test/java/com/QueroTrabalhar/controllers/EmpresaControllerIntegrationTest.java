@@ -240,9 +240,305 @@ class EmpresaControllerIntegrationTest {
     }
 
     @Test
-    void naoDeveListarOportunidadesComLocalidadePendenteNaListagemPublicaDaEmpresa() throws Exception {
+    void deveListarOportunidadesPublicasDaEmpresaComEstruturaPaginadaEOrdenacaoPadraoPorIdDesc() throws Exception {
         int indice = proximoIndice();
-        Empresa empresa = persistirEmpresaValidada("Empresa Vagas " + indice);
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Ordenacao " + indice);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend empresa", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego primeiraOportunidade = persistirOportunidadeValidada(
+                "API publica",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+        OportunidadeDeEmprego segundaOportunidade = persistirOportunidadeValidada(
+                "API publica com Spring Boot",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(segundaOportunidade.getId()))
+                .andExpect(jsonPath("$.content[1].id").value(primeiraOportunidade.getId()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
+    }
+
+    @Test
+    void deveFiltrarOportunidadesDaEmpresaPorTermoIgnorandoEspacosExternos() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Termo " + indice);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend termo", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeFiltrada = persistirOportunidadeValidada(
+                "Java 21 com Spring Boot",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "Analise de dados",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("termo", "  spring boot  "))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].descricao").value(oportunidadeFiltrada.getDescricao()));
+    }
+
+    @Test
+    void deveFiltrarOportunidadesDaEmpresaPorTipoDeEmpregoId() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Tipo " + indice);
+        TipoDeEmprego tipoDeEmpregoAlvo = persistirTipoDeEmprego("Backend alvo", indice);
+        TipoDeEmprego outroTipoDeEmprego = persistirTipoDeEmprego("Frontend alvo", proximoIndice());
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeFiltrada = persistirOportunidadeValidada(
+                "API Java",
+                Modalidade.REMOTO,
+                tipoDeEmpregoAlvo,
+                recrutador,
+                empresa,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "SPA Angular",
+                Modalidade.REMOTO,
+                outroTipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("tipoDeEmpregoId", tipoDeEmpregoAlvo.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].tipoDeEmpregoId").value(tipoDeEmpregoAlvo.getId()));
+    }
+
+    @Test
+    void deveFiltrarOportunidadesDaEmpresaPorRecrutadorId() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Recrutador " + indice);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend recrutador", indice);
+        PerfilRecrutador recrutadorAlvo = persistirRecrutador(indice, "Marina Lima");
+        PerfilRecrutador outroRecrutador = persistirRecrutador(proximoIndice(), "Carlos Melo");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeFiltrada = persistirOportunidadeValidada(
+                "API com ownership claro",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutadorAlvo,
+                empresa,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "Aplicacao legado",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                outroRecrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("recrutadorId", recrutadorAlvo.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].recrutadorId").value(recrutadorAlvo.getId()));
+    }
+
+    @Test
+    void deveFiltrarOportunidadesDaEmpresaPorPaisEstadoECidade() throws Exception {
+        int indiceBase = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Localidade " + indiceBase);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend localidade", indiceBase);
+        PerfilRecrutador recrutador = persistirRecrutador(indiceBase, "Marina Lima");
+        LocalidadePersistida localidadeAlvo = persistirLocalidadeCompleta(indiceBase);
+        LocalidadePersistida outraLocalidade = persistirLocalidadeCompleta(proximoIndice());
+
+        OportunidadeDeEmprego oportunidadeFiltrada = persistirOportunidadeValidada(
+                "API em cidade alvo",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidadeAlvo
+        );
+        persistirOportunidadeValidada(
+                "API em outra cidade",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                outraLocalidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("paisId", localidadeAlvo.pais().getId().toString())
+                        .param("estadoId", localidadeAlvo.estado().getId().toString())
+                        .param("cidadeId", localidadeAlvo.cidade().getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].paisId").value(localidadeAlvo.pais().getId()))
+                .andExpect(jsonPath("$.content[0].estadoId").value(localidadeAlvo.estado().getId()))
+                .andExpect(jsonPath("$.content[0].cidadeId").value(localidadeAlvo.cidade().getId()));
+    }
+
+    @Test
+    void deveFiltrarOportunidadesDaEmpresaPorModalidade() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Modalidade " + indice);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend modalidade", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeFiltrada = persistirOportunidadeValidada(
+                "API remota",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "API presencial",
+                Modalidade.PRESENCIAL,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("modalidade", Modalidade.REMOTO.name()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].modalidade").value(Modalidade.REMOTO.name()));
+    }
+
+    @Test
+    void naoDeveListarOportunidadesDeOutraEmpresaNoEndpointDaEmpresa() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresaAlvo = persistirEmpresaValidada("Empresa Alvo " + indice);
+        Empresa outraEmpresa = persistirEmpresaValidada("Empresa Fora " + proximoIndice());
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend empresa", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeDaEmpresaAlvo = persistirOportunidadeValidada(
+                "Descricao compartilhada",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresaAlvo,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "Descricao compartilhada",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                outraEmpresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresaAlvo.getId())
+                        .param("termo", "compartilhada"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeDaEmpresaAlvo.getId()))
+                .andExpect(jsonPath("$.content[0].empresaId").value(empresaAlvo.getId()));
+    }
+
+    @Test
+    void deveIgnorarEmpresaIdDeClienteLegadoEManterEscopoDaEmpresaDoPath() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresaDoPath = persistirEmpresaValidada("Empresa Path " + indice);
+        Empresa empresaDoParametro = persistirEmpresaValidada("Empresa Parametro " + proximoIndice());
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend legado", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego oportunidadeDaEmpresaDoPath = persistirOportunidadeValidada(
+                "Descricao legado",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresaDoPath,
+                localidade
+        );
+        persistirOportunidadeValidada(
+                "Descricao legado",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresaDoParametro,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresaDoPath.getId())
+                        .param("empresaId", empresaDoParametro.getId().toString())
+                        .param("termo", "legado"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeDaEmpresaDoPath.getId()))
+                .andExpect(jsonPath("$.content[0].empresaId").value(empresaDoPath.getId()));
+    }
+
+    @Test
+    void naoDeveListarOportunidadesComLocalidadePendenteOuSemLocalidadeValidadaNaListagemPublicaDaEmpresa()
+            throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Pendencia " + indice);
         TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend empresa", indice);
         PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
 
@@ -261,17 +557,60 @@ class EmpresaControllerIntegrationTest {
                 empresa,
                 "Regiao nao mapeada " + indice
         );
+        persistirOportunidadeSemLocalidadeValidada(
+                "Oportunidade sem localidade validada",
+                Modalidade.PRESENCIAL,
+                tipoDeEmprego,
+                recrutador,
+                empresa
+        );
 
         mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id").value(oportunidadeValidada.getId()))
-                .andExpect(jsonPath("$[0].descricao").value(oportunidadeValidada.getDescricao()))
-                .andExpect(jsonPath("$[0].statusLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].localidadeTextoOriginal").doesNotExist())
-                .andExpect(jsonPath("$[0].statusValidacaoLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].motivoPendenciaLocalidade").doesNotExist());
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(oportunidadeValidada.getId()))
+                .andExpect(jsonPath("$.content[0].descricao").value(oportunidadeValidada.getDescricao()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
+    }
+
+    @Test
+    void deveIgnorarParametrosOpcionaisNulosOuEmBrancoNaListagemPublicaDeOportunidadesDaEmpresa() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresa = persistirEmpresaValidada("Empresa Vagas Branco " + indice);
+        TipoDeEmprego tipoDeEmprego = persistirTipoDeEmprego("Backend branco", indice);
+        PerfilRecrutador recrutador = persistirRecrutador(indice, "Marina Lima");
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+
+        OportunidadeDeEmprego primeiraOportunidade = persistirOportunidadeValidada(
+                "API alpha",
+                Modalidade.REMOTO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+        OportunidadeDeEmprego segundaOportunidade = persistirOportunidadeValidada(
+                "API beta",
+                Modalidade.HIBRIDO,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                localidade
+        );
+
+        mockMvc.perform(get("/api/empresas/{id}/oportunidades", empresa.getId())
+                        .param("termo", "   "))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(segundaOportunidade.getId()))
+                .andExpect(jsonPath("$.content[1].id").value(primeiraOportunidade.getId()));
     }
 
     private int proximoIndice() {
@@ -351,11 +690,47 @@ class EmpresaControllerIntegrationTest {
         Pais pais = paisRepository.findFirstBySiglaIgnoreCase("BR")
                 .orElseThrow(() -> new IllegalStateException("Pais BR nao encontrado no seed de teste."));
 
+        return persistirOportunidadeValidada(
+                descricao,
+                modalidade,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                new Localidade(pais)
+        );
+    }
+
+    private OportunidadeDeEmprego persistirOportunidadeValidada(
+            String descricao,
+            Modalidade modalidade,
+            TipoDeEmprego tipoDeEmprego,
+            PerfilRecrutador recrutador,
+            Empresa empresa,
+            LocalidadePersistida localidade
+    ) {
+        return persistirOportunidadeValidada(
+                descricao,
+                modalidade,
+                tipoDeEmprego,
+                recrutador,
+                empresa,
+                new Localidade(localidade.pais(), localidade.estado(), localidade.cidade())
+        );
+    }
+
+    private OportunidadeDeEmprego persistirOportunidadeValidada(
+            String descricao,
+            Modalidade modalidade,
+            TipoDeEmprego tipoDeEmprego,
+            PerfilRecrutador recrutador,
+            Empresa empresa,
+            Localidade localidade
+    ) {
         OportunidadeDeEmprego oportunidade = new OportunidadeDeEmprego(
                 descricao,
                 tipoDeEmprego,
                 modalidade,
-                new Localidade(pais),
+                localidade,
                 recrutador,
                 empresa
         );
@@ -389,6 +764,24 @@ class EmpresaControllerIntegrationTest {
                 )
         );
         return oportunidadeSalva;
+    }
+
+    private OportunidadeDeEmprego persistirOportunidadeSemLocalidadeValidada(
+            String descricao,
+            Modalidade modalidade,
+            TipoDeEmprego tipoDeEmprego,
+            PerfilRecrutador recrutador,
+            Empresa empresa
+    ) {
+        OportunidadeDeEmprego oportunidade = new OportunidadeDeEmprego(
+                descricao,
+                tipoDeEmprego,
+                modalidade,
+                null,
+                recrutador,
+                empresa
+        );
+        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
     }
 
     private String gerarCpfValido(int indice) {
