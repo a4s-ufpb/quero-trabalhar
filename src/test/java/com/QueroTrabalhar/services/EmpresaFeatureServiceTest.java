@@ -268,7 +268,6 @@ class EmpresaFeatureServiceTest {
         assertSame(pais, empresaSalva.getLocalidade().getPais());
         assertSame(estado, empresaSalva.getLocalidade().getEstado());
         assertSame(cidade, empresaSalva.getLocalidade().getCidade());
-        assertNull(empresaSalva.getLocalidadePendente());
     }
 
     @Test
@@ -328,7 +327,6 @@ class EmpresaFeatureServiceTest {
         assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, resposta.statusValidacaoLocalidade());
         assertNull(resposta.paisId());
         assertNull(empresaSalva.getLocalidade());
-        assertNull(empresaSalva.getLocalidadePendente());
         assertEquals(TipoRecursoLocalidadePendente.EMPRESA, localidadePendente.getTipoRecurso());
         assertEquals(61L, localidadePendente.getRecursoId());
         assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo());

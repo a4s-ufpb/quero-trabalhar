@@ -236,13 +236,12 @@ public class OportunidadeDeEmpregoService {
             return null;
         }
 
-        limparEstadoLegadoDaLocalidadePendente(oportunidadeDeEmprego);
+        limparLocalidadeValidada(oportunidadeDeEmprego);
         return resultadoResolucao.localidadePendente();
     }
 
-    private void limparEstadoLegadoDaLocalidadePendente(OportunidadeDeEmprego oportunidadeDeEmprego) {
+    private void limparLocalidadeValidada(OportunidadeDeEmprego oportunidadeDeEmprego) {
         oportunidadeDeEmprego.setLocalizacao(null);
-        oportunidadeDeEmprego.setLocalidadePendente(null);
     }
 
     private void associarDonoGenericoDaPendenciaSeNecessario(

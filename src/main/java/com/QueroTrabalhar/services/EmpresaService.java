@@ -160,13 +160,12 @@ public class EmpresaService {
             return null;
         }
 
-        limparEstadoLegadoDaLocalidadePendente(empresa);
+        limparLocalidadeValidada(empresa);
         return resultadoResolucao.localidadePendente();
     }
 
-    private void limparEstadoLegadoDaLocalidadePendente(Empresa empresa) {
+    private void limparLocalidadeValidada(Empresa empresa) {
         empresa.setLocalidade(null);
-        empresa.setLocalidadePendente(null);
     }
 
     private void associarDonoGenericoDaPendenciaSeNecessario(LocalidadePendente localidadePendente, Long empresaId) {

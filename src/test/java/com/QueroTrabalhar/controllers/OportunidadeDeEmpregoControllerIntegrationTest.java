@@ -374,7 +374,7 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 empresa
         );
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
-        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
+        localidadePendenteRepository.saveAndFlush(
                 LocalidadePendente.criarPendenteInformadaPeloUsuario(
                         textoOriginal,
                         "Aguardando validacao",
@@ -383,9 +383,7 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                         CampoLocalidadePendente.LOCALIDADE
                 )
         );
-        oportunidadeSalva.definirLocalidadePendente(localidadePendente);
-
-        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidadeSalva);
+        return oportunidadeSalva;
     }
 
     private record LocalidadePersistida(Pais pais, Estado estado, Cidade cidade) {

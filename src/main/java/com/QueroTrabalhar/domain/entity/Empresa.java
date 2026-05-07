@@ -1,19 +1,16 @@
 package com.QueroTrabalhar.domain.entity;
 
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
-import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import jakarta.persistence.AssociationOverride;
 import jakarta.persistence.AssociationOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.util.Objects;
@@ -53,10 +50,6 @@ public class Empresa {
             @AssociationOverride(name = "cidade", joinColumns = @JoinColumn(name = "cidade_id", nullable = true))
     })
     private Localidade localidade;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "localidade_pendente_id")
-    private LocalidadePendente localidadePendente;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean ativo;
@@ -141,30 +134,8 @@ public class Empresa {
         this.localidade = null;
     }
 
-    public LocalidadePendente getLocalidadePendente() {
-        return localidadePendente;
-    }
-
-    public void setLocalidadePendente(LocalidadePendente localidadePendente) {
-        if (localidadePendente != null) {
-            definirLocalidadePendente(localidadePendente);
-            return;
-        }
-
-        this.localidadePendente = null;
-    }
-
     public void definirLocalidadeValidada(Localidade localidade) {
-        this.localidade = Objects.requireNonNull(localidade, "A localidade validada é obrigatória.");
-        this.localidadePendente = null;
-    }
-
-    public void definirLocalidadePendente(LocalidadePendente localidadePendente) {
-        this.localidadePendente = Objects.requireNonNull(
-                localidadePendente,
-                "A localidade pendente é obrigatória."
-        );
-        this.localidade = null;
+        this.localidade = Objects.requireNonNull(localidade, "A localidade validada \u00E9 obrigat\u00F3ria.");
     }
 
     public boolean isAtivo() {

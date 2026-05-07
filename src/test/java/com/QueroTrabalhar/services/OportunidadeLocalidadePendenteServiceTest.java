@@ -101,7 +101,6 @@ class OportunidadeLocalidadePendenteServiceTest {
         assertSame(pais, oportunidadeSalva.getLocalizacao().getPais());
         assertSame(estado, oportunidadeSalva.getLocalizacao().getEstado());
         assertSame(cidade, oportunidadeSalva.getLocalizacao().getCidade());
-        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertEquals("VALIDADA", resposta.statusLocalidade());
         verifyNoInteractions(localidadeResolucaoService, registroLocalidadePendenteService);
     }
@@ -125,7 +124,6 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         OportunidadeDeEmprego oportunidadeSalva = capturarOportunidadeSalva();
         assertSame(localidadeResolvida, oportunidadeSalva.getLocalizacao());
-        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertEquals("VALIDADA", resposta.statusLocalidade());
         verify(localidadeResolucaoService).resolver("Joao Pessoa");
         verifyNoInteractions(paisRepository, estadoRepository, cidadeRepository, registroLocalidadePendenteService);
@@ -156,7 +154,6 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         OportunidadeDeEmprego oportunidadeSalva = capturarOportunidadeSalva();
         assertNull(oportunidadeSalva.getLocalizacao());
-        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertEquals("PENDENTE", resposta.statusLocalidade());
         assertEquals("Sao Tome das Letras", resposta.localidadeTextoOriginal());
         assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, resposta.statusValidacaoLocalidade());
@@ -220,7 +217,6 @@ class OportunidadeLocalidadePendenteServiceTest {
         assertSame(pais, oportunidadeSalva.getLocalizacao().getPais());
         assertNull(oportunidadeSalva.getLocalizacao().getEstado());
         assertNull(oportunidadeSalva.getLocalizacao().getCidade());
-        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertEquals("VALIDADA", resposta.statusLocalidade());
         verifyNoInteractions(localidadeResolucaoService, registroLocalidadePendenteService);
     }
@@ -290,7 +286,6 @@ class OportunidadeLocalidadePendenteServiceTest {
                 oportunidadeDeEmpregoService.atualizarOportunidadeDeEmprego(700L, dto);
 
         assertSame(localidadeNova, oportunidadeExistente.getLocalizacao());
-        assertNull(oportunidadeExistente.getLocalidadePendente());
         assertSame(empresaOriginal, oportunidadeExistente.getEmpresa());
         assertEquals("VALIDADA", resposta.statusLocalidade());
         assertEquals(empresaOriginal.getId(), resposta.empresaId());
@@ -352,7 +347,6 @@ class OportunidadeLocalidadePendenteServiceTest {
                 oportunidadeDeEmpregoService.atualizarOportunidadeDeEmprego(800L, dto);
 
         assertNull(oportunidadeExistente.getLocalizacao());
-        assertNull(oportunidadeExistente.getLocalidadePendente());
         assertSame(empresaOriginal, oportunidadeExistente.getEmpresa());
         assertEquals("PENDENTE", resposta.statusLocalidade());
         assertEquals("Vale do Silicio Paraibano", resposta.localidadeTextoOriginal());
@@ -403,7 +397,6 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         OportunidadeDeEmprego oportunidadeSalva = capturarOportunidadeSalva();
         assertSame(empresa, oportunidadeSalva.getEmpresa());
-        assertNull(oportunidadeSalva.getLocalidadePendente());
         assertNull(oportunidadeSalva.getLocalizacao());
         assertEquals(empresa.getId(), resposta.empresaId());
         assertEquals("PENDENTE", resposta.statusLocalidade());

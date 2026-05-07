@@ -226,7 +226,7 @@ class EmpresaControllerIntegrationTest {
     private Empresa persistirEmpresaPendente(String nome, String localidadeTextoOriginal) {
         Empresa empresa = new Empresa(nome, "Descricao pendente", null, null, null, null);
         Empresa empresaSalva = empresaRepository.saveAndFlush(empresa);
-        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
+        localidadePendenteRepository.saveAndFlush(
                 LocalidadePendente.criarPendenteInformadaPeloUsuario(
                         localidadeTextoOriginal,
                         "Aguardando validacao",
@@ -235,9 +235,7 @@ class EmpresaControllerIntegrationTest {
                         CampoLocalidadePendente.LOCALIDADE
                 )
         );
-
-        empresaSalva.definirLocalidadePendente(localidadePendente);
-        return empresaRepository.saveAndFlush(empresaSalva);
+        return empresaSalva;
     }
 
     private OportunidadeDeEmprego persistirOportunidadeValidada(
@@ -278,7 +276,7 @@ class EmpresaControllerIntegrationTest {
                 empresa
         );
         OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
-        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
+        localidadePendenteRepository.saveAndFlush(
                 LocalidadePendente.criarPendenteInformadaPeloUsuario(
                         textoOriginal,
                         "Aguardando validacao",
@@ -287,9 +285,7 @@ class EmpresaControllerIntegrationTest {
                         CampoLocalidadePendente.LOCALIDADE
                 )
         );
-
-        oportunidadeSalva.definirLocalidadePendente(localidadePendente);
-        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidadeSalva);
+        return oportunidadeSalva;
     }
 
     private String gerarCpfValido(int indice) {
