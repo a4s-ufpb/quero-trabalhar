@@ -16,9 +16,11 @@ import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
@@ -28,6 +30,7 @@ import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.RegistroLocalidadePendenteService;
 import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +78,9 @@ class EmpresaFeatureServiceTest {
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;
+
+    @Mock
+    private RegistroLocalidadePendenteService registroLocalidadePendenteService;
 
     @InjectMocks
     private EmpresaService empresaService;
@@ -286,6 +292,20 @@ class EmpresaFeatureServiceTest {
             ReflectionTestUtils.setField(empresaSalva, "id", 61L);
             return empresaSalva;
         });
+        when(registroLocalidadePendenteService.associarDonoGenerico(
+                localidadePendente,
+                TipoRecursoLocalidadePendente.EMPRESA,
+                61L,
+                CampoLocalidadePendente.LOCALIDADE
+        )).thenAnswer(invocation -> {
+            LocalidadePendente pendencia = invocation.getArgument(0);
+            pendencia.definirDonoGenerico(
+                    invocation.getArgument(1),
+                    invocation.getArgument(2),
+                    invocation.getArgument(3)
+            );
+            return pendencia;
+        });
 
         EmpresaResponseDTO resposta = empresaService.criarEmpresa(dto);
 
@@ -300,6 +320,15 @@ class EmpresaFeatureServiceTest {
         assertNull(resposta.paisId());
         assertNull(empresaSalva.getLocalidade());
         assertSame(localidadePendente, empresaSalva.getLocalidadePendente());
+        assertEquals(TipoRecursoLocalidadePendente.EMPRESA, empresaSalva.getLocalidadePendente().getTipoRecurso());
+        assertEquals(61L, empresaSalva.getLocalidadePendente().getRecursoId());
+        assertEquals(CampoLocalidadePendente.LOCALIDADE, empresaSalva.getLocalidadePendente().getCampoAlvo());
+        verify(registroLocalidadePendenteService).associarDonoGenerico(
+                localidadePendente,
+                TipoRecursoLocalidadePendente.EMPRESA,
+                61L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
     }
 
     @Test

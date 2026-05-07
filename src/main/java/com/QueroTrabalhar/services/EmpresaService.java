@@ -1,7 +1,7 @@
 package com.QueroTrabalhar.services;
 
-import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
@@ -10,8 +10,11 @@ import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
@@ -21,6 +24,7 @@ import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.RegistroLocalidadePendenteService;
 import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +42,7 @@ public class EmpresaService {
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
     private final LocalidadeResolucaoService localidadeResolucaoService;
+    private final RegistroLocalidadePendenteService registroLocalidadePendenteService;
 
     public EmpresaService(
             EmpresaRepository empresaRepository,
@@ -46,7 +51,8 @@ public class EmpresaService {
             PaisRepository paisRepository,
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository,
-            LocalidadeResolucaoService localidadeResolucaoService
+            LocalidadeResolucaoService localidadeResolucaoService,
+            RegistroLocalidadePendenteService registroLocalidadePendenteService
     ) {
         this.empresaRepository = empresaRepository;
         this.perfilRecrutadorRepository = perfilRecrutadorRepository;
@@ -55,6 +61,7 @@ public class EmpresaService {
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
         this.localidadeResolucaoService = localidadeResolucaoService;
+        this.registroLocalidadePendenteService = registroLocalidadePendenteService;
     }
 
     @Transactional
@@ -69,7 +76,10 @@ public class EmpresaService {
         );
         definirLocalidadeDaEmpresa(empresa, dto);
 
-        return EmpresaResponseDTO.daEntidade(empresaRepository.save(empresa));
+        Empresa empresaSalva = empresaRepository.save(empresa);
+        associarDonoGenericoDaPendenciaSeNecessario(empresaSalva);
+
+        return EmpresaResponseDTO.daEntidade(empresaSalva);
     }
 
     @Transactional(readOnly = true)
@@ -110,12 +120,12 @@ public class EmpresaService {
 
     private Empresa buscarEntidadePorId(Long id) {
         return empresaRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
     }
 
     private Empresa buscarEntidadePublicaPorId(Long id) {
         return empresaRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa nÃ£o encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
     }
 
     private Empresa buscarEntidadePublicaDisponivelPorId(Long id) {
@@ -141,7 +151,24 @@ public class EmpresaService {
             return;
         }
 
-        throw new BusinessRuleException("A localidade da empresa é obrigatória.");
+        throw new BusinessRuleException("A localidade da empresa e obrigatoria.");
+    }
+
+    private void associarDonoGenericoDaPendenciaSeNecessario(Empresa empresa) {
+        LocalidadePendente localidadePendente = empresa.getLocalidadePendente();
+        if (localidadePendente == null) {
+            return;
+        }
+
+        // O FK legado continua temporariamente para a migracao incremental, mas a pendencia
+        // passa a carregar tambem o recurso dono e o campo afetado para preparar a fila tecnica.
+        LocalidadePendente pendenciaComDono = registroLocalidadePendenteService.associarDonoGenerico(
+                localidadePendente,
+                TipoRecursoLocalidadePendente.EMPRESA,
+                empresa.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        );
+        empresa.definirLocalidadePendente(pendenciaComDono);
     }
 
     private boolean possuiLocalidadeEstruturadaPorIds(EmpresaRequestDTO dto) {
@@ -150,25 +177,25 @@ public class EmpresaService {
 
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
-            throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
+            throw new BusinessRuleException("Para informar uma cidade, o estado tambem deve ser informado.");
         }
 
         if (paisId == null) {
-            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
+            throw new BusinessRuleException("O pais e obrigatorio quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)
-                .orElseThrow(() -> new ObjectNotFoundException("País não encontrado. ID: " + paisId));
+                .orElseThrow(() -> new ObjectNotFoundException("Pais nao encontrado. ID: " + paisId));
 
         if (estadoId == null) {
             return new Localidade(pais);
         }
 
         Estado estado = estadoRepository.findById(estadoId)
-                .orElseThrow(() -> new ObjectNotFoundException("Estado não encontrado. ID: " + estadoId));
+                .orElseThrow(() -> new ObjectNotFoundException("Estado nao encontrado. ID: " + estadoId));
 
         if (!estado.getPais().getId().equals(pais.getId())) {
-            throw new BusinessRuleException("O estado informado não pertence ao país informado.");
+            throw new BusinessRuleException("O estado informado nao pertence ao pais informado.");
         }
 
         if (cidadeId == null) {
@@ -176,10 +203,10 @@ public class EmpresaService {
         }
 
         Cidade cidade = cidadeRepository.findById(cidadeId)
-                .orElseThrow(() -> new ObjectNotFoundException("Cidade não encontrada. ID: " + cidadeId));
+                .orElseThrow(() -> new ObjectNotFoundException("Cidade nao encontrada. ID: " + cidadeId));
 
         if (!cidade.getEstado().getId().equals(estado.getId())) {
-            throw new BusinessRuleException("A cidade informada não pertence ao estado informado.");
+            throw new BusinessRuleException("A cidade informada nao pertence ao estado informado.");
         }
 
         return new Localidade(pais, estado, cidade);

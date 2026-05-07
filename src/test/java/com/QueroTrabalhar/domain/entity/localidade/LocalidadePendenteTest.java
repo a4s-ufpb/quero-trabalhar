@@ -1,7 +1,9 @@
 package com.QueroTrabalhar.domain.entity.localidade;
 
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.OrigemLocalidade;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import org.junit.jupiter.api.Test;
 
@@ -10,75 +12,81 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalidadePendenteTest {
 
     @Test
     void deveCriarLocalidadePendenteInformadaPeloUsuario() {
-        // Arrange
-        String textoOriginal = "São José dos Campos";
-        String motivoPendencia = "Localidade aguardando validação manual";
+        String textoOriginal = "Sao Jose dos Campos";
+        String motivoPendencia = "Localidade aguardando validacao manual";
 
-        // Act
         LocalidadePendente localidadePendente =
                 LocalidadePendente.criarPendenteInformadaPeloUsuario(textoOriginal, motivoPendencia);
 
-        // Assert
         assertAll(
-                () -> assertEquals("São José dos Campos", localidadePendente.getTextoOriginal()),
-                () -> assertEquals("Localidade aguardando validação manual", localidadePendente.getMotivoPendencia()),
+                () -> assertEquals("Sao Jose dos Campos", localidadePendente.getTextoOriginal()),
+                () -> assertEquals("Localidade aguardando validacao manual", localidadePendente.getMotivoPendencia()),
                 () -> assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, localidadePendente.getStatusValidacao()),
                 () -> assertEquals(OrigemLocalidade.USUARIO, localidadePendente.getOrigem()),
+                () -> assertNull(localidadePendente.getTipoRecurso()),
+                () -> assertNull(localidadePendente.getRecursoId()),
+                () -> assertNull(localidadePendente.getCampoAlvo()),
                 () -> assertNotNull(localidadePendente.getCriadaEm()),
                 () -> assertNotNull(localidadePendente.getAtualizadaEm())
         );
     }
 
     @Test
+    void deveCriarLocalidadePendenteComDonoGenerico() {
+        LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                "Campina Grande",
+                "Aguardando confirmacao",
+                TipoRecursoLocalidadePendente.EMPRESA,
+                10L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        assertAll(
+                () -> assertTrue(localidadePendente.possuiDonoGenerico()),
+                () -> assertEquals(TipoRecursoLocalidadePendente.EMPRESA, localidadePendente.getTipoRecurso()),
+                () -> assertEquals(10L, localidadePendente.getRecursoId()),
+                () -> assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo())
+        );
+    }
+
+    @Test
     void deveNormalizarTextoOriginalComTrim() {
-        // Arrange
-        String textoOriginal = "  Belo Horizonte  ";
-
-        // Act
         LocalidadePendente localidadePendente =
-                LocalidadePendente.criarPendenteInformadaPeloUsuario(textoOriginal, "Motivo válido");
+                LocalidadePendente.criarPendenteInformadaPeloUsuario("  Belo Horizonte  ", "Motivo valido");
 
-        // Assert
         assertEquals("Belo Horizonte", localidadePendente.getTextoOriginal());
     }
 
     @Test
     void deveNormalizarMotivoPendenciaComTrim() {
-        // Arrange
-        String motivoPendencia = "  Não foi possível validar automaticamente a cidade informada.  ";
-
-        // Act
         LocalidadePendente localidadePendente =
-                LocalidadePendente.criarPendenteInformadaPeloUsuario("Campina Grande", motivoPendencia);
+                LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                        "Campina Grande",
+                        "  Nao foi possivel validar automaticamente a cidade informada.  "
+                );
 
-        // Assert
         assertEquals(
-                "Não foi possível validar automaticamente a cidade informada.",
+                "Nao foi possivel validar automaticamente a cidade informada.",
                 localidadePendente.getMotivoPendencia()
         );
     }
 
     @Test
     void deveConverterMotivoPendenciaVazioParaNull() {
-        // Arrange
-        String motivoPendencia = "";
-
-        // Act
         LocalidadePendente localidadePendente =
-                LocalidadePendente.criarPendenteInformadaPeloUsuario("João Pessoa", motivoPendencia);
+                LocalidadePendente.criarPendenteInformadaPeloUsuario("Joao Pessoa", "");
 
-        // Assert
         assertNull(localidadePendente.getMotivoPendencia());
     }
 
     @Test
     void deveBloquearTextoOriginalNulo() {
-        // Arrange / Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> LocalidadePendente.criarPendenteInformadaPeloUsuario(null, "Motivo opcional")
@@ -87,7 +95,6 @@ class LocalidadePendenteTest {
 
     @Test
     void deveBloquearTextoOriginalVazio() {
-        // Arrange / Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> LocalidadePendente.criarPendenteInformadaPeloUsuario("   ", "Motivo opcional")
@@ -96,7 +103,6 @@ class LocalidadePendenteTest {
 
     @Test
     void deveBloquearStatusNuloNoConstrutor() {
-        // Arrange / Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> new LocalidadePendente("Recife", null, OrigemLocalidade.USUARIO, "Motivo opcional")
@@ -105,7 +111,6 @@ class LocalidadePendenteTest {
 
     @Test
     void deveBloquearOrigemNulaNoConstrutor() {
-        // Arrange / Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> new LocalidadePendente(
@@ -118,26 +123,84 @@ class LocalidadePendenteTest {
     }
 
     @Test
+    void deveBloquearDonoGenericoIncompletoNoConstrutor() {
+        assertThrows(
+                BusinessRuleException.class,
+                () -> new LocalidadePendente(
+                        "Recife",
+                        StatusValidacaoLocalidade.PENDENTE_VALIDACAO,
+                        OrigemLocalidade.USUARIO,
+                        "Motivo opcional",
+                        TipoRecursoLocalidadePendente.EMPRESA,
+                        null,
+                        CampoLocalidadePendente.LOCALIDADE
+                )
+        );
+    }
+
+    @Test
+    void deveBloquearDonoGenericoComRecursoIdZeroOuNegativo() {
+        assertAll(
+                () -> assertThrows(
+                        BusinessRuleException.class,
+                        () -> new LocalidadePendente(
+                                "Recife",
+                                StatusValidacaoLocalidade.PENDENTE_VALIDACAO,
+                                OrigemLocalidade.USUARIO,
+                                "Motivo opcional",
+                                TipoRecursoLocalidadePendente.EMPRESA,
+                                0L,
+                                CampoLocalidadePendente.LOCALIDADE
+                        )
+                ),
+                () -> assertThrows(
+                        BusinessRuleException.class,
+                        () -> new LocalidadePendente(
+                                "Recife",
+                                StatusValidacaoLocalidade.PENDENTE_VALIDACAO,
+                                OrigemLocalidade.USUARIO,
+                                "Motivo opcional",
+                                TipoRecursoLocalidadePendente.EMPRESA,
+                                -1L,
+                                CampoLocalidadePendente.LOCALIDADE
+                        )
+                )
+        );
+    }
+
+    @Test
     void deveAtualizarTextoOriginalComNormalizacao() {
-        // Arrange
         LocalidadePendente localidadePendente = criarLocalidadePendenteValida();
 
-        // Act
         localidadePendente.setTextoOriginal("  Mogi das Cruzes  ");
 
-        // Assert
         assertEquals("Mogi das Cruzes", localidadePendente.getTextoOriginal());
     }
 
     @Test
     void deveBloquearSetTextoOriginalVazio() {
-        // Arrange
         LocalidadePendente localidadePendente = criarLocalidadePendenteValida();
 
-        // Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> localidadePendente.setTextoOriginal("")
+        );
+    }
+
+    @Test
+    void devePermitirAssociarDonoGenericoDepoisDaCriacao() {
+        LocalidadePendente localidadePendente = criarLocalidadePendenteValida();
+
+        localidadePendente.definirDonoGenerico(
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                25L,
+                CampoLocalidadePendente.LOCALIDADE
+        );
+
+        assertAll(
+                () -> assertEquals(TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO, localidadePendente.getTipoRecurso()),
+                () -> assertEquals(25L, localidadePendente.getRecursoId()),
+                () -> assertEquals(CampoLocalidadePendente.LOCALIDADE, localidadePendente.getCampoAlvo())
         );
     }
 
@@ -146,7 +209,7 @@ class LocalidadePendenteTest {
                 "Curitiba",
                 StatusValidacaoLocalidade.PENDENTE_VALIDACAO,
                 OrigemLocalidade.USUARIO,
-                "Aguardando análise"
+                "Aguardando analise"
         );
     }
 }

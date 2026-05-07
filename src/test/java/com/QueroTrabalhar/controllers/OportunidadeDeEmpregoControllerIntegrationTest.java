@@ -10,7 +10,9 @@ import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
@@ -363,10 +365,6 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
             String textoOriginal,
             Empresa empresa
     ) {
-        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
-                LocalidadePendente.criarPendenteInformadaPeloUsuario(textoOriginal, "Aguardando validacao")
-        );
-
         OportunidadeDeEmprego oportunidade = new OportunidadeDeEmprego(
                 descricao,
                 tipoDeEmprego,
@@ -375,9 +373,19 @@ class OportunidadeDeEmpregoControllerIntegrationTest {
                 recrutador,
                 empresa
         );
-        oportunidade.definirLocalidadePendente(localidadePendente);
+        OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
+        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
+                LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                        textoOriginal,
+                        "Aguardando validacao",
+                        TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                        oportunidadeSalva.getId(),
+                        CampoLocalidadePendente.LOCALIDADE
+                )
+        );
+        oportunidadeSalva.definirLocalidadePendente(localidadePendente);
 
-        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
+        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidadeSalva);
     }
 
     private record LocalidadePersistida(Pais pais, Estado estado, Cidade cidade) {

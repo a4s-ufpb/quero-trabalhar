@@ -1,7 +1,9 @@
 package com.QueroTrabalhar.domain.entity.localidade;
 
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.OrigemLocalidade;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +25,11 @@ import java.util.Objects;
         name = "localidade_pendente",
         indexes = {
                 @Index(name = "idx_localidade_pendente_status", columnList = "status_validacao"),
-                @Index(name = "idx_localidade_pendente_origem", columnList = "origem")
+                @Index(name = "idx_localidade_pendente_origem", columnList = "origem"),
+                @Index(
+                        name = "idx_localidade_pendente_recurso_campo",
+                        columnList = "tipo_recurso,recurso_id,campo_alvo"
+                )
         }
 )
 public class LocalidadePendente {
@@ -46,6 +52,17 @@ public class LocalidadePendente {
     @Column(name = "motivo_pendencia", length = 500)
     private String motivoPendencia;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_recurso", length = 50)
+    private TipoRecursoLocalidadePendente tipoRecurso;
+
+    @Column(name = "recurso_id")
+    private Long recursoId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "campo_alvo", length = 50)
+    private CampoLocalidadePendente campoAlvo;
+
     @Column(name = "criada_em", nullable = false, updatable = false)
     private LocalDateTime criadaEm;
 
@@ -58,10 +75,26 @@ public class LocalidadePendente {
             OrigemLocalidade origem,
             String motivoPendencia
     ) {
+        this(textoOriginal, statusValidacao, origem, motivoPendencia, null, null, null);
+    }
+
+    public LocalidadePendente(
+            String textoOriginal,
+            StatusValidacaoLocalidade statusValidacao,
+            OrigemLocalidade origem,
+            String motivoPendencia,
+            TipoRecursoLocalidadePendente tipoRecurso,
+            Long recursoId,
+            CampoLocalidadePendente campoAlvo
+    ) {
         this.textoOriginal = normalizarTextoObrigatorio(textoOriginal);
         this.statusValidacao = validarStatus(statusValidacao);
         this.origem = validarOrigem(origem);
         this.motivoPendencia = normalizarTextoOpcional(motivoPendencia);
+        validarDonoGenerico(tipoRecurso, recursoId, campoAlvo);
+        this.tipoRecurso = tipoRecurso;
+        this.recursoId = recursoId;
+        this.campoAlvo = campoAlvo;
 
         LocalDateTime agora = LocalDateTime.now();
         this.criadaEm = agora;
@@ -72,11 +105,24 @@ public class LocalidadePendente {
     }
 
     public static LocalidadePendente criarPendenteInformadaPeloUsuario(String textoOriginal, String motivoPendencia) {
+        return criarPendenteInformadaPeloUsuario(textoOriginal, motivoPendencia, null, null, null);
+    }
+
+    public static LocalidadePendente criarPendenteInformadaPeloUsuario(
+            String textoOriginal,
+            String motivoPendencia,
+            TipoRecursoLocalidadePendente tipoRecurso,
+            Long recursoId,
+            CampoLocalidadePendente campoAlvo
+    ) {
         return new LocalidadePendente(
                 textoOriginal,
                 StatusValidacaoLocalidade.PENDENTE_VALIDACAO,
                 OrigemLocalidade.USUARIO,
-                motivoPendencia
+                motivoPendencia,
+                tipoRecurso,
+                recursoId,
+                campoAlvo
         );
     }
 
@@ -133,6 +179,33 @@ public class LocalidadePendente {
         this.motivoPendencia = normalizarTextoOpcional(motivoPendencia);
     }
 
+    public TipoRecursoLocalidadePendente getTipoRecurso() {
+        return tipoRecurso;
+    }
+
+    public Long getRecursoId() {
+        return recursoId;
+    }
+
+    public CampoLocalidadePendente getCampoAlvo() {
+        return campoAlvo;
+    }
+
+    public boolean possuiDonoGenerico() {
+        return tipoRecurso != null && recursoId != null && campoAlvo != null;
+    }
+
+    public void definirDonoGenerico(
+            TipoRecursoLocalidadePendente tipoRecurso,
+            Long recursoId,
+            CampoLocalidadePendente campoAlvo
+    ) {
+        validarDonoGenerico(tipoRecurso, recursoId, campoAlvo);
+        this.tipoRecurso = tipoRecurso;
+        this.recursoId = recursoId;
+        this.campoAlvo = campoAlvo;
+    }
+
     public LocalDateTime getCriadaEm() {
         return criadaEm;
     }
@@ -160,7 +233,7 @@ public class LocalidadePendente {
     private static String normalizarTextoObrigatorio(String textoOriginal) {
         String textoNormalizado = normalizarTextoOpcional(textoOriginal);
         if (textoNormalizado == null) {
-            throw new BusinessRuleException("O texto original da localidade é obrigatório.");
+            throw new BusinessRuleException("O texto original da localidade e obrigatorio.");
         }
         return textoNormalizado;
     }
@@ -176,15 +249,36 @@ public class LocalidadePendente {
 
     private static StatusValidacaoLocalidade validarStatus(StatusValidacaoLocalidade statusValidacao) {
         if (statusValidacao == null) {
-            throw new BusinessRuleException("O status de validação da localidade é obrigatório.");
+            throw new BusinessRuleException("O status de validacao da localidade e obrigatorio.");
         }
         return statusValidacao;
     }
 
     private static OrigemLocalidade validarOrigem(OrigemLocalidade origem) {
         if (origem == null) {
-            throw new BusinessRuleException("A origem da localidade é obrigatória.");
+            throw new BusinessRuleException("A origem da localidade e obrigatoria.");
         }
         return origem;
+    }
+
+    private static void validarDonoGenerico(
+            TipoRecursoLocalidadePendente tipoRecurso,
+            Long recursoId,
+            CampoLocalidadePendente campoAlvo
+    ) {
+        boolean todosNulos = tipoRecurso == null && recursoId == null && campoAlvo == null;
+        boolean todosPreenchidos = tipoRecurso != null && recursoId != null && campoAlvo != null;
+
+        if (!todosNulos && !todosPreenchidos) {
+            throw new BusinessRuleException(
+                    "O dono generico da localidade pendente deve ser informado de forma completa."
+            );
+        }
+
+        if (todosPreenchidos && recursoId <= 0) {
+            throw new BusinessRuleException(
+                    "O ID do recurso dono da localidade pendente deve ser positivo."
+            );
+        }
     }
 }

@@ -17,6 +17,7 @@ import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.RegistroLocalidadePendenteService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -56,6 +57,9 @@ class OportunidadeEmpresaFeatureServiceTest {
 
     @Mock
     private LocalidadeResolucaoService localidadeResolucaoService;
+
+    @Mock
+    private RegistroLocalidadePendenteService registroLocalidadePendenteService;
 
     @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;

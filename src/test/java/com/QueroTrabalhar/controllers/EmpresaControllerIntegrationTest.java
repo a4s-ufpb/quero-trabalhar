@@ -14,7 +14,9 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -222,16 +224,20 @@ class EmpresaControllerIntegrationTest {
     }
 
     private Empresa persistirEmpresaPendente(String nome, String localidadeTextoOriginal) {
+        Empresa empresa = new Empresa(nome, "Descricao pendente", null, null, null, null);
+        Empresa empresaSalva = empresaRepository.saveAndFlush(empresa);
         LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
                 LocalidadePendente.criarPendenteInformadaPeloUsuario(
                         localidadeTextoOriginal,
-                        "Aguardando validacao"
+                        "Aguardando validacao",
+                        TipoRecursoLocalidadePendente.EMPRESA,
+                        empresaSalva.getId(),
+                        CampoLocalidadePendente.LOCALIDADE
                 )
         );
 
-        Empresa empresa = new Empresa(nome, "Descricao pendente", null, null, null, null);
-        empresa.definirLocalidadePendente(localidadePendente);
-        return empresaRepository.saveAndFlush(empresa);
+        empresaSalva.definirLocalidadePendente(localidadePendente);
+        return empresaRepository.saveAndFlush(empresaSalva);
     }
 
     private OportunidadeDeEmprego persistirOportunidadeValidada(
@@ -263,10 +269,6 @@ class EmpresaControllerIntegrationTest {
             Empresa empresa,
             String textoOriginal
     ) {
-        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
-                LocalidadePendente.criarPendenteInformadaPeloUsuario(textoOriginal, "Aguardando validacao")
-        );
-
         OportunidadeDeEmprego oportunidade = new OportunidadeDeEmprego(
                 descricao,
                 tipoDeEmprego,
@@ -275,8 +277,19 @@ class EmpresaControllerIntegrationTest {
                 recrutador,
                 empresa
         );
-        oportunidade.definirLocalidadePendente(localidadePendente);
-        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
+        OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.saveAndFlush(oportunidade);
+        LocalidadePendente localidadePendente = localidadePendenteRepository.saveAndFlush(
+                LocalidadePendente.criarPendenteInformadaPeloUsuario(
+                        textoOriginal,
+                        "Aguardando validacao",
+                        TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                        oportunidadeSalva.getId(),
+                        CampoLocalidadePendente.LOCALIDADE
+                )
+        );
+
+        oportunidadeSalva.definirLocalidadePendente(localidadePendente);
+        return oportunidadeDeEmpregoRepository.saveAndFlush(oportunidadeSalva);
     }
 
     private String gerarCpfValido(int indice) {

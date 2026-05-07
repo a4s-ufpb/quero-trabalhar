@@ -11,8 +11,12 @@ import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
 import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
+import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.domain.enums.CampoLocalidadePendente;
+import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.QueroTrabalhar.domain.enums.StatusVinculoEmpresa;
+import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
@@ -22,6 +26,7 @@ import com.QueroTrabalhar.repository.specification.OportunidadeDeEmpregoSpecific
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
+import com.QueroTrabalhar.services.localidade.RegistroLocalidadePendenteService;
 import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +44,7 @@ public class OportunidadeDeEmpregoService {
     private final EstadoRepository estadoRepository;
     private final CidadeRepository cidadeRepository;
     private final LocalidadeResolucaoService localidadeResolucaoService;
+    private final RegistroLocalidadePendenteService registroLocalidadePendenteService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public OportunidadeDeEmpregoService(
@@ -48,6 +54,7 @@ public class OportunidadeDeEmpregoService {
             EstadoRepository estadoRepository,
             CidadeRepository cidadeRepository,
             LocalidadeResolucaoService localidadeResolucaoService,
+            RegistroLocalidadePendenteService registroLocalidadePendenteService,
             UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.oportunidadeDeEmpregoRepository = oportunidadeDeEmpregoRepository;
@@ -56,6 +63,7 @@ public class OportunidadeDeEmpregoService {
         this.estadoRepository = estadoRepository;
         this.cidadeRepository = cidadeRepository;
         this.localidadeResolucaoService = localidadeResolucaoService;
+        this.registroLocalidadePendenteService = registroLocalidadePendenteService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
@@ -105,9 +113,10 @@ public class OportunidadeDeEmpregoService {
 
         perfilRecrutador.adicionarOportunidadePostada(oportunidadeDeEmprego);
 
-        return OportunidadeDeEmpregoResponseDTO.daEntidade(
-                oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego)
-        );
+        OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
+        associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
+
+        return OportunidadeDeEmpregoResponseDTO.daEntidade(oportunidadeSalva);
     }
 
     @Transactional
@@ -120,15 +129,16 @@ public class OportunidadeDeEmpregoService {
 
         validarDonoDaOportunidade(oportunidadeDeEmprego, perfilRecrutador);
 
-        // Nesta fase, o contexto original de publicação da oportunidade é preservado.
+        // Nesta fase, o contexto original de publicacao da oportunidade e preservado.
         oportunidadeDeEmprego.setDescricao(dto.descricao());
         oportunidadeDeEmprego.setTipoDeEmprego(buscarTipoDeEmpregoValido(dto.tipoDeEmpregoId()));
         oportunidadeDeEmprego.setModalidade(dto.modalidade());
         definirLocalidadeDaOportunidade(oportunidadeDeEmprego, dto);
 
-        return OportunidadeDeEmpregoResponseDTO.daEntidade(
-                oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego)
-        );
+        OportunidadeDeEmprego oportunidadeSalva = oportunidadeDeEmpregoRepository.save(oportunidadeDeEmprego);
+        associarDonoGenericoDaPendenciaSeNecessario(oportunidadeSalva);
+
+        return OportunidadeDeEmpregoResponseDTO.daEntidade(oportunidadeSalva);
     }
 
     @Transactional
@@ -144,12 +154,12 @@ public class OportunidadeDeEmpregoService {
 
     private OportunidadeDeEmprego buscarEntidadePorId(Long id) {
         return oportunidadeDeEmpregoRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego não encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
     }
 
     private OportunidadeDeEmprego buscarEntidadePublicaPorId(Long id) {
         return oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nÃ£o encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
     }
 
     private OportunidadeDeEmprego buscarEntidadePublicaDisponivelPorId(Long id) {
@@ -164,12 +174,12 @@ public class OportunidadeDeEmpregoService {
     private TipoDeEmprego buscarTipoDeEmpregoValido(Long tipoDeEmpregoId) {
         TipoDeEmprego tipoDeEmprego = tipoDeEmpregoRepository.findById(tipoDeEmpregoId)
                 .orElseThrow(() -> new ObjectNotFoundException(
-                        "Tipo de emprego não encontrado. ID: " + tipoDeEmpregoId
+                        "Tipo de emprego nao encontrado. ID: " + tipoDeEmpregoId
                 ));
 
         if (!tipoDeEmprego.isAprovado()) {
             throw new BusinessRuleException(
-                    "O tipo de emprego informado ainda não foi aprovado e não pode ser usado em oportunidades."
+                    "O tipo de emprego informado ainda nao foi aprovado e nao pode ser usado em oportunidades."
             );
         }
 
@@ -199,7 +209,24 @@ public class OportunidadeDeEmpregoService {
             return;
         }
 
-        throw new BusinessRuleException("A localidade da oportunidade é obrigatória.");
+        throw new BusinessRuleException("A localidade da oportunidade e obrigatoria.");
+    }
+
+    private void associarDonoGenericoDaPendenciaSeNecessario(OportunidadeDeEmprego oportunidadeDeEmprego) {
+        LocalidadePendente localidadePendente = oportunidadeDeEmprego.getLocalidadePendente();
+        if (localidadePendente == null) {
+            return;
+        }
+
+        // O FK legado continua sendo usado nesta fase, mas a pendencia passa a apontar para a
+        // oportunidade dona para permitir reprocessamento tecnico sem acoplamento ao agregado.
+        LocalidadePendente pendenciaComDono = registroLocalidadePendenteService.associarDonoGenerico(
+                localidadePendente,
+                TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,
+                oportunidadeDeEmprego.getId(),
+                CampoLocalidadePendente.LOCALIDADE
+        );
+        oportunidadeDeEmprego.definirLocalidadePendente(pendenciaComDono);
     }
 
     private boolean possuiLocalidadeEstruturadaPorIds(OportunidadeDeEmpregoRequestDTO dto) {
@@ -208,25 +235,25 @@ public class OportunidadeDeEmpregoService {
 
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
-            throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
+            throw new BusinessRuleException("Para informar uma cidade, o estado tambem deve ser informado.");
         }
 
         if (paisId == null) {
-            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
+            throw new BusinessRuleException("O pais e obrigatorio quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)
-                .orElseThrow(() -> new ObjectNotFoundException("País não encontrado. ID: " + paisId));
+                .orElseThrow(() -> new ObjectNotFoundException("Pais nao encontrado. ID: " + paisId));
 
         if (estadoId == null) {
             return new Localidade(pais);
         }
 
         Estado estado = estadoRepository.findById(estadoId)
-                .orElseThrow(() -> new ObjectNotFoundException("Estado não encontrado. ID: " + estadoId));
+                .orElseThrow(() -> new ObjectNotFoundException("Estado nao encontrado. ID: " + estadoId));
 
         if (!estado.getPais().getId().equals(pais.getId())) {
-            throw new BusinessRuleException("O estado informado não pertence ao país informado.");
+            throw new BusinessRuleException("O estado informado nao pertence ao pais informado.");
         }
 
         if (cidadeId == null) {
@@ -234,10 +261,10 @@ public class OportunidadeDeEmpregoService {
         }
 
         Cidade cidade = cidadeRepository.findById(cidadeId)
-                .orElseThrow(() -> new ObjectNotFoundException("Cidade não encontrada. ID: " + cidadeId));
+                .orElseThrow(() -> new ObjectNotFoundException("Cidade nao encontrada. ID: " + cidadeId));
 
         if (!cidade.getEstado().getId().equals(estado.getId())) {
-            throw new BusinessRuleException("A cidade informada não pertence ao estado informado.");
+            throw new BusinessRuleException("A cidade informada nao pertence ao estado informado.");
         }
 
         return new Localidade(pais, estado, cidade);
@@ -268,7 +295,7 @@ public class OportunidadeDeEmpregoService {
 
         if (perfilRecrutador.getStatusVinculoEmpresa() != StatusVinculoEmpresa.APROVADO) {
             throw new BusinessRuleException(
-                    "Para publicar uma oportunidade em nome da empresa, o vínculo com a empresa precisa estar aprovado."
+                    "Para publicar uma oportunidade em nome da empresa, o vinculo com a empresa precisa estar aprovado."
             );
         }
 
@@ -281,7 +308,7 @@ public class OportunidadeDeEmpregoService {
     ) {
         if (!oportunidadeDeEmprego.getPerfilRecrutador().getId().equals(perfilRecrutadorAutenticado.getId())) {
             throw new BusinessRuleException(
-                    "O recrutador autenticado não pode alterar uma oportunidade que pertence a outro perfil."
+                    "O recrutador autenticado nao pode alterar uma oportunidade que pertence a outro perfil."
             );
         }
     }
