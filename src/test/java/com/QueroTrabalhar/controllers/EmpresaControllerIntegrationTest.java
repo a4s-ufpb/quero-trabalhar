@@ -5,10 +5,14 @@ import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilRecrutador;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.domain.entity.Usuario;
+import com.QueroTrabalhar.domain.entity.localidade.Cidade;
+import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
+import com.QueroTrabalhar.repository.CidadeRepository;
 import com.QueroTrabalhar.repository.EmpresaRepository;
+import com.QueroTrabalhar.repository.EstadoRepository;
 import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
@@ -56,6 +60,12 @@ class EmpresaControllerIntegrationTest {
     private PaisRepository paisRepository;
 
     @Autowired
+    private EstadoRepository estadoRepository;
+
+    @Autowired
+    private CidadeRepository cidadeRepository;
+
+    @Autowired
     private TipoDeEmpregoRepository tipoDeEmpregoRepository;
 
     @Autowired
@@ -78,25 +88,29 @@ class EmpresaControllerIntegrationTest {
     }
 
     @Test
-    void naoDeveListarEmpresasComLocalidadePendenteNaListagemPublica() throws Exception {
+    void naoDeveListarEmpresasComLocalidadePendenteOuSemLocalidadeValidadaNaListagemPublica() throws Exception {
         int indice = proximoIndice();
         Empresa empresaValidada = persistirEmpresaValidada("Empresa Alpha " + indice);
         persistirEmpresaPendente("Empresa Oculta " + indice, "Regiao nao mapeada " + indice);
+        persistirEmpresaSemLocalidadeValidada("Empresa Sem Localidade " + indice);
 
         mockMvc.perform(get("/api/empresas"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id").value(empresaValidada.getId()))
-                .andExpect(jsonPath("$[0].nome").value(empresaValidada.getNome()))
-                .andExpect(jsonPath("$[0].statusLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].localidadeTextoOriginal").doesNotExist())
-                .andExpect(jsonPath("$[0].statusValidacaoLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].motivoPendenciaLocalidade").doesNotExist());
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(empresaValidada.getId()))
+                .andExpect(jsonPath("$.content[0].nome").value(empresaValidada.getNome()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
     }
 
     @Test
-    void deveListarEmpresasPublicasOrdenadasPorNomeQuandoPossuemLocalidadeValidada() throws Exception {
+    void deveListarEmpresasPublicasComEstruturaPaginadaEOrdenacaoPadraoPorNomeAsc() throws Exception {
         int indice = proximoIndice();
         Empresa empresaBeta = persistirEmpresaValidada("Empresa Beta " + indice);
         Empresa empresaAlpha = persistirEmpresaValidada("Empresa Alpha " + indice);
@@ -104,15 +118,85 @@ class EmpresaControllerIntegrationTest {
         mockMvc.perform(get("/api/empresas"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(empresaAlpha.getId()))
-                .andExpect(jsonPath("$[0].nome").value(empresaAlpha.getNome()))
-                .andExpect(jsonPath("$[1].id").value(empresaBeta.getId()))
-                .andExpect(jsonPath("$[1].nome").value(empresaBeta.getNome()))
-                .andExpect(jsonPath("$[0].statusLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].localidadeTextoOriginal").doesNotExist())
-                .andExpect(jsonPath("$[0].statusValidacaoLocalidade").doesNotExist())
-                .andExpect(jsonPath("$[0].motivoPendenciaLocalidade").doesNotExist());
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(empresaAlpha.getId()))
+                .andExpect(jsonPath("$.content[0].nome").value(empresaAlpha.getNome()))
+                .andExpect(jsonPath("$.content[1].id").value(empresaBeta.getId()))
+                .andExpect(jsonPath("$.content[1].nome").value(empresaBeta.getNome()))
+                .andExpect(jsonPath("$.content[0].statusLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].localidadeTextoOriginal").doesNotExist())
+                .andExpect(jsonPath("$.content[0].statusValidacaoLocalidade").doesNotExist())
+                .andExpect(jsonPath("$.content[0].motivoPendenciaLocalidade").doesNotExist());
+    }
+
+    @Test
+    void deveFiltrarEmpresasPorTermoIgnorandoEspacosExternos() throws Exception {
+        int indice = proximoIndice();
+        LocalidadePersistida localidade = persistirLocalidadeCompleta(indice);
+        Empresa empresaFiltrada = persistirEmpresaValidada(
+                "Plataforma Alpha " + indice,
+                new Localidade(localidade.pais(), localidade.estado(), localidade.cidade())
+        );
+        persistirEmpresaValidada(
+                "Consultoria Beta " + indice,
+                new Localidade(localidade.pais(), localidade.estado(), localidade.cidade())
+        );
+
+        mockMvc.perform(get("/api/empresas")
+                        .param("termo", "  alpha  "))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(empresaFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].nome").value(empresaFiltrada.getNome()));
+    }
+
+    @Test
+    void deveFiltrarEmpresasPorPaisEstadoECidade() throws Exception {
+        int indiceBase = proximoIndice();
+        LocalidadePersistida localidadeAlvo = persistirLocalidadeCompleta(indiceBase);
+        LocalidadePersistida outraLocalidade = persistirLocalidadeCompleta(proximoIndice());
+        Empresa empresaFiltrada = persistirEmpresaValidada(
+                "Empresa Localizada " + indiceBase,
+                new Localidade(localidadeAlvo.pais(), localidadeAlvo.estado(), localidadeAlvo.cidade())
+        );
+        persistirEmpresaValidada(
+                "Empresa Fora do Filtro " + indiceBase,
+                new Localidade(outraLocalidade.pais(), outraLocalidade.estado(), outraLocalidade.cidade())
+        );
+
+        mockMvc.perform(get("/api/empresas")
+                        .param("paisId", localidadeAlvo.pais().getId().toString())
+                        .param("estadoId", localidadeAlvo.estado().getId().toString())
+                        .param("cidadeId", localidadeAlvo.cidade().getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(empresaFiltrada.getId()))
+                .andExpect(jsonPath("$.content[0].paisId").value(localidadeAlvo.pais().getId()))
+                .andExpect(jsonPath("$.content[0].estadoId").value(localidadeAlvo.estado().getId()))
+                .andExpect(jsonPath("$.content[0].cidadeId").value(localidadeAlvo.cidade().getId()));
+    }
+
+    @Test
+    void deveIgnorarParametrosOpcionaisNulosOuEmBrancoNaListagemPublica() throws Exception {
+        int indice = proximoIndice();
+        Empresa empresaAlpha = persistirEmpresaValidada("Empresa Alpha Branco " + indice);
+        Empresa empresaBeta = persistirEmpresaValidada("Empresa Beta Branco " + indice);
+
+        mockMvc.perform(get("/api/empresas")
+                        .param("termo", "   "))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(empresaAlpha.getId()))
+                .andExpect(jsonPath("$.content[1].id").value(empresaBeta.getId()));
     }
 
     @Test
@@ -215,11 +299,26 @@ class EmpresaControllerIntegrationTest {
         return usuarioRepository.saveAndFlush(usuario).getPerfilRecrutador();
     }
 
+    private LocalidadePersistida persistirLocalidadeCompleta(int indice) {
+        Pais pais = paisRepository.findFirstBySiglaIgnoreCase("BR")
+                .orElseThrow(() -> new IllegalStateException("Pais BR nao encontrado no seed de teste."));
+        Estado estado = estadoRepository.saveAndFlush(
+                new Estado("Estado Empresa " + indice, String.format("E%03d", indice), pais)
+        );
+        Cidade cidade = cidadeRepository.saveAndFlush(new Cidade("Cidade Empresa " + indice, estado));
+        return new LocalidadePersistida(pais, estado, cidade);
+    }
+
     private Empresa persistirEmpresaValidada(String nome) {
         Pais pais = paisRepository.findFirstBySiglaIgnoreCase("BR")
                 .orElseThrow(() -> new IllegalStateException("Pais BR nao encontrado no seed de teste."));
 
         Empresa empresa = new Empresa(nome, "Descricao publica", null, null, null, new Localidade(pais));
+        return empresaRepository.saveAndFlush(empresa);
+    }
+
+    private Empresa persistirEmpresaValidada(String nome, Localidade localidade) {
+        Empresa empresa = new Empresa(nome, "Descricao publica", null, null, null, localidade);
         return empresaRepository.saveAndFlush(empresa);
     }
 
@@ -236,6 +335,10 @@ class EmpresaControllerIntegrationTest {
                 )
         );
         return empresaSalva;
+    }
+
+    private Empresa persistirEmpresaSemLocalidadeValidada(String nome) {
+        return empresaRepository.saveAndFlush(new Empresa(nome, "Descricao sem localidade", null, null, null, null));
     }
 
     private OportunidadeDeEmprego persistirOportunidadeValidada(
@@ -306,5 +409,8 @@ class EmpresaControllerIntegrationTest {
 
         int resto = 11 - (soma % 11);
         return resto >= 10 ? 0 : resto;
+    }
+
+    private record LocalidadePersistida(Pais pais, Estado estado, Cidade cidade) {
     }
 }

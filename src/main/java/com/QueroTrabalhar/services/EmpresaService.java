@@ -1,10 +1,10 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaFilterDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
-import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.localidade.Cidade;
@@ -22,11 +22,14 @@ import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PaisRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
+import com.QueroTrabalhar.repository.specification.EmpresaSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import com.QueroTrabalhar.services.localidade.LocalidadeResolucaoService;
 import com.QueroTrabalhar.services.localidade.RegistroLocalidadePendenteService;
 import com.QueroTrabalhar.services.localidade.ResultadoResolucaoLocalidade;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,10 +90,9 @@ public class EmpresaService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmpresaPublicaResponseDTO> listarEmpresas() {
-        return empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc().stream()
-                .map(EmpresaPublicaResponseDTO::daEntidade)
-                .toList();
+    public Page<EmpresaPublicaResponseDTO> listarEmpresas(EmpresaFilterDTO filtro, Pageable pageable) {
+        return empresaRepository.findAll(EmpresaSpecification.comFiltros(filtro), pageable)
+                .map(EmpresaPublicaResponseDTO::daEntidade);
     }
 
     @Transactional(readOnly = true)

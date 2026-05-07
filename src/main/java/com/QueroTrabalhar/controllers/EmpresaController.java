@@ -1,13 +1,18 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.empresa.EmpresaFilterDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
-import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.services.EmpresaService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,8 +49,12 @@ public class EmpresaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EmpresaPublicaResponseDTO>> listarEmpresas() {
-        return ResponseEntity.ok(empresaService.listarEmpresas());
+    public ResponseEntity<Page<EmpresaPublicaResponseDTO>> listarEmpresas(
+            @Valid @ParameterObject EmpresaFilterDTO filtro,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 10, sort = "nome", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(empresaService.listarEmpresas(filtro, pageable));
     }
 
     @GetMapping("/{id}")

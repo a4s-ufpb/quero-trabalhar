@@ -4,7 +4,6 @@ import com.QueroTrabalhar.domain.dtos.empresa.EmpresaRequestDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaPublicaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.empresa.EmpresaResponseDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoPublicaResponseDTO;
-import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.RecrutadorDaEmpresaResponseDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
@@ -39,6 +38,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -52,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -366,18 +371,20 @@ class EmpresaFeatureServiceTest {
         empresaAlpha.setSite("https://alpha.com");
         Empresa empresaBeta = criarEmpresaValidada(2L, "Empresa Beta", new Localidade(pais));
         empresaBeta.setEmailPublico("contato@beta.com");
+        Pageable pageable = PageRequest.of(0, 10);
 
-        when(empresaRepository.findByLocalidadePaisIsNotNullOrderByNomeAsc())
-                .thenReturn(List.of(empresaAlpha, empresaBeta));
+        when(empresaRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(empresaAlpha, empresaBeta), pageable, 2));
 
-        List<EmpresaPublicaResponseDTO> resposta = empresaService.listarEmpresas();
+        Page<EmpresaPublicaResponseDTO> resposta = empresaService.listarEmpresas(null, pageable);
 
-        assertEquals(2, resposta.size());
-        assertNotSame(empresaAlpha, resposta.get(0));
-        assertInstanceOf(EmpresaPublicaResponseDTO.class, resposta.get(0));
+        assertEquals(2, resposta.getTotalElements());
+        assertEquals(2, resposta.getContent().size());
+        assertNotSame(empresaAlpha, resposta.getContent().get(0));
+        assertInstanceOf(EmpresaPublicaResponseDTO.class, resposta.getContent().get(0));
 
-        EmpresaPublicaResponseDTO primeiraEmpresa = resposta.get(0);
-        EmpresaPublicaResponseDTO segundaEmpresa = resposta.get(1);
+        EmpresaPublicaResponseDTO primeiraEmpresa = resposta.getContent().get(0);
+        EmpresaPublicaResponseDTO segundaEmpresa = resposta.getContent().get(1);
 
         assertAll(
                 () -> assertEquals(1L, primeiraEmpresa.id()),
@@ -388,7 +395,7 @@ class EmpresaFeatureServiceTest {
                 () -> assertEquals("Empresa Beta", segundaEmpresa.nome()),
                 () -> assertEquals("contato@beta.com", segundaEmpresa.emailPublico())
         );
-        verify(empresaRepository).findByLocalidadePaisIsNotNullOrderByNomeAsc();
+        verify(empresaRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
