@@ -28,6 +28,12 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
+localidade:
+  pendente:
+    reprocessamento:
+      enabled: ${LOCALIDADE_PENDENTE_REPROCESSAMENTO_ENABLED:true}
+      fixed-delay-ms: ${LOCALIDADE_PENDENTE_REPROCESSAMENTO_FIXED_DELAY_MS:600000}
+
 springdoc:
   api-docs:
     enabled: true
