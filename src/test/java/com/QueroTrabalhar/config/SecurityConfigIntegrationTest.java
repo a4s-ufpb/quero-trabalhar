@@ -139,7 +139,8 @@ class SecurityConfigIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[*].email", hasItems(USER_EMAIL, ADMIN_EMAIL)));
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content[*].email", hasItems(USER_EMAIL, ADMIN_EMAIL)));
     }
 
     @Test

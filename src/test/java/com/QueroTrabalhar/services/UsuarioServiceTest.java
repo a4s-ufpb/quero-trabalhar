@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioFilterDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
@@ -19,10 +20,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -67,20 +73,24 @@ class UsuarioServiceTest {
     private UsuarioService usuarioService;
 
     @Test
-    void deveListarTodosUsuarios() {
+    void deveListarUsuariosPaginadosComFiltros() {
         Usuario primeiroUsuario = criarUsuario(1L, "Amanda Souza", "amanda.souza@teste.com");
         Usuario segundoUsuario = criarUsuario(2L, "Bruno Lima", "bruno.lima@teste.com");
+        UsuarioFilterDTO filtro = new UsuarioFilterDTO("  amanda  ", null, null, null, true, null);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "nome"));
 
-        when(usuarioRepository.findAll()).thenReturn(List.of(primeiroUsuario, segundoUsuario));
+        when(usuarioRepository.findAll(any(Specification.class), same(pageable)))
+                .thenReturn(new PageImpl<>(java.util.List.of(primeiroUsuario, segundoUsuario), pageable, 2));
 
-        List<?> resposta = usuarioService.listarTodosUsuarios();
+        Page<UsuarioResponseDTO> resposta = usuarioService.listarUsuarios(filtro, pageable);
 
-        assertEquals(2, resposta.size());
-        assertInstanceOf(UsuarioResponseDTO.class, resposta.get(0));
-        assertNotSame(primeiroUsuario, resposta.get(0));
+        assertEquals(2, resposta.getTotalElements());
+        assertEquals(2, resposta.getContent().size());
+        assertInstanceOf(UsuarioResponseDTO.class, resposta.getContent().get(0));
+        assertNotSame(primeiroUsuario, resposta.getContent().get(0));
 
-        UsuarioResponseDTO primeiroUsuarioResponse = (UsuarioResponseDTO) resposta.get(0);
-        UsuarioResponseDTO segundoUsuarioResponse = (UsuarioResponseDTO) resposta.get(1);
+        UsuarioResponseDTO primeiroUsuarioResponse = resposta.getContent().get(0);
+        UsuarioResponseDTO segundoUsuarioResponse = resposta.getContent().get(1);
 
         assertAll(
                 () -> assertEquals(1L, primeiroUsuarioResponse.id()),
@@ -91,7 +101,7 @@ class UsuarioServiceTest {
                 () -> assertEquals("Bruno Lima", segundoUsuarioResponse.nome()),
                 () -> assertEquals("bruno.lima@teste.com", segundoUsuarioResponse.email())
         );
-        verify(usuarioRepository).findAll();
+        verify(usuarioRepository).findAll(any(Specification.class), same(pageable));
         verifyNoInteractions(
                 perfilCandidatoRepository,
                 perfilRecrutadorRepository,

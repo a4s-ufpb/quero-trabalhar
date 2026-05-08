@@ -2,6 +2,7 @@ package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.perfilRecrutador.PerfilRecrutadorUsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.AlterarSenhaRequestDTO;
+import com.QueroTrabalhar.domain.dtos.usuario.UsuarioFilterDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioAtualizacaoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioRequestDTO;
 import com.QueroTrabalhar.domain.dtos.usuario.UsuarioResponseDTO;
@@ -13,17 +14,18 @@ import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
 import com.QueroTrabalhar.repository.PerfilRecrutadorRepository;
 import com.QueroTrabalhar.repository.UsuarioRepository;
+import com.QueroTrabalhar.repository.specification.UsuarioSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
 import com.QueroTrabalhar.services.exceptions.DuplicateResourceException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
@@ -52,10 +54,9 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public List<UsuarioResponseDTO> listarTodosUsuarios() {
-        return usuarioRepository.findAll().stream()
-                .map(UsuarioResponseDTO::daEntidade)
-                .collect(Collectors.toList());
+    public Page<UsuarioResponseDTO> listarUsuarios(UsuarioFilterDTO filtro, Pageable pageable) {
+        return usuarioRepository.findAll(UsuarioSpecification.comFiltros(filtro), pageable)
+                .map(UsuarioResponseDTO::daEntidade);
     }
 
     @Transactional(readOnly = true)
