@@ -10,24 +10,59 @@ import com.QueroTrabalhar.domain.entity.localidade.Estado;
 import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.Modalidade;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(name = "OportunidadeDeEmpregoPublicaResponseDTO", description = "Dados públicos de uma oportunidade disponível nos endpoints públicos. Apenas oportunidades com localidade validada são expostas.")
 public record OportunidadeDeEmpregoPublicaResponseDTO(
+        @Schema(description = "Identificador da oportunidade.", example = "101")
         Long id,
+
+        @Schema(description = "Descrição pública da oportunidade.", example = "Desenvolvedor Backend Java 21 com Spring Boot.")
         String descricao,
+
+        @Schema(description = "Modalidade da oportunidade.", example = "REMOTO")
         Modalidade modalidade,
+
+        @Schema(description = "Identificador do tipo de emprego.", example = "3")
         Long tipoDeEmpregoId,
+
+        @Schema(description = "Título do tipo de emprego.", example = "Desenvolvedor Backend")
         String tipoDeEmprego,
+
+        @Schema(description = "Identificador do país da localidade validada.", example = "1")
         Long paisId,
+
+        @Schema(description = "Nome do país da localidade validada.", example = "Brasil")
         String pais,
+
+        @Schema(description = "Sigla do país da localidade validada.", example = "BR")
         String paisSigla,
+
+        @Schema(description = "Identificador do estado da localidade validada.", example = "25")
         Long estadoId,
+
+        @Schema(description = "Nome do estado da localidade validada.", example = "Paraíba")
         String estado,
+
+        @Schema(description = "Sigla do estado da localidade validada.", example = "PB")
         String estadoSigla,
+
+        @Schema(description = "Identificador da cidade da localidade validada.", example = "2507507")
         Long cidadeId,
+
+        @Schema(description = "Nome da cidade da localidade validada.", example = "João Pessoa")
         String cidade,
+
+        @Schema(description = "Identificador do recrutador que publicou a oportunidade.", example = "12")
         Long recrutadorId,
+
+        @Schema(description = "Nome do recrutador que publicou a oportunidade.", example = "Marina Lima")
         String recrutadorNome,
+
+        @Schema(description = "Identificador da empresa associada à publicação, quando houver.", example = "7")
         Long empresaId,
+
+        @Schema(description = "Nome da empresa associada à publicação, quando houver.", example = "Quero Trabalhar")
         String empresaNome
 ) {
     public static OportunidadeDeEmpregoPublicaResponseDTO daEntidade(OportunidadeDeEmprego entidade) {

@@ -12,28 +12,71 @@ import com.QueroTrabalhar.domain.entity.localidade.LocalidadePendente;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(name = "OportunidadeDeEmpregoResponseDTO", description = "Dados internos da oportunidade retornados em fluxos autenticados do recrutador.")
 public record OportunidadeDeEmpregoResponseDTO(
+        @Schema(description = "Identificador da oportunidade.", example = "101")
         Long id,
+
+        @Schema(description = "Descrição pública da oportunidade.", example = "Desenvolvedor Backend Java 21 com Spring Boot.")
         String descricao,
+
+        @Schema(description = "Modalidade da oportunidade.", example = "REMOTO")
         Modalidade modalidade,
+
+        @Schema(description = "Identificador do tipo de emprego.", example = "3")
         Long tipoDeEmpregoId,
+
+        @Schema(description = "Título do tipo de emprego.", example = "Desenvolvedor Backend")
         String tipoDeEmprego,
+
+        @Schema(description = "Identificador do país da localidade validada.", example = "1")
         Long paisId,
+
+        @Schema(description = "Nome do país da localidade validada.", example = "Brasil")
         String pais,
+
+        @Schema(description = "Sigla do país da localidade validada.", example = "BR")
         String paisSigla,
+
+        @Schema(description = "Identificador do estado da localidade validada.", example = "25")
         Long estadoId,
+
+        @Schema(description = "Nome do estado da localidade validada.", example = "Paraíba")
         String estado,
+
+        @Schema(description = "Sigla do estado da localidade validada.", example = "PB")
         String estadoSigla,
+
+        @Schema(description = "Identificador da cidade da localidade validada.", example = "2507507")
         Long cidadeId,
+
+        @Schema(description = "Nome da cidade da localidade validada.", example = "João Pessoa")
         String cidade,
+
+        @Schema(description = "Status interno da localidade da oportunidade. Campo de apoio ao dono do recurso e não utilizado como comportamento público.", example = "VALIDADA")
         String statusLocalidade,
+
+        @Schema(description = "Texto original informado para a localidade quando a oportunidade ficou pendente. Campo interno; oportunidades nesse estado não aparecem nos endpoints públicos.", example = "João Pessoa e região")
         String localidadeTextoOriginal,
+
+        @Schema(description = "Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso.", example = "PENDENTE_VALIDACAO")
         StatusValidacaoLocalidade statusValidacaoLocalidade,
+
+        @Schema(description = "Motivo registrado para a pendência de localidade. Campo interno do dono do recurso.", example = "Localidade não encontrada na base estruturada.")
         String motivoPendenciaLocalidade,
+
+        @Schema(description = "Identificador do recrutador dono da oportunidade.", example = "12")
         Long recrutadorId,
+
+        @Schema(description = "Nome do recrutador dono da oportunidade.", example = "Marina Lima")
         String recrutadorNome,
+
+        @Schema(description = "Identificador da empresa vinculada à publicação, quando houver.", example = "7")
         Long empresaId,
+
+        @Schema(description = "Nome da empresa vinculada à publicação, quando houver.", example = "Quero Trabalhar")
         String empresaNome
 ) {
     private static final String STATUS_LOCALIDADE_VALIDADA = "VALIDADA";
