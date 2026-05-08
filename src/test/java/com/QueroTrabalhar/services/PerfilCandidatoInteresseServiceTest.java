@@ -1,6 +1,7 @@
 package com.QueroTrabalhar.services;
 
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeInteresseCandidatoFilterDTO;
 import com.QueroTrabalhar.domain.entity.Empresa;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
@@ -23,6 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -37,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -62,9 +70,8 @@ class PerfilCandidatoInteresseServiceTest {
 
     @Test
     void deveDemonstrarInteresseEmVagaComCandidatoAutenticado() {
-        // Arrange
         Long vagaId = 100L;
-        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(1L, "João da Silva");
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(1L, "Joao da Silva");
         OportunidadeDeEmprego vaga = criarOportunidade(
                 vagaId,
                 "Pessoa desenvolvedora Java 21",
@@ -78,24 +85,21 @@ class PerfilCandidatoInteresseServiceTest {
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.of(vaga));
 
-        // Act
         perfilCandidatoService.demonstrarInteresseEmVaga(vagaId);
 
-        // Assert
         assertTrue(perfilCandidato.getVagasDeInteresse().contains(vaga));
         verify(perfilCandidatoRepository).save(perfilCandidato);
     }
 
     @Test
     void deveBloquearInteresseDuplicadoNaMesmaVaga() {
-        // Arrange
         Long vagaId = 101L;
-        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(2L, "Lívia Andrade");
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(2L, "Livia Andrade");
         OportunidadeDeEmprego vaga = criarOportunidade(
                 vagaId,
-                "Tech lead para microsserviços",
+                "Tech lead para microsservicos",
                 Modalidade.HIBRIDO,
-                criarTipoDeEmpregoAprovado(6L, "Liderança técnica"),
+                criarTipoDeEmpregoAprovado(6L, "Lideranca tecnica"),
                 criarPerfilRecrutador(21L, "Rafael Dias"),
                 null,
                 criarPais(1L, "Brasil", "BR")
@@ -105,7 +109,6 @@ class PerfilCandidatoInteresseServiceTest {
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.of(vaga));
 
-        // Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> perfilCandidatoService.demonstrarInteresseEmVaga(vagaId)
@@ -116,14 +119,12 @@ class PerfilCandidatoInteresseServiceTest {
 
     @Test
     void deveLancarObjectNotFoundExceptionQuandoVagaNaoExistirAoDemonstrarInteresse() {
-        // Arrange
         Long vagaId = 999L;
-        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(3L, "Érica Pires");
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(3L, "Erica Pires");
 
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.empty());
 
-        // Act / Assert
         assertThrows(
                 ObjectNotFoundException.class,
                 () -> perfilCandidatoService.demonstrarInteresseEmVaga(vagaId)
@@ -134,14 +135,13 @@ class PerfilCandidatoInteresseServiceTest {
 
     @Test
     void deveRemoverInteresseEmVagaComCandidatoAutenticado() {
-        // Arrange
         Long vagaId = 102L;
         PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(4L, "Carlos Henrique");
         OportunidadeDeEmprego vaga = criarOportunidade(
                 vagaId,
-                "Especialista em integrações REST",
+                "Especialista em integracoes REST",
                 Modalidade.PRESENCIAL,
-                criarTipoDeEmpregoAprovado(7L, "Integrações"),
+                criarTipoDeEmpregoAprovado(7L, "Integracoes"),
                 criarPerfilRecrutador(22L, "Fernanda Rocha"),
                 null,
                 criarPais(1L, "Brasil", "BR")
@@ -151,17 +151,14 @@ class PerfilCandidatoInteresseServiceTest {
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.of(vaga));
 
-        // Act
         perfilCandidatoService.removerInteresseEmVaga(vagaId);
 
-        // Assert
         assertFalse(perfilCandidato.getVagasDeInteresse().contains(vaga));
         verify(perfilCandidatoRepository).save(perfilCandidato);
     }
 
     @Test
     void deveBloquearRemocaoDeInteresseInexistente() {
-        // Arrange
         Long vagaId = 103L;
         PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(5L, "Ana Paula");
         OportunidadeDeEmprego vaga = criarOportunidade(
@@ -169,7 +166,7 @@ class PerfilCandidatoInteresseServiceTest {
                 "Desenvolvimento orientado a eventos",
                 Modalidade.REMOTO,
                 criarTipoDeEmpregoAprovado(8L, "Mensageria"),
-                criarPerfilRecrutador(23L, "Patrícia Mendes"),
+                criarPerfilRecrutador(23L, "Patricia Mendes"),
                 null,
                 criarPais(1L, "Brasil", "BR")
         );
@@ -177,7 +174,6 @@ class PerfilCandidatoInteresseServiceTest {
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.of(vaga));
 
-        // Act / Assert
         assertThrows(
                 BusinessRuleException.class,
                 () -> perfilCandidatoService.removerInteresseEmVaga(vagaId)
@@ -188,14 +184,12 @@ class PerfilCandidatoInteresseServiceTest {
 
     @Test
     void deveLancarObjectNotFoundExceptionQuandoVagaNaoExistirAoRemoverInteresse() {
-        // Arrange
         Long vagaId = 1000L;
-        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(6L, "Marcelo Júnior");
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(6L, "Marcelo Junior");
 
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
         when(oportunidadeDeEmpregoRepository.findById(vagaId)).thenReturn(Optional.empty());
 
-        // Act / Assert
         assertThrows(
                 ObjectNotFoundException.class,
                 () -> perfilCandidatoService.removerInteresseEmVaga(vagaId)
@@ -205,43 +199,48 @@ class PerfilCandidatoInteresseServiceTest {
     }
 
     @Test
-    void deveListarMinhasVagasDeInteresse() {
-        // Arrange
-        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(7L, "Joana D'Ávila");
-        PerfilRecrutador recrutador = criarPerfilRecrutador(30L, "Camila Araújo");
-        Empresa empresa = criarEmpresa(40L, "Inovação Pública");
+    void deveListarMinhasVagasDeInteresseEmPagina() {
+        PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(7L, "Joana DAvila");
+        PerfilRecrutador recrutador = criarPerfilRecrutador(30L, "Camila Araujo");
+        Empresa empresa = criarEmpresa(40L, "Inovacao Publica");
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id"));
         OportunidadeDeEmprego vaga = criarOportunidade(
                 104L,
-                "Backend Java para serviços digitais",
+                "Backend Java para servicos digitais",
                 Modalidade.HIBRIDO,
-                criarTipoDeEmpregoAprovado(9L, "Backend Sênior"),
+                criarTipoDeEmpregoAprovado(9L, "Backend Senior"),
                 recrutador,
                 empresa,
                 criarPais(1L, "Brasil", "BR")
         );
-        perfilCandidato.demonstrarInteresse(vaga);
 
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(vaga), pageable, 1)
+        );
 
-        // Act
-        List<?> resposta = perfilCandidatoService.listarMinhasVagasDeInteresse();
+        Page<?> resposta = perfilCandidatoService.listarMinhasVagasDeInteresse(
+                criarFiltroInteresseCandidatoVazio(),
+                pageable
+        );
 
-        // Assert
-        assertEquals(1, resposta.size());
-        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.get(0));
-        assertNotSame(vaga, resposta.get(0));
+        assertEquals(1, resposta.getTotalElements());
+        assertEquals(1, resposta.getContent().size());
+        assertInstanceOf(OportunidadeDeEmpregoResponseDTO.class, resposta.getContent().get(0));
+        assertNotSame(vaga, resposta.getContent().get(0));
 
-        OportunidadeDeEmpregoResponseDTO dto = (OportunidadeDeEmpregoResponseDTO) resposta.get(0);
+        OportunidadeDeEmpregoResponseDTO dto = (OportunidadeDeEmpregoResponseDTO) resposta.getContent().get(0);
         assertAll(
                 () -> assertEquals(104L, dto.id()),
-                () -> assertEquals("Backend Java para serviços digitais", dto.descricao()),
+                () -> assertEquals("Backend Java para servicos digitais", dto.descricao()),
                 () -> assertEquals(30L, dto.recrutadorId()),
-                () -> assertEquals("Camila Araújo", dto.recrutadorNome()),
+                () -> assertEquals("Camila Araujo", dto.recrutadorNome()),
                 () -> assertEquals(40L, dto.empresaId()),
-                () -> assertEquals("Inovação Pública", dto.empresaNome())
+                () -> assertEquals("Inovacao Publica", dto.empresaNome())
         );
         verify(usuarioAutenticadoService).obterPerfilCandidatoAutenticado();
-        verifyNoInteractions(oportunidadeDeEmpregoRepository, perfilCandidatoRepository);
+        verify(oportunidadeDeEmpregoRepository).findAll(any(Specification.class), eq(pageable));
+        verifyNoInteractions(perfilCandidatoRepository, localidadePendenteRepository);
     }
 
     @Test
@@ -249,6 +248,7 @@ class PerfilCandidatoInteresseServiceTest {
         PerfilCandidato perfilCandidato = criarPerfilCandidatoAutenticado(8L, "Carla Mendes");
         PerfilRecrutador recrutador = criarPerfilRecrutador(31L, "Renata Alves");
         TipoDeEmprego tipoDeEmprego = criarTipoDeEmpregoAprovado(10L, "Backend");
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "id"));
 
         OportunidadeDeEmprego vagaPendente = new OportunidadeDeEmprego(
                 "Fila tecnica 1",
@@ -269,9 +269,6 @@ class PerfilCandidatoInteresseServiceTest {
                 null
         );
         ReflectionTestUtils.setField(vagaPendente2, "id", 402L);
-
-        perfilCandidato.demonstrarInteresse(vagaPendente);
-        perfilCandidato.demonstrarInteresse(vagaPendente2);
 
         LocalidadePendente primeiraPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 "Vale Imaginario",
@@ -294,26 +291,51 @@ class PerfilCandidatoInteresseServiceTest {
         );
 
         when(usuarioAutenticadoService.obterPerfilCandidatoAutenticado()).thenReturn(perfilCandidato);
+        when(oportunidadeDeEmpregoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(
+                new PageImpl<>(List.of(vagaPendente, vagaPendente2), pageable, 2)
+        );
         when(localidadePendenteRepository.findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
                 org.mockito.ArgumentMatchers.eq(TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO),
                 org.mockito.ArgumentMatchers.eq(CampoLocalidadePendente.LOCALIDADE),
                 org.mockito.ArgumentMatchers.argThat(ids -> ids.size() == 2 && ids.containsAll(List.of(401L, 402L)))
         )).thenReturn(List.of(primeiraPendencia, segundaPendencia));
 
-        List<OportunidadeDeEmpregoResponseDTO> resposta = perfilCandidatoService.listarMinhasVagasDeInteresse();
+        Page<OportunidadeDeEmpregoResponseDTO> resposta = perfilCandidatoService.listarMinhasVagasDeInteresse(
+                criarFiltroInteresseCandidatoVazio(),
+                pageable
+        );
 
         assertAll(
-                () -> assertEquals(2, resposta.size()),
-                () -> assertTrue(resposta.stream().allMatch(dto -> "PENDENTE".equals(dto.statusLocalidade()))),
+                () -> assertEquals(2, resposta.getContent().size()),
+                () -> assertTrue(
+                        resposta.getContent().stream().allMatch(dto -> "PENDENTE".equals(dto.statusLocalidade()))
+                ),
                 () -> assertEquals(
                         Set.of("Vale Imaginario", "Serra do Sol Tech"),
-                        resposta.stream().map(OportunidadeDeEmpregoResponseDTO::localidadeTextoOriginal).collect(java.util.stream.Collectors.toSet())
+                        resposta.getContent().stream()
+                                .map(OportunidadeDeEmpregoResponseDTO::localidadeTextoOriginal)
+                                .collect(java.util.stream.Collectors.toSet())
                 )
         );
+        verify(oportunidadeDeEmpregoRepository).findAll(any(Specification.class), eq(pageable));
         verify(localidadePendenteRepository).findByTipoRecursoAndCampoAlvoAndRecursoIdInOrderByRecursoIdAscAtualizadaEmDescCriadaEmDesc(
                 org.mockito.ArgumentMatchers.eq(TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO),
                 org.mockito.ArgumentMatchers.eq(CampoLocalidadePendente.LOCALIDADE),
                 org.mockito.ArgumentMatchers.argThat(ids -> ids.size() == 2 && ids.containsAll(List.of(401L, 402L)))
+        );
+    }
+
+    private OportunidadeInteresseCandidatoFilterDTO criarFiltroInteresseCandidatoVazio() {
+        return new OportunidadeInteresseCandidatoFilterDTO(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -373,7 +395,7 @@ class PerfilCandidatoInteresseServiceTest {
     }
 
     private TipoDeEmprego criarTipoDeEmpregoAprovado(Long id, String titulo) {
-        TipoDeEmprego tipoDeEmprego = TipoDeEmprego.criarTipoDeEmpregoAdmin(titulo, "Descrição do tipo");
+        TipoDeEmprego tipoDeEmprego = TipoDeEmprego.criarTipoDeEmpregoAdmin(titulo, "Descricao do tipo");
         ReflectionTestUtils.setField(tipoDeEmprego, "id", id);
         return tipoDeEmprego;
     }

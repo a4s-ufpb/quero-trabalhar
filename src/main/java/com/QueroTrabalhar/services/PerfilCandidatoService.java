@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeInteresseCandidatoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.oportunidadeDeEmprego.OportunidadeDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.OportunidadeDeEmprego;
 import com.QueroTrabalhar.domain.entity.PerfilCandidato;
@@ -9,8 +10,11 @@ import com.QueroTrabalhar.domain.enums.TipoRecursoLocalidadePendente;
 import com.QueroTrabalhar.repository.LocalidadePendenteRepository;
 import com.QueroTrabalhar.repository.OportunidadeDeEmpregoRepository;
 import com.QueroTrabalhar.repository.PerfilCandidatoRepository;
+import com.QueroTrabalhar.repository.specification.OportunidadeInteresseCandidatoSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,17 +69,22 @@ public class PerfilCandidatoService {
     }
 
     @Transactional(readOnly = true)
-    public List<OportunidadeDeEmpregoResponseDTO> listarMinhasVagasDeInteresse() {
+    public Page<OportunidadeDeEmpregoResponseDTO> listarMinhasVagasDeInteresse(
+            OportunidadeInteresseCandidatoFilterDTO filtro,
+            Pageable pageable
+    ) {
         PerfilCandidato perfilCandidato = usuarioAutenticadoService.obterPerfilCandidatoAutenticado();
-        List<OportunidadeDeEmprego> vagasDeInteresse = perfilCandidato.getVagasDeInteresse().stream().toList();
-        Map<Long, LocalidadePendente> pendenciasPorOportunidade = mapearPendenciasPorOportunidade(vagasDeInteresse);
+        Page<OportunidadeDeEmprego> vagasDeInteresse = oportunidadeDeEmpregoRepository.findAll(
+                OportunidadeInteresseCandidatoSpecification.comFiltros(perfilCandidato.getId(), filtro),
+                pageable
+        );
+        Map<Long, LocalidadePendente> pendenciasPorOportunidade =
+                mapearPendenciasPorOportunidade(vagasDeInteresse.getContent());
 
-        return vagasDeInteresse.stream()
-                .map(vaga -> OportunidadeDeEmpregoResponseDTO.daEntidade(
-                        vaga,
-                        pendenciasPorOportunidade.get(vaga.getId())
-                ))
-                .toList();
+        return vagasDeInteresse.map(vaga -> OportunidadeDeEmpregoResponseDTO.daEntidade(
+                vaga,
+                pendenciasPorOportunidade.get(vaga.getId())
+        ));
     }
 
     private OportunidadeDeEmprego buscarVagaPorId(Long vagaId) {
