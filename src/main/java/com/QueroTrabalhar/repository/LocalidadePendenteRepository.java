@@ -10,6 +10,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Acesso de persistência para a fila técnica de {@link LocalidadePendente}.
+ *
+ * <p>Os métodos ordenados por atualização/criação atendem dois cenários centrais do módulo:
+ * recuperar a pendência mais recente de um recurso específico e reprocessar a fila aberta
+ * em ordem previsível.</p>
+ */
 @Repository
 public interface LocalidadePendenteRepository extends JpaRepository<LocalidadePendente, Long> {
 
@@ -55,6 +62,9 @@ public interface LocalidadePendenteRepository extends JpaRepository<LocalidadePe
         );
     }
 
+    /**
+     * Retorna a fila atualmente aberta para reprocessamento técnico.
+     */
     default List<LocalidadePendente> findPendenciasAbertas() {
         return findByStatusValidacaoOrderByAtualizadaEmAscCriadaEmAsc(
                 StatusValidacaoLocalidade.PENDENTE_VALIDACAO

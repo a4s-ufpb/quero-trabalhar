@@ -13,6 +13,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Converte um resultado único do Google Maps em uma {@link Localidade} coerente com o catálogo interno.
+ *
+ * <p>Esta classe existe para impedir que a integração externa atravesse o domínio sem validação.
+ * O resultado só é promovido quando a hierarquia país/estado/cidade vem consistente. Quando isso
+ * acontece, a conversão reaproveita ou cria registros internos para que a localidade validada
+ * continue sendo a fonte oficial persistida no banco.</p>
+ */
 @Service
 public class ConversorGoogleResultParaLocalidade {
 
@@ -30,8 +38,11 @@ public class ConversorGoogleResultParaLocalidade {
         this.cidadeRepository = cidadeRepository;
     }
 
+    /**
+     * Converte o retorno do Google para a representação oficial do domínio ou rejeita o resultado inconsistente.
+     */
     public ResultadoConversaoGoogleParaLocalidade converter(GoogleResult resultadoGoogle) {
-        // Google Maps e apenas fallback de validacao. So promovemos o resultado quando a hierarquia vier consistente.
+        // Google Maps é apenas fallback de validação. Só promovemos o resultado quando a hierarquia vier consistente.
         AddressComponent componentePais = extrairComponente(resultadoGoogle, "country");
         if (!componenteValido(componentePais)) {
             return ResultadoConversaoGoogleParaLocalidade.invalida("PAIS_AUSENTE");

@@ -22,6 +22,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * Reprocessa pendências já persistidas tentando promovê-las para localidade validada.
+ *
+ * <p>Diferente do fluxo normal de cadastro, este serviço nunca cria uma nova {@link LocalidadePendente}.
+ * Ele reutiliza a pendência existente, executa novamente a tentativa pura de resolução e, conforme o
+ * resultado, ou aplica a localidade oficial ao recurso dono e remove a fila, ou apenas atualiza o motivo
+ * técnico da pendência.</p>
+ *
+ * <p>O reencontro com o recurso é feito pelo trio tipo/id/campo porque {@code Empresa} e
+ * {@code OportunidadeDeEmprego} não referenciam a pendência diretamente.</p>
+ */
 @Service
 public class LocalidadePendenteReprocessamentoService {
 
@@ -47,11 +58,17 @@ public class LocalidadePendenteReprocessamentoService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
+    /**
+     * Lista a fila técnica aberta na ordem usada pelo reprocessamento.
+     */
     @Transactional(readOnly = true)
     public List<LocalidadePendente> buscarPendenciasAbertas() {
         return localidadePendenteRepository.findPendenciasAbertas();
     }
 
+    /**
+     * Reprocessa todas as pendências abertas sem criar novos registros para o mesmo problema.
+     */
     public List<ResultadoReprocessamentoPendencia> reprocessarPendenciasAbertas() {
         List<Long> pendenciaIds = buscarPendenciasAbertas().stream()
                 .map(LocalidadePendente::getId)
@@ -65,6 +82,9 @@ public class LocalidadePendenteReprocessamentoService {
         return List.copyOf(resultados);
     }
 
+    /**
+     * Reprocessa uma pendência específica em transação isolada.
+     */
     public ResultadoReprocessamentoPendencia reprocessarPendencia(Long pendenciaId) {
         try {
             return Objects.requireNonNull(
@@ -107,6 +127,7 @@ public class LocalidadePendenteReprocessamentoService {
         }
 
         FluxoResolucaoLocalidadeService.ResultadoTentativaResolucaoLocalidade resultadoTentativa =
+                // O reprocessamento reaproveita o fluxo puro para não duplicar LocalidadePendente.
                 fluxoResolucaoLocalidadeService.resolver(pendencia.getTextoOriginal());
 
         if (resultadoTentativa.resolvida()) {
@@ -265,6 +286,9 @@ public class LocalidadePendenteReprocessamentoService {
         }
     }
 
+    /**
+     * Estados técnicos possíveis ao fim de uma rodada de reprocessamento.
+     */
     enum StatusReprocessamentoPendencia {
         RESOLVIDA,
         MANTIDA,
@@ -273,6 +297,9 @@ public class LocalidadePendenteReprocessamentoService {
         FALHA
     }
 
+    /**
+     * Resultado técnico do reprocessamento de uma pendência específica.
+     */
     public record ResultadoReprocessamentoPendencia(
             Long pendenciaId,
             StatusReprocessamentoPendencia status

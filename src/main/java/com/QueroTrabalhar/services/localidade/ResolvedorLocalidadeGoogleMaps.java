@@ -12,6 +12,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Executa o fallback de integração externa para resolução de localidade.
+ *
+ * <p>O Google Maps só entra em cena depois que a base interna oficial não resolve o texto.
+ * A integração fica encapsulada nesta etapa para não contaminar consultas públicas com fonte
+ * externa. Resultados ambíguos, ausentes ou estruturalmente inválidos não são escolhidos
+ * automaticamente; nesses casos o fluxo devolve motivo para manter ou criar pendência.</p>
+ */
 @Service
 public class ResolvedorLocalidadeGoogleMaps {
 
@@ -34,6 +42,9 @@ public class ResolvedorLocalidadeGoogleMaps {
         this.conversorGoogleResultParaLocalidade = conversorGoogleResultParaLocalidade;
     }
 
+    /**
+     * Consulta a integração externa e retorna uma localidade validada apenas quando há resultado único e coerente.
+     */
     public ResultadoResolucaoGoogleMaps resolver(String textoNormalizado, String textoHash) {
         int maxAttempts = Math.max(1, googleMapsRetryMaxAttempts);
         logger.info(
@@ -90,7 +101,7 @@ public class ResolvedorLocalidadeGoogleMaps {
                     calcularDuracaoMs(inicioConsulta),
                     exception.getClass().getSimpleName()
             );
-            logger.debug("Detalhes da falha transitoria durante a resolucao de localidade.", exception);
+            logger.debug("Detalhes da falha transitória durante a resolução de localidade.", exception);
             return ResultadoConsultaGoogleMaps.retryFalhaExterna();
         }
 

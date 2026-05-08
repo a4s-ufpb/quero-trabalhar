@@ -14,6 +14,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Tenta resolver a localidade exclusivamente no catálogo interno já validado.
+ *
+ * <p>Esta é a primeira etapa do processo porque a base interna é a fonte oficial do domínio.
+ * Quando mais de uma combinação é compatível com o texto informado, o resolvedor não escolhe
+ * automaticamente para evitar associação incorreta de país, estado ou cidade.</p>
+ */
 @Service
 public class ResolvedorLocalidadeBaseInterna {
 
@@ -33,6 +40,9 @@ public class ResolvedorLocalidadeBaseInterna {
         this.paisRepository = paisRepository;
     }
 
+    /**
+     * Procura uma correspondência única e oficial na base interna.
+     */
     public ResultadoResolucaoBaseInterna resolver(String textoNormalizado, String textoHash) {
         List<Cidade> cidades = cidadeRepository.findAllByNomeIgnoreCase(textoNormalizado);
         List<Estado> estados = estadoRepository.findAllByNomeIgnoreCase(textoNormalizado);
@@ -40,7 +50,7 @@ public class ResolvedorLocalidadeBaseInterna {
 
         int quantidadePossibilidades = cidades.size() + estados.size() + (paisOptional.isPresent() ? 1 : 0);
         if (quantidadePossibilidades > 1) {
-            // A base interna nao deve escolher automaticamente entre resultados compativeis.
+            // A base interna não deve escolher automaticamente entre resultados compatíveis.
             logger.warn(
                     "event=localidade_base_interna_ambigua textoHash={} quantidadeCidades={} quantidadeEstados={} quantidadePaises={} quantidadePossibilidades={} acao=PENDENCIA",
                     textoHash,

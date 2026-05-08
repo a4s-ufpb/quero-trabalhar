@@ -13,6 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Expõe o catálogo oficial de localidades já validadas no banco interno.
+ *
+ * <p>As consultas deste serviço não usam pendências nem integração externa. A separação existe para que
+ * endpoints públicos retornem apenas dados oficiais e para manter o Google Maps restrito ao fluxo técnico
+ * de resolução usado durante cadastros e reprocessamentos.</p>
+ */
 @Service
 public class LocalidadeService {
 
@@ -43,7 +50,6 @@ public class LocalidadeService {
         Pais pais = paisRepository.findById(paisId)
                 .orElseThrow(() -> new IllegalArgumentException("País não encontrado."));
 
-        // Catalogo oficial: consultas publicas usam apenas localidades ja validadas internamente.
         return estadoRepository.findByPaisAndNomeContainingIgnoreCase(pais, termoBusca)
                 .stream()
                 .map(EstadoResponseDTO::daEntidade)
@@ -55,7 +61,6 @@ public class LocalidadeService {
         Estado estado = estadoRepository.findById(estadoId)
                 .orElseThrow(() -> new IllegalArgumentException("Estado não encontrado."));
 
-        // Catalogo oficial: Google Maps fica restrito ao fluxo de resolucao, nao ao catalogo publico.
         return cidadeRepository.findByEstadoAndNomeContainingIgnoreCase(estado, termoBusca)
                 .stream()
                 .map(CidadeResponseDTO::daEntidade)

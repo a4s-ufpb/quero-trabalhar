@@ -4,6 +4,14 @@ import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Concentra a tentativa pura de resolução de localidade, sem persistir pendências.
+ *
+ * <p>A separação desta classe evita duplicar regra de decisão entre o fluxo normal de cadastro
+ * e o reprocessamento da fila técnica. Primeiro ela consulta o catálogo interno oficial; só depois
+ * aciona o Google Maps como detalhe de integração encapsulado. Ambiguidades ou falhas retornam
+ * apenas o motivo técnico da pendência.</p>
+ */
 @Service
 class FluxoResolucaoLocalidadeService {
 
@@ -18,6 +26,9 @@ class FluxoResolucaoLocalidadeService {
         this.resolvedorLocalidadeGoogleMaps = resolvedorLocalidadeGoogleMaps;
     }
 
+    /**
+     * Tenta resolver o texto informado sem efeitos colaterais de persistência.
+     */
     ResultadoTentativaResolucaoLocalidade resolver(String textoLivre) {
         String textoNormalizado = normalizarTextoObrigatorio(textoLivre);
         String textoHash = gerarTextoHash(textoNormalizado);
@@ -88,6 +99,12 @@ class FluxoResolucaoLocalidadeService {
         GOOGLE_MAPS
     }
 
+    /**
+     * Resultado imutável da tentativa de resolução.
+     *
+     * <p>Por contrato, a instância carrega exatamente uma destas informações: uma localidade validada
+     * pronta para uso no domínio ou um motivo técnico de pendência.</p>
+     */
     record ResultadoTentativaResolucaoLocalidade(
             String textoNormalizado,
             String textoHash,
@@ -103,7 +120,7 @@ class FluxoResolucaoLocalidadeService {
 
             if (possuiLocalidadeValidada == possuiMotivoPendencia) {
                 throw new IllegalArgumentException(
-                        "A tentativa de resolucao deve conter localidade validada ou motivo de pendencia."
+                        "A tentativa de resolução deve conter localidade validada ou motivo de pendência."
                 );
             }
         }

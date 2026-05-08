@@ -7,6 +7,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Orquestra o fluxo normal de resolução de localidade durante cadastro e atualização de recursos.
+ *
+ * <p>Este serviço decide se o texto livre pode ser promovido imediatamente para uma localidade validada
+ * ou se precisa virar {@link LocalidadePendente}. A tentativa de resolução fica separada em um fluxo puro;
+ * a criação da pendência acontece apenas aqui, no caminho normal do domínio.</p>
+ */
 @Service
 public class LocalidadeResolucaoService {
 
@@ -23,6 +30,9 @@ public class LocalidadeResolucaoService {
         this.registroLocalidadePendenteService = registroLocalidadePendenteService;
     }
 
+    /**
+     * Resolve uma localidade no fluxo normal do cadastro e registra pendência quando não há validação segura.
+     */
     @Transactional
     public ResultadoResolucaoLocalidade resolver(String textoLivre) {
         long inicioResolucao = System.nanoTime();
@@ -59,6 +69,12 @@ public class LocalidadeResolucaoService {
         );
     }
 
+    /**
+     * Executa apenas a tentativa de resolução, sem criar ou atualizar a fila de pendências.
+     *
+     * <p>Esse atalho existe para o reprocessamento técnico de pendências já persistidas, evitando duplicar
+     * registros de {@link LocalidadePendente} para o mesmo texto.</p>
+     */
     FluxoResolucaoLocalidadeService.ResultadoTentativaResolucaoLocalidade resolverSemRegistrarPendencia(
             String textoLivre
     ) {
@@ -73,7 +89,7 @@ public class LocalidadeResolucaoService {
             long inicioResolucao
     ) {
         // A localidade validada continua sendo a fonte oficial.
-        // A pendencia apenas preserva o texto original ate a confirmacao futura do usuario.
+        // A pendência apenas preserva o texto original até uma evolução futura do fluxo.
         LocalidadePendente localidadePendente = registroLocalidadePendenteService.registrar(
                 textoNormalizado,
                 motivoPendencia,

@@ -20,6 +20,22 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/**
+ * Representa uma localidade que ainda não pôde ser promovida para uma {@link Localidade} validada.
+ *
+ * <p>Esta entidade existe como fila técnica temporária de resolução. Ela preserva o texto informado
+ * no cadastro quando o sistema não consegue confirmar, com segurança, uma localidade oficial no banco.
+ * Enquanto a pendência existir, o recurso associado não deve ser tratado como pronto para exposição
+ * em endpoints públicos.</p>
+ *
+ * <p>O vínculo com o recurso dono é mantido de forma genérica por tipo, identificador e campo alvo.
+ * Essa escolha evita acoplar {@code Empresa} e {@code OportunidadeDeEmprego} a um estado transitório
+ * do fluxo de validação e permite reprocessar a fila sem depender de referência direta dessas entidades
+ * para a pendência.</p>
+ *
+ * <p>No MVP a pendência ainda não oferece confirmação manual de sugestão, notificação automática ao
+ * dono do recurso nem ownership formal de empresa. Esses comportamentos permanecem como evolução futura.</p>
+ */
 @Entity
 @Table(
         name = "localidade_pendente",
@@ -104,10 +120,23 @@ public class LocalidadePendente {
     protected LocalidadePendente() {
     }
 
+    /**
+     * Cria uma pendência aberta apenas com o texto informado pelo usuário.
+     *
+     * <p>Esta sobrecarga atende fluxos em que a pendência ainda não precisa estar associada a um recurso
+     * específico, mantendo a localidade validada como única fonte oficial do domínio.</p>
+     */
     public static LocalidadePendente criarPendenteInformadaPeloUsuario(String textoOriginal, String motivoPendencia) {
         return criarPendenteInformadaPeloUsuario(textoOriginal, motivoPendencia, null, null, null);
     }
 
+    /**
+     * Cria uma pendência aberta já vinculada ao recurso dono por identificador genérico.
+     *
+     * <p>O uso do trio {@code tipoRecurso}/{@code recursoId}/{@code campoAlvo} permite reprocessar a fila
+     * e informar o próprio dono em fluxos autenticados, como endpoints {@code /me}, sem transformar a
+     * pendência em relacionamento permanente do domínio público.</p>
+     */
     public static LocalidadePendente criarPendenteInformadaPeloUsuario(
             String textoOriginal,
             String motivoPendencia,
@@ -191,10 +220,16 @@ public class LocalidadePendente {
         return campoAlvo;
     }
 
+    /**
+     * Indica se a pendência já conhece o recurso responsável pelo texto que falhou na validação.
+     */
     public boolean possuiDonoGenerico() {
         return tipoRecurso != null && recursoId != null && campoAlvo != null;
     }
 
+    /**
+     * Define o recurso dono da pendência sem introduzir referência direta da entidade de negócio para esta fila.
+     */
     public void definirDonoGenerico(
             TipoRecursoLocalidadePendente tipoRecurso,
             Long recursoId,
@@ -271,7 +306,7 @@ public class LocalidadePendente {
 
         if (!todosNulos && !todosPreenchidos) {
             throw new BusinessRuleException(
-                    "O dono generico da localidade pendente deve ser informado de forma completa."
+                    "O dono genérico da localidade pendente deve ser informado de forma completa."
             );
         }
 

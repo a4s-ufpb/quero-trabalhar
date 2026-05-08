@@ -9,6 +9,12 @@ import org.springframework.stereotype.Component;
 import java.util.EnumMap;
 import java.util.List;
 
+/**
+ * Dispara periodicamente o reprocessamento da fila de localidades pendentes.
+ *
+ * <p>O scheduler não contém regra de negócio. Sua responsabilidade é apenas verificar se a rotina
+ * está habilitada, delegar a execução ao serviço apropriado e registrar métricas operacionais do lote.</p>
+ */
 @Component
 public class LocalidadePendenteReprocessamentoScheduler {
 
@@ -25,6 +31,9 @@ public class LocalidadePendenteReprocessamentoScheduler {
         this.reprocessamentoEnabled = reprocessamentoEnabled;
     }
 
+    /**
+     * Aciona uma rodada de reprocessamento técnico das pendências abertas.
+     */
     @Scheduled(fixedDelayString = "${localidade.pendente.reprocessamento.fixed-delay-ms:600000}")
     public void reprocessarPendenciasAbertas() {
         if (!reprocessamentoEnabled) {

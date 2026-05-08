@@ -10,6 +10,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
+/**
+ * Centraliza a criação e atualização da fila técnica de {@link LocalidadePendente}.
+ *
+ * <p>O objetivo deste serviço é impedir que a pendência seja criada de forma espalhada pelo domínio.
+ * A entidade de negócio continua carregando apenas a localidade validada, enquanto a fila técnica
+ * registra o texto pendente e, quando necessário, a associação genérica com o recurso dono.</p>
+ */
 @Service
 public class RegistroLocalidadePendenteService {
 
@@ -21,6 +28,9 @@ public class RegistroLocalidadePendenteService {
         this.localidadePendenteRepository = localidadePendenteRepository;
     }
 
+    /**
+     * Registra uma pendência sem associá-la imediatamente a um recurso específico.
+     */
     public LocalidadePendente registrar(
             String textoNormalizado,
             MotivoPendenciaLocalidade motivoPendencia,
@@ -40,6 +50,12 @@ public class RegistroLocalidadePendenteService {
         );
     }
 
+    /**
+     * Registra uma nova pendência já vinculada ao recurso que falhou na validação.
+     *
+     * <p>Este é o ponto que materializa a fila técnica temporária. O registro preserva o texto original
+     * para reprocessamento futuro, mas não transforma a pendência em estado público normal do recurso.</p>
+     */
     public LocalidadePendente registrar(
             String textoNormalizado,
             MotivoPendenciaLocalidade motivoPendencia,
@@ -50,7 +66,7 @@ public class RegistroLocalidadePendenteService {
             int tentativasExecutadas,
             long inicioResolucao
     ) {
-        // A pendencia continua sendo um fallback tecnico interno e nao substitui a localidade validada.
+        // A pendência continua sendo um fallback técnico interno e não substitui a localidade validada.
         LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 textoNormalizado,
                 motivoPendencia.descricao(),
@@ -76,6 +92,13 @@ public class RegistroLocalidadePendenteService {
         return localidadePendenteSalva;
     }
 
+    /**
+     * Associa a pendência existente ao recurso dono por tipo, id e campo alvo.
+     *
+     * <p>Esse vínculo genérico permite que o próprio dono enxergue o status da pendência em fluxos
+     * autenticados e que o reprocessamento consiga reencontrar o recurso sem criar dependência direta
+     * da entidade de negócio para {@link LocalidadePendente}.</p>
+     */
     public LocalidadePendente associarDonoGenerico(
             LocalidadePendente localidadePendente,
             TipoRecursoLocalidadePendente tipoRecurso,
@@ -89,8 +112,8 @@ public class RegistroLocalidadePendenteService {
             return localidadePendente;
         }
 
-        // Mantemos o FK legado nas entidades durante a migracao, mas a pendencia agora conhece
-        // o recurso dono para preparar o reprocessamento tecnico futuro.
+        // Mantemos o FK legado nas entidades durante a migração, mas a pendência agora conhece
+        // o recurso dono para preparar o reprocessamento técnico sem acoplá-lo ao modelo público.
         localidadePendente.definirDonoGenerico(tipoRecurso, recursoId, campoAlvo);
         return localidadePendenteRepository.save(localidadePendente);
     }
