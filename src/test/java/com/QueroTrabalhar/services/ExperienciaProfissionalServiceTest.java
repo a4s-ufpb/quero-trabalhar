@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalFilterDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalRequestDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalResponseDTO;
 import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
@@ -16,6 +17,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -417,21 +424,35 @@ class ExperienciaProfissionalServiceTest {
                 LocalDate.of(2020, 1, 1),
                 LocalDate.of(2022, 10, 31)
         );
+        ExperienciaProfissionalFilterDTO filtro = new ExperienciaProfissionalFilterDTO(
+                "  platform  ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id"));
 
-        when(experienciaProfissionalRepository.findAll()).thenReturn(List.of(primeiraExperiencia, segundaExperiencia));
+        when(experienciaProfissionalRepository.findAll(any(Specification.class), same(pageable)))
+                .thenReturn(new PageImpl<>(List.of(primeiraExperiencia, segundaExperiencia), pageable, 2));
 
         // Act
-        List<?> resposta = experienciaProfissionalService.listarTodasExperienciasComoAdmin();
+        Page<?> resposta = experienciaProfissionalService.listarTodasExperienciasComoAdmin(filtro, pageable);
 
         // Assert
-        assertEquals(2, resposta.size());
-        assertInstanceOf(ExperienciaProfissionalResponseDTO.class, resposta.get(0));
-        assertInstanceOf(ExperienciaProfissionalResponseDTO.class, resposta.get(1));
-        assertNotSame(primeiraExperiencia, resposta.get(0));
-        assertNotSame(segundaExperiencia, resposta.get(1));
+        assertEquals(2, resposta.getTotalElements());
+        assertEquals(2, resposta.getContent().size());
+        assertInstanceOf(ExperienciaProfissionalResponseDTO.class, resposta.getContent().get(0));
+        assertInstanceOf(ExperienciaProfissionalResponseDTO.class, resposta.getContent().get(1));
+        assertNotSame(primeiraExperiencia, resposta.getContent().get(0));
+        assertNotSame(segundaExperiencia, resposta.getContent().get(1));
 
-        ExperienciaProfissionalResponseDTO primeiroDto = (ExperienciaProfissionalResponseDTO) resposta.get(0);
-        ExperienciaProfissionalResponseDTO segundoDto = (ExperienciaProfissionalResponseDTO) resposta.get(1);
+        ExperienciaProfissionalResponseDTO primeiroDto =
+                (ExperienciaProfissionalResponseDTO) resposta.getContent().get(0);
+        ExperienciaProfissionalResponseDTO segundoDto =
+                (ExperienciaProfissionalResponseDTO) resposta.getContent().get(1);
         assertAll(
                 () -> assertEquals(109L, primeiroDto.id()),
                 () -> assertEquals(20L, primeiroDto.tipoDeEmprego()),
@@ -441,7 +462,7 @@ class ExperienciaProfissionalServiceTest {
                 () -> assertEquals("Confiabilidade e incidentes", segundoDto.descricao())
         );
 
-        verify(experienciaProfissionalRepository).findAll();
+        verify(experienciaProfissionalRepository).findAll(any(Specification.class), same(pageable));
         verifyNoInteractions(tipoDeEmpregoRepository, usuarioAutenticadoService);
     }
 

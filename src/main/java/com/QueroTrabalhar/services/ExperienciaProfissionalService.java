@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalFilterDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalRequestDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalResponseDTO;
 import com.QueroTrabalhar.domain.entity.ExperienciaProfissional;
@@ -7,8 +8,11 @@ import com.QueroTrabalhar.domain.entity.PerfilCandidato;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.repository.ExperienciaProfissionalRepository;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import com.QueroTrabalhar.repository.specification.ExperienciaProfissionalSpecification;
 import com.QueroTrabalhar.services.exceptions.BusinessRuleException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,10 +96,15 @@ public class ExperienciaProfissionalService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExperienciaProfissionalResponseDTO> listarTodasExperienciasComoAdmin() {
-        return experienciaProfissionalRepository.findAll().stream()
-                .map(ExperienciaProfissionalResponseDTO::daEntidade)
-                .toList();
+    public Page<ExperienciaProfissionalResponseDTO> listarTodasExperienciasComoAdmin(
+            ExperienciaProfissionalFilterDTO filtro,
+            Pageable pageable
+    ) {
+        return experienciaProfissionalRepository.findAll(
+                        ExperienciaProfissionalSpecification.comFiltros(filtro),
+                        pageable
+                )
+                .map(ExperienciaProfissionalResponseDTO::daEntidade);
     }
 
     @Transactional(readOnly = true)

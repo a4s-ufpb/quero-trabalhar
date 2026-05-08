@@ -1,9 +1,15 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalFilterDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalRequestDTO;
 import com.QueroTrabalhar.domain.dtos.experienciaProfissional.ExperienciaProfissionalResponseDTO;
 import com.QueroTrabalhar.services.ExperienciaProfissionalService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,8 +19,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/experiencias")
@@ -28,8 +32,12 @@ public class ExperienciaProfissionalAdminController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ExperienciaProfissionalResponseDTO>> listarTodasAsExperiencias() {
-        return ResponseEntity.ok(experienciaService.listarTodasExperienciasComoAdmin());
+    public ResponseEntity<Page<ExperienciaProfissionalResponseDTO>> listarTodasAsExperiencias(
+            @Valid @ParameterObject ExperienciaProfissionalFilterDTO filtro,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(experienciaService.listarTodasExperienciasComoAdmin(filtro, pageable));
     }
 
     @GetMapping("/{id}")
