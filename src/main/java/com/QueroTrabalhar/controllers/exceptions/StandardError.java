@@ -2,15 +2,21 @@ package com.QueroTrabalhar.controllers.exceptions;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(name = "StandardError", description = "Modelo padrão de erro retornado pela API.")
 public class StandardError  {
+    @Schema(description = "Momento em que o erro ocorreu, em milissegundos desde epoch.", example = "1746727687000")
     private Long timestamp;
 
+    @Schema(description = "Código HTTP da resposta.", example = "401")
     private Integer status;
 
+    @Schema(description = "Resumo do tipo de erro.", example = "Não autorizado")
     private String error;
 
+    @Schema(description = "Mensagem detalhando o erro retornado pela API.", example = "E-mail ou senha inválidos.")
     private String message;
 
+    @Schema(description = "Caminho da requisição que gerou o erro.", example = "/login")
     private String path;
 
     public StandardError() {
