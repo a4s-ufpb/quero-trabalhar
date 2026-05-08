@@ -14,6 +14,14 @@ import com.QueroTrabalhar.domain.enums.Modalidade;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Representa a resposta interna das oportunidades em fluxos autenticados do recrutador.
+ *
+ * <p>Além dos dados públicos da vaga, o DTO pode expor status de localidade, texto original e motivo de pendência,
+ * porque essas informações são úteis para o dono do recurso entender por que a oportunidade ainda não aparece nos
+ * endpoints públicos. O contrato também explicita quem é o recrutador dono e se a publicação está associada a uma
+ * empresa.</p>
+ */
 @Schema(name = "OportunidadeDeEmpregoResponseDTO", description = "Dados internos da oportunidade retornados em fluxos autenticados do recrutador.")
 public record OportunidadeDeEmpregoResponseDTO(
         @Schema(description = "Identificador da oportunidade.", example = "101")
@@ -86,6 +94,9 @@ public record OportunidadeDeEmpregoResponseDTO(
         return daEntidade(entidade, null);
     }
 
+    /**
+     * Converte a entidade para a visão interna, ocultando pendência antiga quando a localidade já estiver validada.
+     */
     public static OportunidadeDeEmpregoResponseDTO daEntidade(
             OportunidadeDeEmprego entidade,
             LocalidadePendente localidadePendente

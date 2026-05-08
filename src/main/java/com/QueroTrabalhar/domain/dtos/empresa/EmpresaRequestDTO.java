@@ -6,6 +6,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Contrato de entrada do cadastro autenticado de empresas.
+ *
+ * <p>O DTO aceita dois modos de informar localidade: por IDs já validados no catálogo interno ou por texto livre para
+ * resolução técnica. Quando qualquer ID é enviado, esse caminho tem precedência sobre {@code localidadeTexto}. O DTO
+ * não carrega campos de ownership porque essa relação formal ainda não existe no MVP.</p>
+ */
 @Schema(name = "EmpresaRequestDTO", description = "Dados para cadastro de empresa em fluxo autenticado.")
 public record EmpresaRequestDTO(
         @NotBlank(message = "O nome da empresa é obrigatório.")

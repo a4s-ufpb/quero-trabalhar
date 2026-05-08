@@ -12,6 +12,12 @@ import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.Modalidade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Representa a projeção pública de uma oportunidade.
+ *
+ * <p>O DTO deliberadamente não expõe detalhes de {@code LocalidadePendente} nem campos internos de suporte ao dono do
+ * recurso. Ele assume que a vaga já foi filtrada pela camada pública e, portanto, só carrega dados consolidados.</p>
+ */
 @Schema(name = "OportunidadeDeEmpregoPublicaResponseDTO", description = "Dados públicos de uma oportunidade disponível nos endpoints públicos. Apenas oportunidades com localidade validada são expostas.")
 public record OportunidadeDeEmpregoPublicaResponseDTO(
         @Schema(description = "Identificador da oportunidade.", example = "101")
@@ -65,6 +71,9 @@ public record OportunidadeDeEmpregoPublicaResponseDTO(
         @Schema(description = "Nome da empresa associada à publicação, quando houver.", example = "Quero Trabalhar")
         String empresaNome
 ) {
+    /**
+     * Converte a entidade para a visão pública já filtrada pelas regras de localidade validada.
+     */
     public static OportunidadeDeEmpregoPublicaResponseDTO daEntidade(OportunidadeDeEmprego entidade) {
         TipoDeEmprego tipoDeEmprego = entidade.getTipoDeEmprego();
         Localidade localidade = entidade.getLocalizacao();

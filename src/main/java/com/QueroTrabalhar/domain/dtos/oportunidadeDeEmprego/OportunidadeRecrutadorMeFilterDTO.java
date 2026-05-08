@@ -6,6 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Agrupa os filtros da visão interna de oportunidades do recrutador autenticado.
+ *
+ * <p>Não existe campo de {@code recrutadorId} porque o escopo de {@code /me} é determinado pelo usuário autenticado.
+ * Diferentemente da API pública, este DTO pode pedir explicitamente vagas com localidade pendente para apoiar a
+ * gestão do próprio recurso.</p>
+ */
 @Schema(name = "OportunidadeRecrutadorMeFilterDTO", description = "Filtros disponíveis na listagem paginada das oportunidades do recrutador autenticado.")
 public record OportunidadeRecrutadorMeFilterDTO(
         @Size(max = 500, message = "O termo de busca deve ter no máximo 500 caracteres.")

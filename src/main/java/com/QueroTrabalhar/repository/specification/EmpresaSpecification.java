@@ -9,11 +9,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Centraliza os filtros do catálogo público de empresas.
+ *
+ * <p>A specification sempre injeta a restrição de localidade validada antes de aplicar filtros opcionais de texto ou
+ * recorte geográfico. Isso garante que empresas pendentes não escapem para endpoints públicos por combinação de
+ * parâmetros.</p>
+ */
 public final class EmpresaSpecification {
 
     private EmpresaSpecification() {
     }
 
+    /**
+     * Monta os predicados da listagem pública de empresas.
+     */
     public static Specification<Empresa> comFiltros(EmpresaFilterDTO filtro) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();

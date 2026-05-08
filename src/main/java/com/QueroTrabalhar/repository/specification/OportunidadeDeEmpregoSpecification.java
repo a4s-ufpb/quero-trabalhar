@@ -11,11 +11,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Centraliza os filtros do catálogo público de oportunidades.
+ *
+ * <p>Tanto a listagem global quanto a listagem pública por empresa passam pela mesma regra-base: somente
+ * oportunidades com localidade validada entram no resultado. Os demais filtros apenas refinam esse conjunto.</p>
+ */
 public final class OportunidadeDeEmpregoSpecification {
 
     private OportunidadeDeEmpregoSpecification() {
     }
 
+    /**
+     * Monta os predicados da listagem pública geral de oportunidades.
+     */
     public static Specification<OportunidadeDeEmprego> comFiltros(OportunidadeDeEmpregoFilterDTO filtro) {
         return comFiltrosInternos(
                 filtro == null ? null : filtro.termo(),
@@ -29,6 +38,12 @@ public final class OportunidadeDeEmpregoSpecification {
         );
     }
 
+    /**
+     * Monta os predicados da listagem pública de oportunidades dentro do contexto de uma empresa.
+     *
+     * <p>O identificador da empresa vem do path na camada HTTP e é injetado aqui como escopo fixo, sem depender de
+     * query parameter do cliente.</p>
+     */
     public static Specification<OportunidadeDeEmprego> comFiltrosDaEmpresa(
             Long empresaId,
             OportunidadesDaEmpresaFilterDTO filtro

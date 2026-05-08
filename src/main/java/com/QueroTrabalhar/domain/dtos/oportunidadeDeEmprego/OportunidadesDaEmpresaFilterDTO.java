@@ -5,6 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Agrupa os filtros da navegação pública de oportunidades dentro de uma empresa.
+ *
+ * <p>O identificador da empresa não faz parte deste DTO porque o escopo vem do parâmetro de caminho do endpoint. Os
+ * campos aqui presentes apenas refinam as vagas públicas já pertencentes à empresa selecionada.</p>
+ */
 @Schema(name = "OportunidadesDaEmpresaFilterDTO", description = "Filtros disponíveis na listagem pública de oportunidades de uma empresa.")
 public record OportunidadesDaEmpresaFilterDTO(
         @Size(max = 500, message = "O termo de busca deve ter no máximo 500 caracteres.")

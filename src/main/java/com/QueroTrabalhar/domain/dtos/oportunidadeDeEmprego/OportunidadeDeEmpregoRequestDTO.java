@@ -7,6 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Contrato de entrada para criação e atualização de oportunidades pelo recrutador autenticado.
+ *
+ * <p>O DTO não expõe {@code recrutadorId} porque a autoria da vaga é definida pelo contexto autenticado do endpoint.
+ * A localidade segue a mesma regra do módulo de empresa: IDs estruturados têm precedência sobre texto livre. O campo
+ * {@code publicarComoEmpresa} apenas solicita o contexto desejado; a associação final depende das validações de
+ * vínculo do recrutador com a empresa.</p>
+ */
 @Schema(name = "OportunidadeDeEmpregoRequestDTO", description = "Dados para criação ou atualização de oportunidade de emprego em fluxo autenticado de recrutador.")
 public record OportunidadeDeEmpregoRequestDTO(
         @NotBlank(message = "A descrição da oportunidade é obrigatória.")

@@ -9,6 +9,13 @@ import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import com.QueroTrabalhar.domain.enums.StatusValidacaoLocalidade;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Representa a resposta interna usada em fluxos autenticados do módulo de empresas.
+ *
+ * <p>Diferentemente do DTO público, este contrato pode informar status da localidade, texto original enviado e motivo
+ * da pendência para apoiar o cliente que acabou de criar o recurso ou que precisa entender por que ele ainda não está
+ * exposto publicamente. O ownership formal da empresa continua fora do escopo do MVP atual.</p>
+ */
 @Schema(name = "EmpresaResponseDTO", description = "Dados internos da empresa retornados em fluxos autenticados.")
 public record EmpresaResponseDTO(
         @Schema(description = "Identificador da empresa.", example = "7")
@@ -75,6 +82,12 @@ public record EmpresaResponseDTO(
         return daEntidade(entidade, null);
     }
 
+    /**
+     * Converte a entidade para o contrato interno priorizando a localidade validada sobre qualquer pendência antiga.
+     *
+     * <p>Se a empresa já possui localidade oficial, os campos de pendência são ocultados no DTO para refletir o estado
+     * atual do recurso.</p>
+     */
     public static EmpresaResponseDTO daEntidade(Empresa entidade, LocalidadePendente localidadePendente) {
         Localidade localidade = entidade.getLocalidade();
         LocalidadePendente pendenciaEfetiva = localidade != null ? null : localidadePendente;

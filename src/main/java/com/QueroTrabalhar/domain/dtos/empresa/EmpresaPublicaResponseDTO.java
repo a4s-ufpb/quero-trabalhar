@@ -7,6 +7,12 @@ import com.QueroTrabalhar.domain.entity.localidade.Localidade;
 import com.QueroTrabalhar.domain.entity.localidade.Pais;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Representa a projeção pública de uma empresa.
+ *
+ * <p>Este DTO existe para manter a API pública limitada a dados já consolidados. Informações sobre localidade
+ * pendente, texto original enviado ou status interno de validação não são expostas aqui.</p>
+ */
 @Schema(name = "EmpresaPublicaResponseDTO", description = "Dados públicos de uma empresa disponível nos endpoints públicos. Apenas empresas com localidade validada são expostas.")
 public record EmpresaPublicaResponseDTO(
         @Schema(description = "Identificador da empresa.", example = "7")
@@ -54,6 +60,9 @@ public record EmpresaPublicaResponseDTO(
         @Schema(description = "Nome da cidade da localidade validada.", example = "João Pessoa")
         String cidade
 ) {
+    /**
+     * Converte a entidade para a visão pública já filtrada pela camada de serviço/repositório.
+     */
     public static EmpresaPublicaResponseDTO daEntidade(Empresa entidade) {
         Localidade localidade = entidade.getLocalidade();
         Pais pais = localidade != null ? localidade.getPais() : null;

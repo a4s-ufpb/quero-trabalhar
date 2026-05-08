@@ -15,6 +15,16 @@ import jakarta.persistence.Table;
 
 import java.util.Objects;
 
+/**
+ * Representa a empresa exibida no catálogo público e usada como contexto opcional de publicação de oportunidades.
+ *
+ * <p>No MVP, a empresa pode ser persistida já com uma localidade validada ou com a localidade ainda pendente de
+ * resolução. Quando a localidade não é validada no cadastro, a empresa continua existindo internamente, mas fica
+ * fora dos endpoints públicos até que uma localidade oficial seja associada ao recurso.</p>
+ *
+ * <p>O ownership formal da empresa por um usuário autenticado ainda não foi implementado e permanece como evolução
+ * futura pós-MVP.</p>
+ */
 @Entity
 @Table(
         name = "empresa",
@@ -134,6 +144,13 @@ public class Empresa {
         this.localidade = null;
     }
 
+    /**
+     * Registra uma localidade já validada para a empresa.
+     *
+     * <p>A decisão sobre usar catálogo estruturado ou gerar pendência acontece na camada de serviço. Quando a
+     * entidade recebe uma localidade por este método, o valor já é tratado como oficial para fins de exposição
+     * pública.</p>
+     */
     public void definirLocalidadeValidada(Localidade localidade) {
         this.localidade = Objects.requireNonNull(localidade, "A localidade validada \u00E9 obrigat\u00F3ria.");
     }

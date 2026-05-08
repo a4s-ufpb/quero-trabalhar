@@ -6,6 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Agrupa os filtros da visão interna das vagas marcadas como interesse pelo candidato autenticado.
+ *
+ * <p>Este DTO pode combinar filtros tradicionais com {@code statusLocalidade} para separar vagas já validadas das que
+ * ainda dependem de resolução formal de localidade.</p>
+ */
 @Schema(name = "OportunidadeInteresseCandidatoFilterDTO", description = "Filtros disponíveis na listagem paginada das vagas de interesse do candidato autenticado.")
 public record OportunidadeInteresseCandidatoFilterDTO(
         @Size(max = 500, message = "O termo de busca deve ter no máximo 500 caracteres.")

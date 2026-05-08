@@ -40,6 +40,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Orquestra o ciclo de vida público e autenticado das oportunidades no MVP.
+ *
+ * <p>Este serviço concentra três decisões de domínio importantes: a oportunidade sempre nasce no contexto do
+ * recrutador autenticado; a associação opcional com empresa depende de {@code publicarComoEmpresa} e do vínculo já
+ * aprovado; e a visibilidade pública da vaga depende exclusivamente de possuir localidade validada.</p>
+ *
+ * <p>Quando a localidade fica pendente, o recurso continua acessível ao dono em fluxos internos, inclusive em
+ * listagens de {@code /me}, mas permanece fora do catálogo público. Nesta fase do MVP ainda não existe confirmação
+ * manual da sugestão de localidade nem notificação automática avisando que a vaga foi ocultada por pendência.</p>
+ */
 @Service
 public class OportunidadeDeEmpregoService {
 
@@ -75,6 +86,9 @@ public class OportunidadeDeEmpregoService {
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
+    /**
+     * Lista o catálogo público geral de oportunidades.
+     */
     @Transactional(readOnly = true)
     public Page<OportunidadeDeEmpregoPublicaResponseDTO> listarOportunidadesDeEmprego(
             OportunidadeDeEmpregoFilterDTO filtro,
@@ -86,11 +100,20 @@ public class OportunidadeDeEmpregoService {
         ).map(OportunidadeDeEmpregoPublicaResponseDTO::daEntidade);
     }
 
+    /**
+     * Busca uma oportunidade apenas quando ela já estiver liberada para exposição pública.
+     */
     @Transactional(readOnly = true)
     public OportunidadeDeEmpregoPublicaResponseDTO buscarPorId(Long id) {
         return OportunidadeDeEmpregoPublicaResponseDTO.daEntidade(buscarEntidadePublicaDisponivelPorId(id));
     }
 
+    /**
+     * Lista as oportunidades do recrutador autenticado, inclusive as que estejam com localidade pendente.
+     *
+     * <p>O escopo do recrutador não vem do cliente. Ele é sempre derivado do contexto de autenticação, e o DTO de
+     * resposta pode carregar informações internas de pendência para apoiar a gestão do próprio recurso.</p>
+     */
     @Transactional(readOnly = true)
     public Page<OportunidadeDeEmpregoResponseDTO> listarOportunidadesDoRecrutadorAutenticado(
             OportunidadeRecrutadorMeFilterDTO filtro,
@@ -110,6 +133,14 @@ public class OportunidadeDeEmpregoService {
                 ));
     }
 
+    /**
+     * Cria uma oportunidade no contexto do recrutador autenticado.
+     *
+     * <p>O cliente não controla {@code recrutadorId}; esse vínculo é resolvido internamente a partir da sessão
+     * autenticada. Quando {@code publicarComoEmpresa=true}, a vaga só é associada à empresa vinculada se o vínculo do
+     * recrutador com essa empresa já estiver aprovado. Caso a localidade fique pendente, a vaga é persistida, mas
+     * permanece fora dos endpoints públicos até resolução posterior.</p>
+     */
     @Transactional
     public OportunidadeDeEmpregoResponseDTO criarOportunidadeDeEmprego(OportunidadeDeEmpregoRequestDTO dto) {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
@@ -140,6 +171,12 @@ public class OportunidadeDeEmpregoService {
         );
     }
 
+    /**
+     * Atualiza uma oportunidade do recrutador autenticado preservando o contexto original de publicação.
+     *
+     * <p>Nesta fase do MVP, o payload não converte uma vaga pessoal em vaga publicada como empresa nem faz o caminho
+     * inverso. A atualização apenas altera os atributos editáveis do recurso já pertencente ao recrutador autenticado.</p>
+     */
     @Transactional
     public OportunidadeDeEmpregoResponseDTO atualizarOportunidadeDeEmprego(
             Long id,
@@ -165,6 +202,9 @@ public class OportunidadeDeEmpregoService {
         );
     }
 
+    /**
+     * Remove uma oportunidade do recrutador autenticado.
+     */
     @Transactional
     public void removerOportunidadeDeEmprego(Long id) {
         PerfilRecrutador perfilRecrutador = obterPerfilRecrutadorAutenticado();
@@ -210,6 +250,12 @@ public class OportunidadeDeEmpregoService {
         return tipoDeEmprego;
     }
 
+    /**
+     * Decide entre a localidade estruturada e a resolução textual no cadastro ou atualização da vaga.
+     *
+     * <p>Se o cliente informar qualquer ID de localidade, o serviço prioriza a montagem a partir do catálogo interno.
+     * Sem IDs, o texto livre é enviado ao resolvedor técnico. A ausência de ambos continua sendo erro de negócio.</p>
+     */
     private LocalidadePendente definirLocalidadeDaOportunidade(
             OportunidadeDeEmprego oportunidadeDeEmprego,
             OportunidadeDeEmpregoRequestDTO dto
@@ -232,6 +278,9 @@ public class OportunidadeDeEmpregoService {
         throw new BusinessRuleException("A localidade da oportunidade é obrigatória.");
     }
 
+    /**
+     * Aplica o resultado da resolução textual preservando a regra de ocultação pública por pendência.
+     */
     private LocalidadePendente aplicarResultadoResolucaoLocalidade(
             OportunidadeDeEmprego oportunidadeDeEmprego,
             ResultadoResolucaoLocalidade resultadoResolucao
@@ -277,6 +326,9 @@ public class OportunidadeDeEmpregoService {
         ).orElse(null);
     }
 
+    /**
+     * Consolida a pendência mais recente de cada oportunidade para enriquecer respostas internas do dono do recurso.
+     */
     private Map<Long, LocalidadePendente> mapearPendenciasPorOportunidade(List<OportunidadeDeEmprego> oportunidades) {
         List<Long> oportunidadeIds = oportunidades.stream()
                 .filter(oportunidade -> oportunidade.getLocalizacao() == null)
@@ -306,6 +358,9 @@ public class OportunidadeDeEmpregoService {
         return dto.paisId() != null || dto.estadoId() != null || dto.cidadeId() != null;
     }
 
+    /**
+     * Monta a localidade oficial da vaga validando a hierarquia país-estado-cidade no catálogo interno.
+     */
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
             throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
@@ -352,6 +407,12 @@ public class OportunidadeDeEmpregoService {
         return valorNormalizado.isEmpty() ? null : valorNormalizado;
     }
 
+    /**
+     * Decide se a vaga será pessoal ou publicada em nome da empresa vinculada ao recrutador.
+     *
+     * <p>Quando {@code publicarComoEmpresa} não é verdadeiro, a vaga permanece sem empresa associada. Quando é
+     * verdadeiro, o serviço exige empresa vinculada e vínculo aprovado antes de permitir a associação.</p>
+     */
     private Empresa resolverEmpresaDaOportunidade(
             PerfilRecrutador perfilRecrutador,
             Boolean publicarComoEmpresa
@@ -375,6 +436,9 @@ public class OportunidadeDeEmpregoService {
         return perfilRecrutador.getEmpresaVinculada();
     }
 
+    /**
+     * Garante que somente o recrutador dono da vaga possa alterá-la ou removê-la.
+     */
     private void validarDonoDaOportunidade(
             OportunidadeDeEmprego oportunidadeDeEmprego,
             PerfilRecrutador perfilRecrutadorAutenticado

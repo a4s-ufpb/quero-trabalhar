@@ -17,11 +17,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Define os filtros da visão interna das oportunidades marcadas como interesse pelo candidato autenticado.
+ *
+ * <p>A specification preserva o recorte de relacionamento do candidato e, opcionalmente, permite distinguir vagas com
+ * localidade validada das que ainda dependem de resolução. Isso evita que o cliente trate ausência de localidade como
+ * sinônimo automático de pendência sem registro formal.</p>
+ */
 public final class OportunidadeInteresseCandidatoSpecification {
 
     private OportunidadeInteresseCandidatoSpecification() {
     }
 
+    /**
+     * Monta os predicados da listagem de vagas de interesse do candidato autenticado.
+     */
     public static Specification<OportunidadeDeEmprego> comFiltros(
             Long perfilCandidatoId,
             OportunidadeInteresseCandidatoFilterDTO filtro
@@ -101,6 +111,9 @@ public final class OportunidadeInteresseCandidatoSpecification {
         };
     }
 
+    /**
+     * Confirma que a vaga sem localidade validada realmente possui pendência registrada de localidade.
+     */
     private static Subquery<Long> criarSubqueryDePendenciaLocalidade(
             CriteriaQuery<?> query,
             Root<OportunidadeDeEmprego> root,

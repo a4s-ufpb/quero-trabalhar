@@ -34,6 +34,13 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * Expõe o recorte HTTP do módulo de empresas no MVP.
+ *
+ * <p>O controller separa o fluxo autenticado de cadastro do catálogo público. As respostas públicas do módulo só
+ * existem para empresas cuja localidade já foi validada; dados de pendência permanecem restritos aos retornos
+ * internos usados no momento do cadastro.</p>
+ */
 @RestController
 @RequestMapping("/api/empresas")
 @Tag(name = "Empresas", description = "Endpoints públicos e autenticados para cadastro, consulta e navegação de empresas.")

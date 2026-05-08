@@ -24,6 +24,17 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Representa a oportunidade publicada no contexto de um recrutador autenticado.
+ *
+ * <p>No MVP, toda oportunidade nasce associada ao recrutador autenticado e pode, opcionalmente, carregar também a
+ * empresa vinculada a esse recrutador quando a publicação ocorre em nome da empresa. A entidade não decide isso
+ * sozinha; ela apenas materializa o vínculo já validado pela camada de serviço.</p>
+ *
+ * <p>Assim como no módulo de empresas, a presença de localidade validada é o que permite exposição em endpoints
+ * públicos. Oportunidades com localidade pendente continuam existentes para o dono do recurso, mas ficam ocultas do
+ * catálogo público até a resolução da pendência.</p>
+ */
 @Entity
 @Table(name = "oportunidade_de_emprego")
 public class OportunidadeDeEmprego {
@@ -137,6 +148,13 @@ public class OportunidadeDeEmprego {
         this.localidade = null;
     }
 
+    /**
+     * Registra uma localidade já validada para a oportunidade.
+     *
+     * <p>Ao chegar aqui, a localidade já passou pelas validações estruturais ou pela resolução textual conduzida pela
+     * camada de serviço. A entidade apenas formaliza que o recurso pode ser tratado como elegível para exposição
+     * pública sob a ótica da localidade.</p>
+     */
     public void definirLocalidadeValidada(Localidade localidade) {
         this.localidade = Objects.requireNonNull(localidade, "A localidade validada \u00E9 obrigat\u00F3ria.");
     }

@@ -5,6 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Agrupa os filtros aceitos pela listagem pública geral de oportunidades.
+ *
+ * <p>Os campos deste DTO apenas refinam o catálogo público. O filtro não muda a regra-base do módulo: vagas com
+ * localidade pendente permanecem invisíveis nesse recorte.</p>
+ */
 @Schema(name = "OportunidadeDeEmpregoFilterDTO", description = "Filtros disponíveis na listagem pública de oportunidades de emprego.")
 public record OportunidadeDeEmpregoFilterDTO(
         @Size(max = 500, message = "O termo de busca deve ter no máximo 500 caracteres.")

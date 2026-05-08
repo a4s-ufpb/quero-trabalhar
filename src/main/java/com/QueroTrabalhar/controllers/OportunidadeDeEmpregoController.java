@@ -32,6 +32,13 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 
+/**
+ * Expõe os endpoints públicos e autenticados do núcleo de oportunidades do MVP.
+ *
+ * <p>A camada HTTP mantém a mesma separação de estados adotada no domínio: a API pública retorna apenas
+ * oportunidades com localidade validada, enquanto os fluxos autenticados usam respostas internas para informar
+ * pendências e contexto de publicação ao dono do recurso.</p>
+ */
 @RestController
 @RequestMapping("/api/oportunidades")
 @Tag(name = "Oportunidades de emprego", description = "Endpoints públicos e autenticados para cadastro, consulta e gestão de oportunidades de emprego.")

@@ -17,11 +17,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Define os filtros da visão interna de oportunidades do recrutador autenticado.
+ *
+ * <p>Diferentemente das consultas públicas, esta specification pode incluir vagas com localidade pendente quando o
+ * filtro interno solicitar esse estado. O escopo do recrutador é sempre imposto pela aplicação e não por parâmetro do
+ * cliente.</p>
+ */
 public final class OportunidadeRecrutadorMeSpecification {
 
     private OportunidadeRecrutadorMeSpecification() {
     }
 
+    /**
+     * Monta os predicados da listagem interna do recrutador autenticado.
+     */
     public static Specification<OportunidadeDeEmprego> comFiltros(
             Long perfilRecrutadorId,
             OportunidadeRecrutadorMeFilterDTO filtro
@@ -92,6 +102,9 @@ public final class OportunidadeRecrutadorMeSpecification {
         };
     }
 
+    /**
+     * Confirma que a vaga sem localidade validada realmente possui pendência registrada de localidade.
+     */
     private static Subquery<Long> criarSubqueryDePendenciaLocalidade(
             CriteriaQuery<?> query,
             Root<OportunidadeDeEmprego> root,
