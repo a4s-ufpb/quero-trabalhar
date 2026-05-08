@@ -65,7 +65,7 @@ class FluxoResolucaoLocalidadeService {
     private String normalizarTextoObrigatorio(String textoLivre) {
         String textoNormalizado = normalizarTextoOpcional(textoLivre);
         if (textoNormalizado == null) {
-            throw new BusinessRuleException("O texto da localidade e obrigatorio.");
+            throw new BusinessRuleException("O texto da localidade é obrigatório.");
         }
         return textoNormalizado;
     }

@@ -233,7 +233,7 @@ public class LocalidadePendente {
     private static String normalizarTextoObrigatorio(String textoOriginal) {
         String textoNormalizado = normalizarTextoOpcional(textoOriginal);
         if (textoNormalizado == null) {
-            throw new BusinessRuleException("O texto original da localidade e obrigatorio.");
+            throw new BusinessRuleException("O texto original da localidade é obrigatório.");
         }
         return textoNormalizado;
     }
@@ -249,14 +249,14 @@ public class LocalidadePendente {
 
     private static StatusValidacaoLocalidade validarStatus(StatusValidacaoLocalidade statusValidacao) {
         if (statusValidacao == null) {
-            throw new BusinessRuleException("O status de validacao da localidade e obrigatorio.");
+            throw new BusinessRuleException("O status de validação da localidade é obrigatório.");
         }
         return statusValidacao;
     }
 
     private static OrigemLocalidade validarOrigem(OrigemLocalidade origem) {
         if (origem == null) {
-            throw new BusinessRuleException("A origem da localidade e obrigatoria.");
+            throw new BusinessRuleException("A origem da localidade é obrigatória.");
         }
         return origem;
     }

@@ -75,7 +75,7 @@ class OportunidadeDeEmpregoResponseDTOTest {
 
         LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 "Vale Imaginario",
-                "Localidade nao encontrada"
+                "Localidade não encontrada"
         );
 
         OportunidadeDeEmpregoResponseDTO dto =
@@ -86,7 +86,7 @@ class OportunidadeDeEmpregoResponseDTOTest {
                 () -> assertEquals("PENDENTE", dto.statusLocalidade()),
                 () -> assertEquals("Vale Imaginario", dto.localidadeTextoOriginal()),
                 () -> assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, dto.statusValidacaoLocalidade()),
-                () -> assertEquals("Localidade nao encontrada", dto.motivoPendenciaLocalidade()),
+                () -> assertEquals("Localidade não encontrada", dto.motivoPendenciaLocalidade()),
                 () -> assertEquals(21L, dto.recrutadorId()),
                 () -> assertEquals("Paula Mendes", dto.recrutadorNome()),
                 () -> assertNull(dto.empresaId())

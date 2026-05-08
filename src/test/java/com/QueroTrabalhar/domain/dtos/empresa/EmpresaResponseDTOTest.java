@@ -47,7 +47,7 @@ class EmpresaResponseDTOTest {
 
         LocalidadePendente localidadePendente = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 "Vale Imaginario",
-                "Localidade nao encontrada"
+                "Localidade não encontrada"
         );
 
         EmpresaResponseDTO dto = EmpresaResponseDTO.daEntidade(empresa, localidadePendente);
@@ -57,7 +57,7 @@ class EmpresaResponseDTOTest {
                 () -> assertEquals("PENDENTE", dto.statusLocalidade()),
                 () -> assertEquals("Vale Imaginario", dto.localidadeTextoOriginal()),
                 () -> assertEquals(StatusValidacaoLocalidade.PENDENTE_VALIDACAO, dto.statusValidacaoLocalidade()),
-                () -> assertEquals("Localidade nao encontrada", dto.motivoPendenciaLocalidade()),
+                () -> assertEquals("Localidade não encontrada", dto.motivoPendenciaLocalidade()),
                 () -> assertNull(dto.paisId()),
                 () -> assertNull(dto.cidadeId())
         );

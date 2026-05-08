@@ -61,7 +61,7 @@ public class JWTAuthenticationFilter extends AbstractAuthenticationProcessingFil
                 System.currentTimeMillis(),
                 HttpServletResponse.SC_UNAUTHORIZED,
                 "Não autorizado",
-                "Email ou senha inválidos",
+                "E-mail ou senha inválidos.",
                 request.getRequestURI()
         );
 

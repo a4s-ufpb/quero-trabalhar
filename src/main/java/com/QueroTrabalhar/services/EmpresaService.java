@@ -133,17 +133,17 @@ public class EmpresaService {
 
     private Empresa buscarEntidadePorId(Long id) {
         return empresaRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
     }
 
     private Empresa buscarEntidadePublicaPorId(Long id) {
         return empresaRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
     }
 
     private Empresa buscarEntidadePublicaDisponivelPorId(Long id) {
         return empresaRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Empresa nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Empresa não encontrada. ID: " + id));
     }
 
     private LocalidadePendente definirLocalidadeDaEmpresa(Empresa empresa, EmpresaRequestDTO dto) {
@@ -157,7 +157,7 @@ public class EmpresaService {
             return aplicarResultadoResolucaoLocalidade(empresa, localidadeResolucaoService.resolver(localidadeTexto));
         }
 
-        throw new BusinessRuleException("A localidade da empresa e obrigatoria.");
+        throw new BusinessRuleException("A localidade da empresa é obrigatória.");
     }
 
     private LocalidadePendente aplicarResultadoResolucaoLocalidade(
@@ -208,25 +208,25 @@ public class EmpresaService {
 
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
-            throw new BusinessRuleException("Para informar uma cidade, o estado tambem deve ser informado.");
+            throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
         }
 
         if (paisId == null) {
-            throw new BusinessRuleException("O pais e obrigatorio quando a localidade for informada por IDs.");
+            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)
-                .orElseThrow(() -> new ObjectNotFoundException("Pais nao encontrado. ID: " + paisId));
+                .orElseThrow(() -> new ObjectNotFoundException("País não encontrado. ID: " + paisId));
 
         if (estadoId == null) {
             return new Localidade(pais);
         }
 
         Estado estado = estadoRepository.findById(estadoId)
-                .orElseThrow(() -> new ObjectNotFoundException("Estado nao encontrado. ID: " + estadoId));
+                .orElseThrow(() -> new ObjectNotFoundException("Estado não encontrado. ID: " + estadoId));
 
         if (!estado.getPais().getId().equals(pais.getId())) {
-            throw new BusinessRuleException("O estado informado nao pertence ao pais informado.");
+            throw new BusinessRuleException("O estado informado não pertence ao país informado.");
         }
 
         if (cidadeId == null) {
@@ -234,10 +234,10 @@ public class EmpresaService {
         }
 
         Cidade cidade = cidadeRepository.findById(cidadeId)
-                .orElseThrow(() -> new ObjectNotFoundException("Cidade nao encontrada. ID: " + cidadeId));
+                .orElseThrow(() -> new ObjectNotFoundException("Cidade não encontrada. ID: " + cidadeId));
 
         if (!cidade.getEstado().getId().equals(estado.getId())) {
-            throw new BusinessRuleException("A cidade informada nao pertence ao estado informado.");
+            throw new BusinessRuleException("A cidade informada não pertence ao estado informado.");
         }
 
         return new Localidade(pais, estado, cidade);

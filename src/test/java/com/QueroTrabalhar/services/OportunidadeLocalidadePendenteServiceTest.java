@@ -318,7 +318,7 @@ class OportunidadeLocalidadePendenteServiceTest {
 
         LocalidadePendente localidadePendente = criarLocalidadePendente(
                 "Vale do Silicio Paraibano",
-                "Localidade nao encontrada na base estruturada."
+                "Localidade não encontrada na base estruturada."
         );
         OportunidadeDeEmpregoRequestDTO dto = new OportunidadeDeEmpregoRequestDTO(
                 "Descricao atualizada",

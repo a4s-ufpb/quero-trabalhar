@@ -178,17 +178,17 @@ public class OportunidadeDeEmpregoService {
 
     private OportunidadeDeEmprego buscarEntidadePorId(Long id) {
         return oportunidadeDeEmpregoRepository.findById(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego não encontrada. ID: " + id));
     }
 
     private OportunidadeDeEmprego buscarEntidadePublicaPorId(Long id) {
         return oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego não encontrada. ID: " + id));
     }
 
     private OportunidadeDeEmprego buscarEntidadePublicaDisponivelPorId(Long id) {
         return oportunidadeDeEmpregoRepository.findByIdAndLocalidadePaisIsNotNull(id)
-                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego nao encontrada. ID: " + id));
+                .orElseThrow(() -> new ObjectNotFoundException("Oportunidade de emprego não encontrada. ID: " + id));
     }
 
     PerfilRecrutador obterPerfilRecrutadorAutenticado() {
@@ -198,12 +198,12 @@ public class OportunidadeDeEmpregoService {
     private TipoDeEmprego buscarTipoDeEmpregoValido(Long tipoDeEmpregoId) {
         TipoDeEmprego tipoDeEmprego = tipoDeEmpregoRepository.findById(tipoDeEmpregoId)
                 .orElseThrow(() -> new ObjectNotFoundException(
-                        "Tipo de emprego nao encontrado. ID: " + tipoDeEmpregoId
+                        "Tipo de emprego não encontrado. ID: " + tipoDeEmpregoId
                 ));
 
         if (!tipoDeEmprego.isAprovado()) {
             throw new BusinessRuleException(
-                    "O tipo de emprego informado ainda nao foi aprovado e nao pode ser usado em oportunidades."
+                    "O tipo de emprego informado ainda não foi aprovado e não pode ser usado em oportunidades."
             );
         }
 
@@ -229,7 +229,7 @@ public class OportunidadeDeEmpregoService {
             );
         }
 
-        throw new BusinessRuleException("A localidade da oportunidade e obrigatoria.");
+        throw new BusinessRuleException("A localidade da oportunidade é obrigatória.");
     }
 
     private LocalidadePendente aplicarResultadoResolucaoLocalidade(
@@ -308,25 +308,25 @@ public class OportunidadeDeEmpregoService {
 
     private Localidade montarLocalidade(Long paisId, Long estadoId, Long cidadeId) {
         if (cidadeId != null && estadoId == null) {
-            throw new BusinessRuleException("Para informar uma cidade, o estado tambem deve ser informado.");
+            throw new BusinessRuleException("Para informar uma cidade, o estado também deve ser informado.");
         }
 
         if (paisId == null) {
-            throw new BusinessRuleException("O pais e obrigatorio quando a localidade for informada por IDs.");
+            throw new BusinessRuleException("O país é obrigatório quando a localidade for informada por IDs.");
         }
 
         Pais pais = paisRepository.findById(paisId)
-                .orElseThrow(() -> new ObjectNotFoundException("Pais nao encontrado. ID: " + paisId));
+                .orElseThrow(() -> new ObjectNotFoundException("País não encontrado. ID: " + paisId));
 
         if (estadoId == null) {
             return new Localidade(pais);
         }
 
         Estado estado = estadoRepository.findById(estadoId)
-                .orElseThrow(() -> new ObjectNotFoundException("Estado nao encontrado. ID: " + estadoId));
+                .orElseThrow(() -> new ObjectNotFoundException("Estado não encontrado. ID: " + estadoId));
 
         if (!estado.getPais().getId().equals(pais.getId())) {
-            throw new BusinessRuleException("O estado informado nao pertence ao pais informado.");
+            throw new BusinessRuleException("O estado informado não pertence ao país informado.");
         }
 
         if (cidadeId == null) {
@@ -334,10 +334,10 @@ public class OportunidadeDeEmpregoService {
         }
 
         Cidade cidade = cidadeRepository.findById(cidadeId)
-                .orElseThrow(() -> new ObjectNotFoundException("Cidade nao encontrada. ID: " + cidadeId));
+                .orElseThrow(() -> new ObjectNotFoundException("Cidade não encontrada. ID: " + cidadeId));
 
         if (!cidade.getEstado().getId().equals(estado.getId())) {
-            throw new BusinessRuleException("A cidade informada nao pertence ao estado informado.");
+            throw new BusinessRuleException("A cidade informada não pertence ao estado informado.");
         }
 
         return new Localidade(pais, estado, cidade);
@@ -368,7 +368,7 @@ public class OportunidadeDeEmpregoService {
 
         if (perfilRecrutador.getStatusVinculoEmpresa() != StatusVinculoEmpresa.APROVADO) {
             throw new BusinessRuleException(
-                    "Para publicar uma oportunidade em nome da empresa, o vinculo com a empresa precisa estar aprovado."
+                    "Para publicar uma oportunidade em nome da empresa, o vínculo com a empresa precisa estar aprovado."
             );
         }
 
@@ -381,7 +381,7 @@ public class OportunidadeDeEmpregoService {
     ) {
         if (!oportunidadeDeEmprego.getPerfilRecrutador().getId().equals(perfilRecrutadorAutenticado.getId())) {
             throw new BusinessRuleException(
-                    "O recrutador autenticado nao pode alterar uma oportunidade que pertence a outro perfil."
+                    "O recrutador autenticado não pode alterar uma oportunidade que pertence a outro perfil."
             );
         }
     }

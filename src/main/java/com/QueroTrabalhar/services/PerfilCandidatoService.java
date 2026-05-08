@@ -48,7 +48,7 @@ public class PerfilCandidatoService {
         OportunidadeDeEmprego vaga = buscarVagaPorId(vagaId);
 
         if (perfilCandidato.getVagasDeInteresse().contains(vaga)) {
-            throw new BusinessRuleException("Voce ja demonstrou interesse nesta vaga.");
+            throw new BusinessRuleException("Você já demonstrou interesse nesta vaga.");
         }
 
         perfilCandidato.demonstrarInteresse(vaga);
@@ -61,7 +61,7 @@ public class PerfilCandidatoService {
         OportunidadeDeEmprego vaga = buscarVagaPorId(vagaId);
 
         if (!perfilCandidato.getVagasDeInteresse().contains(vaga)) {
-            throw new BusinessRuleException("Voce ainda nao demonstrou interesse nesta vaga.");
+            throw new BusinessRuleException("Você ainda não demonstrou interesse nesta vaga.");
         }
 
         perfilCandidato.removerInteresse(vaga);
@@ -90,7 +90,7 @@ public class PerfilCandidatoService {
     private OportunidadeDeEmprego buscarVagaPorId(Long vagaId) {
         return oportunidadeDeEmpregoRepository.findById(vagaId)
                 .orElseThrow(() -> new ObjectNotFoundException(
-                        "Oportunidade de emprego nao encontrada. ID: " + vagaId
+                        "Oportunidade de emprego não encontrada. ID: " + vagaId
                 ));
     }
 

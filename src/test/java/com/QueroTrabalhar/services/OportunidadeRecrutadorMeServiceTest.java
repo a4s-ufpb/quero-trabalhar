@@ -426,7 +426,7 @@ class OportunidadeRecrutadorMeServiceTest {
 
         LocalidadePendente primeiraPendencia = LocalidadePendente.criarPendenteInformadaPeloUsuario(
                 "Vale Imaginario",
-                "Localidade nao encontrada"
+                "Localidade não encontrada"
         );
         primeiraPendencia.definirDonoGenerico(
                 TipoRecursoLocalidadePendente.OPORTUNIDADE_DE_EMPREGO,

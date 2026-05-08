@@ -7,10 +7,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 
 public record ExperienciaProfissionalFilterDTO(
-        @Size(max = 500, message = "O termo de busca deve ter no maximo 500 caracteres.")
+        @Size(max = 500, message = "O termo de busca deve ter no máximo 500 caracteres.")
         String termo,
 
-        @Positive(message = "O tipo de emprego informado e invalido.")
+        @Positive(message = "O tipo de emprego informado é inválido.")
         Long tipoDeEmpregoId,
 
         Boolean emAndamento,

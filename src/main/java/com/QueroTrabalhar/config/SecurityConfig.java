@@ -126,8 +126,8 @@ public class SecurityConfig {
                             StandardError error = new StandardError(
                                     System.currentTimeMillis(),
                                     HttpServletResponse.SC_UNAUTHORIZED,
-                                    "Nao autorizado",
-                                    "Token ausente, invalido ou expirado.",
+                                    "Não autorizado",
+                                    "Token ausente, inválido ou expirado.",
                                     request.getRequestURI()
                             );
 
@@ -142,7 +142,7 @@ public class SecurityConfig {
                                     System.currentTimeMillis(),
                                     HttpServletResponse.SC_FORBIDDEN,
                                     "Acesso negado",
-                                    "Voce nao possui permissao para acessar este recurso.",
+                                    "Você não possui permissão para acessar este recurso.",
                                     request.getRequestURI()
                             );
 
