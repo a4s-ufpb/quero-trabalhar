@@ -1,16 +1,19 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import com.QueroTrabalhar.repository.TipoDeEmpregoRepository;
+import com.QueroTrabalhar.repository.specification.TipoDeEmpregoSpecification;
 import com.QueroTrabalhar.services.exceptions.DataIntegrityViolationException;
 import com.QueroTrabalhar.services.exceptions.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,10 +29,15 @@ public class TipoDeEmpregoService {
                 .collect(Collectors.toList());
     }
 
-    public List<TipoDeEmpregoResponseDTO> listarNaoAprovados(){
-        return tipoDeEmpregoRepository.findByAprovadoFalse().stream()
-                .map(TipoDeEmpregoResponseDTO::daEntidade)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<TipoDeEmpregoResponseDTO> listarNaoAprovados(
+            TipoDeEmpregoFilterDTO filtro,
+            Pageable pageable
+    ) {
+        return tipoDeEmpregoRepository.findAll(
+                TipoDeEmpregoSpecification.comFiltros(filtro),
+                pageable
+        ).map(TipoDeEmpregoResponseDTO::daEntidade);
     }
 
     public TipoDeEmpregoResponseDTO buscarPorId(Long id) {

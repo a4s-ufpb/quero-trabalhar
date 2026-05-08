@@ -1,5 +1,6 @@
 package com.QueroTrabalhar.services;
 
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
@@ -12,6 +13,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -22,12 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -185,32 +194,40 @@ class TipoDeEmpregoServiceTest {
     }
 
     @Test
-    void deveListarNaoAprovados() {
+    void deveListarNaoAprovadosPaginadosComFiltros() {
         // Arrange
         TipoDeEmprego primeiroTipo = criarTipoDeEmpregoPendente(20L, "DevRel");
         TipoDeEmprego segundoTipo = criarTipoDeEmpregoPendente(21L, "QA Automation");
+        TipoDeEmpregoFilterDTO filtro = new TipoDeEmpregoFilterDTO("  automation  ");
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id"));
 
-        when(tipoDeEmpregoRepository.findByAprovadoFalse()).thenReturn(List.of(primeiroTipo, segundoTipo));
+        when(tipoDeEmpregoRepository.findAll(any(Specification.class), same(pageable)))
+                .thenReturn(new PageImpl<>(List.of(primeiroTipo, segundoTipo), pageable, 2));
 
         // Act
-        List<TipoDeEmpregoResponseDTO> resposta = tipoDeEmpregoService.listarNaoAprovados();
+        Page<TipoDeEmpregoResponseDTO> resposta = tipoDeEmpregoService.listarNaoAprovados(filtro, pageable);
 
         // Assert
-        assertEquals(2, resposta.size());
-        assertInstanceOf(TipoDeEmpregoResponseDTO.class, resposta.get(0));
-        assertInstanceOf(TipoDeEmpregoResponseDTO.class, resposta.get(1));
-        assertNotSame(primeiroTipo, resposta.get(0));
-        assertNotSame(segundoTipo, resposta.get(1));
+        assertNotNull(resposta);
+        assertEquals(2, resposta.getTotalElements());
+        assertEquals(2, resposta.getContent().size());
+        assertInstanceOf(TipoDeEmpregoResponseDTO.class, resposta.getContent().get(0));
+        assertInstanceOf(TipoDeEmpregoResponseDTO.class, resposta.getContent().get(1));
+        assertNotSame(primeiroTipo, resposta.getContent().get(0));
+        assertNotSame(segundoTipo, resposta.getContent().get(1));
+
+        TipoDeEmpregoResponseDTO primeiroDto = resposta.getContent().get(0);
+        TipoDeEmpregoResponseDTO segundoDto = resposta.getContent().get(1);
         assertAll(
-                () -> assertEquals(20L, resposta.get(0).id()),
-                () -> assertEquals("DevRel", resposta.get(0).titulo()),
-                () -> assertFalse(resposta.get(0).aprovado()),
-                () -> assertEquals(21L, resposta.get(1).id()),
-                () -> assertEquals("QA Automation", resposta.get(1).titulo()),
-                () -> assertFalse(resposta.get(1).aprovado())
+                () -> assertEquals(20L, primeiroDto.id()),
+                () -> assertEquals("DevRel", primeiroDto.titulo()),
+                () -> assertFalse(primeiroDto.aprovado()),
+                () -> assertEquals(21L, segundoDto.id()),
+                () -> assertEquals("QA Automation", segundoDto.titulo()),
+                () -> assertFalse(segundoDto.aprovado())
         );
 
-        verify(tipoDeEmpregoRepository).findByAprovadoFalse();
+        verify(tipoDeEmpregoRepository).findAll(any(Specification.class), same(pageable));
     }
 
     @Test

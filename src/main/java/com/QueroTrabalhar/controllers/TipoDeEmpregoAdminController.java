@@ -1,9 +1,15 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.TipoDeEmpregoService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,8 +37,12 @@ public class TipoDeEmpregoAdminController {
     }
 
     @GetMapping("/nao-aprovados")
-    public ResponseEntity<List<TipoDeEmpregoResponseDTO>> listarNaoAprovados() {
-        return ResponseEntity.ok(tipoDeEmpregoService.listarNaoAprovados());
+    public ResponseEntity<Page<TipoDeEmpregoResponseDTO>> listarNaoAprovados(
+            @Valid @ParameterObject TipoDeEmpregoFilterDTO filtro,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(tipoDeEmpregoService.listarNaoAprovados(filtro, pageable));
     }
 
     @PostMapping

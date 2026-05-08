@@ -2,6 +2,7 @@ package com.QueroTrabalhar.repository;
 
 import com.QueroTrabalhar.domain.entity.TipoDeEmprego;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TipoDeEmpregoRepository extends JpaRepository<TipoDeEmprego, Long> {
+public interface TipoDeEmpregoRepository extends JpaRepository<TipoDeEmprego, Long>, JpaSpecificationExecutor<TipoDeEmprego> {
     Optional<TipoDeEmprego> findByTitulo(String titulo); // Busca por Titulo
 
     boolean existsByTitulo(String titulo);
