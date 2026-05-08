@@ -1,9 +1,18 @@
 package com.QueroTrabalhar.controllers;
 
+import com.QueroTrabalhar.controllers.exceptions.StandardError;
+import com.QueroTrabalhar.controllers.exceptions.ValidationError;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoFilterDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoRequestDTO;
 import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.TipoDeEmpregoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -28,6 +37,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/tipos-emprego")
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(
+        name = "Administração de tipos de emprego",
+        description = "Endpoints administrativos para moderação e manutenção do catálogo de tipos de emprego. Exigem permissão ADMIN."
+)
 public class TipoDeEmpregoAdminController {
 
     private final TipoDeEmpregoService tipoDeEmpregoService;
@@ -37,6 +50,28 @@ public class TipoDeEmpregoAdminController {
     }
 
     @GetMapping("/nao-aprovados")
+    @Operation(
+            summary = "Listar tipos de emprego não aprovados",
+            description = "Lista a fila administrativa de moderação dos tipos de emprego ainda não aprovados. Aceita o filtro termo. A paginação usa os parâmetros page, size e sort, com padrão page=0, size=10 e sort=id,desc. O backend aplica obrigatoriamente o filtro aprovado=false e ignora qualquer tentativa do cliente de controlar esse estado."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Fila de tipos de emprego não aprovados listada com sucesso.", useReturnTypeSchema = true),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Parâmetros de filtro ou paginação inválidos.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Sem permissão para acessar este recurso administrativo.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            )
+    })
     public ResponseEntity<Page<TipoDeEmpregoResponseDTO>> listarNaoAprovados(
             @Valid @ParameterObject TipoDeEmpregoFilterDTO filtro,
             @ParameterObject
@@ -46,6 +81,28 @@ public class TipoDeEmpregoAdminController {
     }
 
     @PostMapping
+    @Operation(
+            summary = "Criar tipo de emprego no catálogo",
+            description = "Cria, como ADMIN, um tipo de emprego já aprovado diretamente no catálogo."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Tipo de emprego criado com sucesso no catálogo.", useReturnTypeSchema = true),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Payload inválido ou título já existente no catálogo.",
+                    content = @Content(schema = @Schema(oneOf = {StandardError.class, ValidationError.class}))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Sem permissão para acessar este recurso administrativo.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            )
+    })
     public ResponseEntity<TipoDeEmpregoResponseDTO> criarNoCatalogo(
             @Valid @RequestBody TipoDeEmpregoRequestDTO tipoDeEmprego
     ) {
@@ -61,7 +118,35 @@ public class TipoDeEmpregoAdminController {
     }
 
     @PatchMapping("/{id}/aprovar")
+    @Operation(
+            summary = "Aprovar sugestão de tipo de emprego",
+            description = "Aprova, como ADMIN, uma sugestão da fila de moderação. O payload permite ajustar título e descrição antes da aprovação."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Sugestão aprovada com sucesso.", useReturnTypeSchema = true),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Payload inválido.",
+                    content = @Content(schema = @Schema(oneOf = {StandardError.class, ValidationError.class}))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Sem permissão para acessar este recurso administrativo.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Tipo de emprego não encontrado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            )
+    })
     public ResponseEntity<TipoDeEmpregoResponseDTO> aprovarSugestao(
+            @Parameter(description = "Identificador do tipo de emprego pendente na fila de moderação.", example = "8", required = true)
             @PathVariable Long id,
             @Valid @RequestBody TipoDeEmpregoRequestDTO tipoDeEmprego
     ) {
@@ -74,13 +159,65 @@ public class TipoDeEmpregoAdminController {
     }
 
     @PatchMapping("/aprovar-lote")
+    @Operation(
+            summary = "Aprovar sugestões em lote",
+            description = "Aprova, como ADMIN, várias sugestões da fila de moderação a partir de uma lista simples de IDs. No contrato atual, o endpoint não retorna corpo."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Sugestões aprovadas em lote com sucesso."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Lista de IDs inválida ou nenhum tipo de emprego encontrado para os IDs informados.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Sem permissão para acessar este recurso administrativo.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            )
+    })
     public ResponseEntity<Void> aprovarEmLote(@RequestBody List<Long> ids) {
         tipoDeEmpregoService.aprovarEmLote(ids);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+    @Operation(
+            summary = "Remover tipo de emprego",
+            description = "Remove, como ADMIN, um tipo de emprego pelo identificador. No contrato atual, o recurso precisa existir e não pode estar em uso por vagas associadas."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Tipo de emprego removido com sucesso."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Tipo de emprego em uso ou operação inválida para o estado atual do recurso.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autenticado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Sem permissão para acessar este recurso administrativo.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Tipo de emprego não encontrado.",
+                    content = @Content(schema = @Schema(implementation = StandardError.class))
+            )
+    })
+    public ResponseEntity<Void> deletar(
+            @Parameter(description = "Identificador do tipo de emprego a ser removido.", example = "8", required = true)
+            @PathVariable Long id
+    ) {
         tipoDeEmpregoService.deletar(id);
         return ResponseEntity.noContent().build();
     }

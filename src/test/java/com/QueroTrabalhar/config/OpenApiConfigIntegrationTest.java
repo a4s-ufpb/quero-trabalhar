@@ -91,4 +91,34 @@ class OpenApiConfigIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.OportunidadeDeEmpregoResponseDTO.properties.statusValidacaoLocalidade.description").value("Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso."))
                 .andExpect(jsonPath("$.components.schemas.RecrutadorDaEmpresaResponseDTO.properties.statusVinculoEmpresa.description").value("Status atual do vínculo do recrutador com a empresa."));
     }
+
+    @Test
+    void deveDocumentarLocalidadesTiposDeEmpregoEIndicacoesNaOpenApi() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/localidades/paises'].get.summary").value("Listar países oficiais"))
+                .andExpect(jsonPath("$.paths['/api/localidades/paises'].get.description").value("Consulta o catálogo oficial de países disponíveis na base para autocomplete. Usa o parâmetro termo e retorna lista vazia quando a busca tiver menos de 2 caracteres."))
+                .andExpect(jsonPath("$.paths['/api/localidades/paises'].get.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/api/localidades/paises'].get.parameters[?(@.name=='termo')].description").value(hasItem("Trecho do nome do país usado no autocomplete oficial. Quando tiver menos de 2 caracteres, o endpoint retorna lista vazia.")))
+                .andExpect(jsonPath("$.paths['/api/localidades/estados'].get.parameters[?(@.name=='paisId')].description").value(hasItem("Identificador do país já existente na base oficial para restringir o catálogo de estados.")))
+                .andExpect(jsonPath("$.paths['/api/localidades/cidades'].get.responses['400'].description").value("Parâmetros inválidos ou estado não encontrado na base oficial."))
+                .andExpect(jsonPath("$.components.schemas.PaisResponseDTO.properties.sigla.description").value("Sigla do país na base oficial."))
+                .andExpect(jsonPath("$.components.schemas.CidadeResponseDTO.properties.estado.description").value("Identificador do estado associado à cidade, mantendo o nome de campo JSON atual."))
+                .andExpect(jsonPath("$.paths['/api/tipos-de-emprego/aprovados'].get.summary").value("Listar tipos de emprego aprovados"))
+                .andExpect(jsonPath("$.paths['/api/tipos-de-emprego/aprovados'].get.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/api/tipos-de-emprego/{id}'].get.responses['404'].description").value("Tipo de emprego aprovado não encontrado."))
+                .andExpect(jsonPath("$.paths['/api/tipos-de-emprego/sugerir'].post.description").value("Cria uma sugestão de tipo de emprego ainda não aprovado para a fila de moderação administrativa. No comportamento atual da API, este endpoint exige autenticação."))
+                .andExpect(jsonPath("$.paths['/api/tipos-de-emprego/sugerir'].post.responses['401'].description").value("Não autenticado."))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.description").value("Lista a fila administrativa de moderação dos tipos de emprego ainda não aprovados. Aceita o filtro termo. A paginação usa os parâmetros page, size e sort, com padrão page=0, size=10 e sort=id,desc. O backend aplica obrigatoriamente o filtro aprovado=false e ignora qualquer tentativa do cliente de controlar esse estado."))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.parameters[?(@.name=='termo')].description").value(hasItem("Busca textual aplicada ao título e à descrição dos tipos pendentes.")))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.responses['403'].description").value("Sem permissão para acessar este recurso administrativo."))
+                .andExpect(jsonPath("$.components.schemas.TipoDeEmpregoResponseDTO.properties.aprovado.description").value("Indica se o tipo de emprego já faz parte do catálogo aprovado."))
+                .andExpect(jsonPath("$.paths['/api/indicacoes'].post.summary").value("Criar indicação"))
+                .andExpect(jsonPath("$.paths['/api/indicacoes'].post.responses['422'].description").value("Regra de negócio violada ao criar a indicação."))
+                .andExpect(jsonPath("$.paths['/api/indicacoes/me/dadas'].get.description").value("Lista as indicações criadas pelo usuário autenticado. Opera sobre o recurso /me e mantém o contrato atual de lista simples, sem paginação."))
+                .andExpect(jsonPath("$.paths['/api/indicacoes/me/recebidas'].get.responses['401'].description").value("Não autenticado."))
+                .andExpect(jsonPath("$.paths['/api/indicacoes/{id}'].delete.responses['422'].description").value("Regra de negócio violada ao remover a indicação."))
+                .andExpect(jsonPath("$.components.schemas.IndicacaoRequestDTO.properties.usuarioIndicadoId.description").value("Identificador do usuário que receberá a indicação."))
+                .andExpect(jsonPath("$.components.schemas.IndicacaoResponseDTO.properties.autorNome.description").value("Nome do usuário autor da indicação."));
+    }
 }
