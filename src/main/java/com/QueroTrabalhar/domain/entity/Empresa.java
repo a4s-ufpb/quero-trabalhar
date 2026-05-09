@@ -152,7 +152,7 @@ public class Empresa {
      * pública.</p>
      */
     public void definirLocalidadeValidada(Localidade localidade) {
-        this.localidade = Objects.requireNonNull(localidade, "A localidade validada \u00E9 obrigat\u00F3ria.");
+        this.localidade = Objects.requireNonNull(localidade, "A localidade validada é obrigatória.");
     }
 
     public boolean isAtivo() {

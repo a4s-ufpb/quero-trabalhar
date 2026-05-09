@@ -178,7 +178,7 @@ class LocalidadeResolucaoServiceTest {
                 () -> assertNotNull(resultado.localidadePendente()),
                 () -> assertEquals("Santo Andre", resultado.localidadePendente().getTextoOriginal()),
                 () -> assertEquals(
-                        "A localidade informada corresponde a m\u00FAltiplas op\u00E7\u00F5es na base interna e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        "A localidade informada corresponde a múltiplas opções na base interna e precisa de confirmação do usuário.",
                         resultado.localidadePendente().getMotivoPendencia()
                 )
         );
@@ -208,7 +208,7 @@ class LocalidadeResolucaoServiceTest {
                 () -> assertNull(resultado.localidadeValidada()),
                 () -> assertEquals("Sao Paulo", resultado.localidadePendente().getTextoOriginal()),
                 () -> assertEquals(
-                        "A localidade informada corresponde a m\u00FAltiplas op\u00E7\u00F5es na base interna e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        "A localidade informada corresponde a múltiplas opções na base interna e precisa de confirmação do usuário.",
                         resultado.localidadePendente().getMotivoPendencia()
                 )
         );
@@ -427,7 +427,7 @@ class LocalidadeResolucaoServiceTest {
                 () -> assertTrue(resultado.pendente()),
                 () -> assertEquals("Springfield", resultado.localidadePendente().getTextoOriginal()),
                 () -> assertEquals(
-                        "A localidade informada retornou m\u00FAltiplas op\u00E7\u00F5es no Google Maps e precisa de confirma\u00E7\u00E3o do usu\u00E1rio.",
+                        "A localidade informada retornou múltiplas opções no Google Maps e precisa de confirmação do usuário.",
                         resultado.localidadePendente().getMotivoPendencia()
                 )
         );

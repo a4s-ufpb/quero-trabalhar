@@ -8,6 +8,7 @@ import com.QueroTrabalhar.domain.dtos.tipoDeEmprego.TipoDeEmpregoResponseDTO;
 import com.QueroTrabalhar.services.TipoDeEmpregoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -161,7 +162,7 @@ public class TipoDeEmpregoAdminController {
     @PatchMapping("/aprovar-lote")
     @Operation(
             summary = "Aprovar sugestões em lote",
-            description = "Aprova, como ADMIN, várias sugestões da fila de moderação a partir de uma lista simples de IDs. No contrato atual, o endpoint não retorna corpo."
+            description = "Aprova, como ADMIN, várias sugestões da fila de moderação a partir de um array JSON simples de IDs numéricos, por exemplo [8, 11, 15]. No contrato atual, o endpoint não aceita objetos por item e não retorna corpo."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Sugestões aprovadas em lote com sucesso."),
@@ -181,7 +182,17 @@ public class TipoDeEmpregoAdminController {
                     content = @Content(schema = @Schema(implementation = StandardError.class))
             )
     })
-    public ResponseEntity<Void> aprovarEmLote(@RequestBody List<Long> ids) {
+    public ResponseEntity<Void> aprovarEmLote(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Array JSON simples com os IDs numéricos das sugestões pendentes a aprovar em lote.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(type = "integer", format = "int64"))
+                    )
+            )
+            @RequestBody List<Long> ids
+    ) {
         tipoDeEmpregoService.aprovarEmLote(ids);
         return ResponseEntity.noContent().build();
     }

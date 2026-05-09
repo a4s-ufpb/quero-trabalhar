@@ -4,6 +4,14 @@ import jakarta.persistence.*;
 
 import java.util.Objects;
 
+/**
+ * Representa a localidade oficial validada usada pelos recursos expostos pela API.
+ *
+ * <p>Esta estrutura só existe quando país, estado e cidade já foram resolvidos contra o catálogo oficial
+ * da aplicação. Quando o texto informado pelo usuário ainda não pode ser convertido para essa forma
+ * estruturada, a API mantém a informação em {@link LocalidadePendente} até nova tentativa automática ou
+ * tratamento interno da pendência.</p>
+ */
 @Embeddable
 public class Localidade {
     @ManyToOne(fetch = FetchType.LAZY)

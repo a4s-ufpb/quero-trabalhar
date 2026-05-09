@@ -69,7 +69,7 @@ public record OportunidadeDeEmpregoResponseDTO(
         @Schema(description = "Texto original informado para a localidade quando a oportunidade ficou pendente. Campo interno; oportunidades nesse estado não aparecem nos endpoints públicos.", example = "João Pessoa e região")
         String localidadeTextoOriginal,
 
-        @Schema(description = "Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso.", example = "PENDENTE_VALIDACAO")
+        @Schema(description = "Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso. No MVP atual, estados de confirmação ou recusa manual permanecem reservados para evolução futura e não indicam funcionalidade pública já disponível.", example = "PENDENTE_VALIDACAO")
         StatusValidacaoLocalidade statusValidacaoLocalidade,
 
         @Schema(description = "Motivo registrado para a pendência de localidade. Campo interno do dono do recurso.", example = "Localidade não encontrada na base estruturada.")

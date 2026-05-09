@@ -88,7 +88,8 @@ class OpenApiConfigIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/oportunidades/{id}'].delete.responses['422'].description").value("Regra de negócio violada ao remover a oportunidade."))
                 .andExpect(jsonPath("$.components.schemas.EmpresaRequestDTO.properties.localidadeTexto.description").value("Texto livre da localidade. Use quando não houver IDs estruturados. Se a resolução automática não validar a localidade, a empresa será criada com localidade pendente no fluxo interno e não aparecerá nos endpoints públicos. A confirmação manual da sugestão ainda não está implementada no MVP."))
                 .andExpect(jsonPath("$.components.schemas.EmpresaResponseDTO.properties.statusLocalidade.description").value("Status interno da localidade da empresa. Campo de apoio ao dono do recurso e não utilizado nos endpoints públicos."))
-                .andExpect(jsonPath("$.components.schemas.OportunidadeDeEmpregoResponseDTO.properties.statusValidacaoLocalidade.description").value("Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso."))
+                .andExpect(jsonPath("$.components.schemas.EmpresaResponseDTO.properties.statusValidacaoLocalidade.description").value("Status detalhado da validação interna da localidade pendente. Campo interno do fluxo autenticado. No MVP atual, estados de confirmação ou recusa manual permanecem reservados para evolução futura e não indicam funcionalidade pública já disponível."))
+                .andExpect(jsonPath("$.components.schemas.OportunidadeDeEmpregoResponseDTO.properties.statusValidacaoLocalidade.description").value("Status detalhado da validação interna da localidade pendente. Campo interno do dono do recurso. No MVP atual, estados de confirmação ou recusa manual permanecem reservados para evolução futura e não indicam funcionalidade pública já disponível."))
                 .andExpect(jsonPath("$.components.schemas.RecrutadorDaEmpresaResponseDTO.properties.statusVinculoEmpresa.description").value("Status atual do vínculo do recrutador com a empresa."));
     }
 
@@ -112,6 +113,9 @@ class OpenApiConfigIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.description").value("Lista a fila administrativa de moderação dos tipos de emprego ainda não aprovados. Aceita o filtro termo. A paginação usa os parâmetros page, size e sort, com padrão page=0, size=10 e sort=id,desc. O backend aplica obrigatoriamente o filtro aprovado=false e ignora qualquer tentativa do cliente de controlar esse estado."))
                 .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.parameters[?(@.name=='termo')].description").value(hasItem("Busca textual aplicada ao título e à descrição dos tipos pendentes.")))
                 .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/nao-aprovados'].get.responses['403'].description").value("Sem permissão para acessar este recurso administrativo."))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/aprovar-lote'].patch.requestBody.description").value("Array JSON simples com os IDs numéricos das sugestões pendentes a aprovar em lote."))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/aprovar-lote'].patch.requestBody.content['application/json'].schema.type").value("array"))
+                .andExpect(jsonPath("$.paths['/api/admin/tipos-emprego/aprovar-lote'].patch.requestBody.content['application/json'].schema.items.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.TipoDeEmpregoResponseDTO.properties.aprovado.description").value("Indica se o tipo de emprego já faz parte do catálogo aprovado."))
                 .andExpect(jsonPath("$.paths['/api/indicacoes'].post.summary").value("Criar indicação"))
                 .andExpect(jsonPath("$.paths['/api/indicacoes'].post.responses['422'].description").value("Regra de negócio violada ao criar a indicação."))
@@ -119,6 +123,7 @@ class OpenApiConfigIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/indicacoes/me/recebidas'].get.responses['401'].description").value("Não autenticado."))
                 .andExpect(jsonPath("$.paths['/api/indicacoes/{id}'].delete.responses['422'].description").value("Regra de negócio violada ao remover a indicação."))
                 .andExpect(jsonPath("$.components.schemas.IndicacaoRequestDTO.properties.usuarioIndicadoId.description").value("Identificador do usuário que receberá a indicação."))
+                .andExpect(jsonPath("$.components.schemas.PerfilRecrutadorUsuarioRequestDTO.description").value("Dados para adicionar ou atualizar o perfil de recrutador de um usuário, tanto em fluxo administrativo quanto no fluxo do próprio usuário autenticado."))
                 .andExpect(jsonPath("$.components.schemas.IndicacaoResponseDTO.properties.autorNome.description").value("Nome do usuário autor da indicação."));
     }
 }

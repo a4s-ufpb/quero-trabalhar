@@ -156,7 +156,7 @@ public class OportunidadeDeEmprego {
      * pública sob a ótica da localidade.</p>
      */
     public void definirLocalidadeValidada(Localidade localidade) {
-        this.localidade = Objects.requireNonNull(localidade, "A localidade validada \u00E9 obrigat\u00F3ria.");
+        this.localidade = Objects.requireNonNull(localidade, "A localidade validada é obrigatória.");
     }
 
     public Set<PerfilCandidato> getCandidatosInteressados() {
