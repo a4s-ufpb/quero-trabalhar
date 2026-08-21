@@ -10,4 +10,5 @@ public class QueroTrabalharApplication {
 		SpringApplication.run(QueroTrabalharApplication.class, args);
 	}
 
+	//tESTdEtUDO
 }
